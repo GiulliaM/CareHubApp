@@ -1,0 +1,39 @@
+comandos carehub
+
+criar projeto: npx create-expo-app carehub --template
+escolher a opção Navigation (TypeScript)
+
+para rodar no expo: npx expo start
+
+dependencias instaladas:
+
+npx expo install @expo/vector-icons@^15.0.3
+npx expo install @futurejj/react-native-checkbox@^1.0.5
+npx expo install @react-navigation/native@^7.1.8
+npx expo install expo@~54.0.22
+npx expo install expo-constants@~18.0.10
+npx expo install expo-font@~14.0.9
+npx expo install expo-image@~3.0.10
+npx expo install expo-linking@~8.0.8
+npx expo install expo-splash-screen@~31.0.10
+npx expo install expo-status-bar@~3.0.8
+npx expo install expo-web-browser@~15.0.9
+npx expo install lucide-react-native@^0.552.0
+npx expo install react@19.1.0
+npx expo install react-dom@19.1.0
+npx expo install react-native@0.81.5
+npx expo install react-native-checkbox@^2.0.0
+npx expo install react-native-keyboard-aware-scroll-view@^0.9.5
+npx expo install react-native-reanimated@~4.1.1
+npx expo install react-native-safe-area-context@~5.6.0
+npx expo install react-native-screens@~4.16.0
+npx expo install react-native-web@~0.21.0
+npx expo install react-native-worklets@0.5.1
+
+# Dev dependencies (opcional)
+npx expo install --dev @types/react@~19.1.0
+npx expo install --dev react-test-renderer@19.1.0
+npx expo install --dev typescript@~5.9.2
+
+
+
