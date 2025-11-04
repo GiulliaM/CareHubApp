@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, NotepadText, Pill, Newspaper, Album } from 'lucide-react-native';
 
+// Importando as Telas
 import HomeTela from '../telas/HomeTela';
 import TarefasTela from '../telas/TarefasTela';
 import RemediosTela from '../telas/RemediosTela';
@@ -18,11 +19,22 @@ const TabNavigator: React.FC = () => {
         headerShown: false, 
         tabBarActiveTintColor: cores.primaria,
         tabBarInactiveTintColor: cores.preto,
+        
+        // <<< MUDANÇA AQUI
         tabBarStyle: {
-          height: 70,
-          paddingBottom: 10,
-          paddingTop: 5,
+          // Removemos a altura fixa para deixar o Safe Area funcionar
+          // height: 70, 
+          
+          // Aumentamos o padding superior e inferior para mais espaço
+          paddingBottom: 10, 
+          paddingTop: 10,
+          
+          // A altura total agora será "automática" 
+          // (padding + ícone + texto + safe area)
+          height: 'auto', 
         },
+        // ---
+        
         tabBarLabelStyle: {
           fontSize: 12,
           marginTop: 4,

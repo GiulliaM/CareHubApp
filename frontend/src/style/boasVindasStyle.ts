@@ -1,12 +1,9 @@
-// Arquivo: src/style/boasVindasStyle.tsx (nome minúsculo para padronizar)
 import { StyleSheet, Dimensions, ViewStyle, TextStyle, ImageStyle } from 'react-native';
-// <<< MUDANÇA: 'cores' minúsculo
 import { cores } from '../constantes/cores';
 import { comumEstilosObjeto } from './comumEstilos';
 
 const { width, height } = Dimensions.get('window');
 
-// <<< MUDANÇA: Adicionado 'as ViewStyle', etc. em TODAS as regras
 const boasVindasEstilosUnicos = {
   pageContainer: {
     flex: 1,
@@ -19,7 +16,9 @@ const boasVindasEstilosUnicos = {
   headerImage: {
     width: width,
     height: height * 0.4,
-    resizeMode: 'cover',
+    // <<< MUDANÇA AQUI
+    contentFit: 'cover', // 'resizeMode' foi trocado por 'contentFit'
+    // ---
     position: 'absolute',
     top: 0,
     left: 0,

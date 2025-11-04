@@ -10,9 +10,13 @@ import {
 } from 'react-native';
 import {Image } from 'expo-image';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'; 
+import { Eye, EyeOff } from 'lucide-react-native'; 
 
 import { styles } from '../style/boasVindasStyle';
 import { cores } from '../constantes/cores';
+// PENSANDO NO BACK-END:
+// Precisaremos disso para salvar o token de login
+// import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_URL = 'http://54.39.173.152:3000';
 
@@ -38,7 +42,6 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ onSetStep, onComplete }) => (
     </Text>
     <View style={styles.flexSpacer} />
     
-    {/* <<< MUDANÇA: Botão de Login adicionado */}
     <TouchableOpacity style={styles.primaryButton} onPress={() => onSetStep(4)}>
       <Text style={styles.buttonText}>Entrar (Login)</Text>
     </TouchableOpacity>
@@ -63,9 +66,12 @@ type RegisterUserStepProps = {
   isLoading: boolean;
   onCadastrar: () => void;
   onGoToLogin: () => void;
+  isSenhaVisivel: boolean;
+  setIsSenhaVisivel: (val: boolean) => void;
 };
 const RegisterUserStep: React.FC<RegisterUserStepProps> = ({
-  nome, setNome, email, setEmail, senha, setSenha, isLoading, onCadastrar, onGoToLogin
+  nome, setNome, email, setEmail, senha, setSenha, isLoading, onCadastrar, onGoToLogin,
+  isSenhaVisivel, setIsSenhaVisivel
 }) => (
   <KeyboardAwareScrollView
     style={{ flex: 1, backgroundColor: cores.branco }}
@@ -79,7 +85,26 @@ const RegisterUserStep: React.FC<RegisterUserStepProps> = ({
     
     <TextInput style={styles.input} placeholder="Seu nome completo" value={nome} onChangeText={setNome} />
     <TextInput style={styles.input} placeholder="Seu melhor email" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
-    <TextInput style={styles.input} placeholder="Crie uma senha" secureTextEntry value={senha} onChangeText={setSenha} />
+    
+    <View style={styles.passwordContainer}>
+      <TextInput 
+        style={styles.passwordInput} 
+        placeholder="Crie uma senha" 
+        secureTextEntry={!isSenhaVisivel}
+        value={senha} 
+        onChangeText={setSenha} 
+      />
+      <TouchableOpacity 
+        style={styles.passwordEyeIcon} 
+        onPress={() => setIsSenhaVisivel(!isSenhaVisivel)}
+      >
+        {isSenhaVisivel ? (
+          <EyeOff color={cores.preto} size={20} /> 
+        ) : (
+          <Eye color={cores.preto} size={20} />
+        )}
+      </TouchableOpacity>
+    </View>
 
     <View style={styles.flexSpacer} /> 
     
@@ -98,7 +123,6 @@ const RegisterUserStep: React.FC<RegisterUserStepProps> = ({
 
 
 // --- ETAPA 3: CADASTRO DO PACIENTE ---
-// (Sem mudanças, mas agora é a etapa 3)
 type RegisterPatientStepProps = {
   onComplete: () => void;
 };
@@ -125,7 +149,7 @@ const RegisterPatientStep: React.FC<RegisterPatientStepProps> = ({ onComplete })
   </KeyboardAwareScrollView>
 );
 
-// --- <<< MUDANÇA: ETAPA 4 (NOVA): LOGIN ---
+// --- ETAPA 4: LOGIN ---
 type LoginStepProps = {
   email: string;
   setEmail: (email: string) => void;
@@ -134,9 +158,12 @@ type LoginStepProps = {
   isLoading: boolean;
   onLogin: () => void;
   onGoToCadastro: () => void;
+  isSenhaVisivel: boolean;
+  setIsSenhaVisivel: (val: boolean) => void;
 };
 const LoginStep: React.FC<LoginStepProps> = ({
-  email, setEmail, senha, setSenha, isLoading, onLogin, onGoToCadastro
+  email, setEmail, senha, setSenha, isLoading, onLogin, onGoToCadastro,
+  isSenhaVisivel, setIsSenhaVisivel
 }) => (
   <KeyboardAwareScrollView
     style={{ flex: 1, backgroundColor: cores.branco }}
@@ -149,7 +176,26 @@ const LoginStep: React.FC<LoginStepProps> = ({
     <Text style={styles.formSubtitle}>Que bom te ver de volta!</Text>
     
     <TextInput style={styles.input} placeholder="Seu email" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
-    <TextInput style={styles.input} placeholder="Sua senha" secureTextEntry value={senha} onChangeText={setSenha} />
+    
+    <View style={styles.passwordContainer}>
+      <TextInput 
+        style={styles.passwordInput} 
+        placeholder="Sua senha" 
+        secureTextEntry={!isSenhaVisivel}
+        value={senha} 
+        onChangeText={setSenha} 
+      />
+      <TouchableOpacity 
+        style={styles.passwordEyeIcon} 
+        onPress={() => setIsSenhaVisivel(!isSenhaVisivel)}
+      >
+        {isSenhaVisivel ? (
+          <EyeOff color={cores.preto} size={20} /> 
+        ) : (
+          <Eye color={cores.preto} size={20} />
+        )}
+      </TouchableOpacity>
+    </View>
 
     <View style={styles.flexSpacer} /> 
     
@@ -174,18 +220,17 @@ type Props = {
 const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
   const [step, setStep] = useState(1);
   
-  // Estados de Cadastro (Etapa 2)
   const [nomeCadastro, setNomeCadastro] = useState('');
   const [emailCadastro, setEmailCadastro] = useState('');
   const [senhaCadastro, setSenhaCadastro] = useState('');
   
-  // <<< MUDANÇA: Estados de Login (Etapa 4)
   const [emailLogin, setEmailLogin] = useState('');
   const [senhaLogin, setSenhaLogin] = useState('');
   
   const [isLoading, setIsLoading] = useState(false); 
+  const [isSenhaVisivel, setIsSenhaVisivel] = useState(false);
 
-  // Função de Cadastro
+  // Função de Cadastro (sem mudanças)
   const handleCadastroUsuario = async () => {
     if (!nomeCadastro || !emailCadastro || !senhaCadastro) {
         Alert.alert('Campos incompletos', 'Por favor, preencha nome, email e senha.');
@@ -203,7 +248,7 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
         setIsLoading(false); 
         if (response.ok) {
             Alert.alert('Sucesso!', 'Sua conta foi criada. Vamos para o próximo passo.');
-            setStep(3); // Avança para cadastrar paciente
+            setStep(3); 
         } else {
             Alert.alert('Erro no Cadastro', data.message || 'Não foi possível criar a conta.');
         }
@@ -214,7 +259,7 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
     }
   };
   
-  // <<< MUDANÇA: Função de Login
+  // <<< MUDANÇA: Função de Login CORRIGIDA
   const handleLogin = async () => {
     if (!emailLogin || !senhaLogin) {
         Alert.alert('Campos incompletos', 'Por favor, preencha email e senha.');
@@ -223,37 +268,35 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
     setIsLoading(true);
     
     // PENSANDO NO BACK-END:
-    // try {
-    //   const response = await fetch(`${API_URL}/login`, {
-    //       method: 'POST',
-    //       headers: {'Content-Type': 'application/json'},
-    //       body: JSON.stringify({ email: emailLogin, senha: senhaLogin }),
-    //   });
-    //   const data = await response.json();
-    //   setIsLoading(false);
-    //   if (response.ok) {
-    //     // 1. Salvar o Token (data.token) no AsyncStorage
-    //     // await AsyncStorage.setItem('@carehub_token', data.token);
-    //     // 2. Avisar o App.tsx que o login foi feito
-    //     onComplete();
-    //   } else {
-    //     Alert.alert('Erro no Login', data.message || 'Credenciais inválidas.');
-    //   }
-    // } catch (error) {
-    //   setIsLoading(false);
-    //   Alert.alert('Erro de Conexão', 'Não foi possível conectar ao servidor.');
-    // }
-    
-    // Mock rápido:
-    setTimeout(() => {
+    // A lógica real da API agora está ATIVA:
+    try {
+      const response = await fetch(`${API_URL}/login`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ email: emailLogin, senha: senhaLogin }),
+      });
+      
+      const data = await response.json();
       setIsLoading(false);
-      if (emailLogin === 'teste@carehub.com' && senhaLogin === 'minhasenha123') {
+      
+      if (response.ok) {
+        // PENSANDO NO BACK-END:
+        // O ideal é salvar o token aqui (data.token)
+        // await AsyncStorage.setItem('@carehub_token', data.token);
+        
         Alert.alert('Sucesso!', 'Login realizado.');
-        onComplete(); // Avisa o App.tsx que o login foi feito
+        // Avisa o App.tsx que o login foi feito
+        onComplete(); 
       } else {
-        Alert.alert('Erro', 'Credenciais inválVlidas (teste: teste@carehub.com, minhasenha123)');
+        Alert.alert('Erro no Login', data.message || 'Credenciais inválidas.');
       }
-    }, 1000);
+    } catch (error) {
+      setIsLoading(false);
+      console.error('Erro de conexão:', error);
+      Alert.alert('Erro de Conexão', 'Não foi possível conectar ao servidor.');
+    }
+    
+    // O Mock rápido foi REMOVIDO daqui.
   };
 
   // Renderiza a etapa correta
@@ -272,6 +315,8 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
           isLoading={isLoading}
           onCadastrar={handleCadastroUsuario}
           onGoToLogin={() => setStep(4)}
+          isSenhaVisivel={isSenhaVisivel}
+          setIsSenhaVisivel={setIsSenhaVisivel}
         />
       );
     case 3:
@@ -280,7 +325,6 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
           onComplete={onComplete} 
         />
       );
-    // <<< MUDANÇA: Renderiza a tela de Login
     case 4:
       return (
         <LoginStep
@@ -291,6 +335,8 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
           isLoading={isLoading}
           onLogin={handleLogin}
           onGoToCadastro={() => setStep(2)}
+          isSenhaVisivel={isSenhaVisivel}
+          setIsSenhaVisivel={setIsSenhaVisivel}
         />
       );
     default:
