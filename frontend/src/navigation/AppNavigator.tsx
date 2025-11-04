@@ -9,11 +9,9 @@ import {
 } from '@react-navigation/drawer';
 import { Home, Search, User, Shield, LogOut } from 'lucide-react-native';
 
-// Importa o menu de 5 abas (o próximo arquivo)
 import TabNavigator from './TabNavigator'; 
 import { cores } from '../constantes/cores';
 
-// ----- Telas "Placeholder" -----
 const PlaceholderScreen = ({ route }: any) => (
   <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
     <Text style={{ fontSize: 24, fontWeight: 'bold' }}>{route.name}</Text>
@@ -22,11 +20,9 @@ const PlaceholderScreen = ({ route }: any) => (
 const BuscarCuidadoresTela = () => <PlaceholderScreen route={{ name: 'Buscar Cuidadores' }} />;
 const MeuPerfilTela = () => <PlaceholderScreen route={{ name: 'Meu Perfil' }} />;
 const PerfilPessoaCuidadaTela = () => <PlaceholderScreen route={{ name: 'Perfil Pessoa Cuidada' }} />;
-// ---------------------------------
 
 const Drawer = createDrawerNavigator();
 
-// --- O Conteúdo Customizado do Menu ---
 type CustomDrawerProps = DrawerContentComponentProps & {
   onLogout: () => void; 
 };
@@ -52,14 +48,12 @@ function CustomDrawerContent(props: CustomDrawerProps) {
   );
 }
 
-// --- O Navegador Principal ---
 type AppNavigatorProps = {
   onLogout: () => void; 
 };
 
 const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout }) => {
   return (
-    // ESTE ARQUIVO NÃO TEM <NavigationContainer>
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} onLogout={onLogout} />}
       screenOptions={{

@@ -2,7 +2,6 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, NotepadText, Pill, Newspaper, Album } from 'lucide-react-native';
 
-// Importando as Telas
 import HomeTela from '../telas/HomeTela';
 import TarefasTela from '../telas/TarefasTela';
 import RemediosTela from '../telas/RemediosTela';
@@ -14,7 +13,6 @@ const Tab = createBottomTabNavigator();
 
 const TabNavigator: React.FC = () => {
   return (
-    // ESTE ARQUIVO TAMBÉM NÃO TEM <NavigationContainer>
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false, 
