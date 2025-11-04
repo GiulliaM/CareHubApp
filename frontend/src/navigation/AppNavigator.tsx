@@ -14,6 +14,9 @@ import { cores } from '../constantes/cores';
 import HomeTela from '../telas/HomeTela';
 import TarefasTela from '../telas/TarefasTela';
 import RemediosTela from '../telas/RemediosTela';
+import ConteudoTela from '../telas/ConteudoTela';
+import DiarioTela from '../telas/DiarioTela';
+
 
 
 type ScreenName = 'Início' | 'Tarefas' | 'Remedios' | 'Artigos' | 'Diario';
@@ -36,6 +39,10 @@ const AppNavigator: React.FC = () => {
         return <TarefasTela />;
       case 'Remedios':
         return <RemediosTela />;
+      case 'Artigos':
+        return <ConteudoTela />;
+      case 'Diario':
+        return <DiarioTela />;
       default:
         return <HomeTela />; // Tela padrão caso algo dê errado.
     }

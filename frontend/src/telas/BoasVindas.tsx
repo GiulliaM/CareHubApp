@@ -9,14 +9,11 @@ import {
     Platform
 } from 'react-native';
 import {Image } from 'expo-image';
-// Lembre-se de instalar: npm i react-native-keyboard-aware-scroll-view
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'; 
 
-// Importando estilos e cores (padronizado para minúsculas)
 import { styles } from '../style/boasVindasStyle';
 import { cores } from '../constantes/cores';
 
-// O endereço da sua API
 const API_URL = 'http://54.39.173.152:3000';
 
 // ---
@@ -30,7 +27,6 @@ type WelcomeStepProps = {
 };
 const WelcomeStep: React.FC<WelcomeStepProps> = ({ onSetStep, onComplete }) => (
   <View style={styles.pageContainer}>
-    {/* <<< CORREÇÃO APLICADA AQUI */}
     <Image
       style={styles.headerImage} 
       source="../images/bandaid-heart.webp"
@@ -41,11 +37,16 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ onSetStep, onComplete }) => (
       atenção, segurança e afeto no dia a dia.
     </Text>
     <View style={styles.flexSpacer} />
-    <TouchableOpacity style={styles.primaryButton} onPress={() => onSetStep(2)}>
-      <Text style={styles.buttonText}>Começar Cadastro</Text>
+    
+    {/* <<< MUDANÇA: Botão de Login adicionado */}
+    <TouchableOpacity style={styles.primaryButton} onPress={() => onSetStep(4)}>
+      <Text style={styles.buttonText}>Entrar (Login)</Text>
     </TouchableOpacity>
-    <TouchableOpacity style={styles.secondaryButton} onPress={onComplete}>
-      <Text style={styles.secondaryButtonText}>Pular (Modo Visitante)</Text>
+    <TouchableOpacity style={[styles.secondaryButton, { padding: 12, marginBottom: 8 }]} onPress={() => onSetStep(2)}>
+      <Text style={styles.secondaryButtonText}>Criar Nova Conta</Text>
+    </TouchableOpacity>
+    <TouchableOpacity style={[styles.secondaryButton, { padding: 12 }]} onPress={onComplete}>
+      <Text style={[styles.secondaryButtonText, { fontSize: 14 }]}>Pular (Modo Visitante)</Text>
     </TouchableOpacity>
   </View>
 );
@@ -60,10 +61,11 @@ type RegisterUserStepProps = {
   senha: string;
   setSenha: (senha: string) => void;
   isLoading: boolean;
-  onCadastrar: () => void; // A função que chama a API
+  onCadastrar: () => void;
+  onGoToLogin: () => void;
 };
 const RegisterUserStep: React.FC<RegisterUserStepProps> = ({
-  nome, setNome, email, setEmail, senha, setSenha, isLoading, onCadastrar
+  nome, setNome, email, setEmail, senha, setSenha, isLoading, onCadastrar, onGoToLogin
 }) => (
   <KeyboardAwareScrollView
     style={{ flex: 1, backgroundColor: cores.branco }}
@@ -72,34 +74,12 @@ const RegisterUserStep: React.FC<RegisterUserStepProps> = ({
     extraScrollHeight={Platform.OS === 'ios' ? 20 : 0} 
     keyboardShouldPersistTaps="handled"
   >
-    {/* Usando os estilos corretos de formulário */}
-    <Text style={styles.formTitle}>Seu Cadastro</Text>
-    <Text style={styles.formSubtitle}>Primeiro, vamos criar a sua conta.</Text>
+    <Text style={styles.formTitle}>Criar Conta</Text>
+    <Text style={styles.formSubtitle}>Vamos criar a sua conta.</Text>
     
-    <TextInput
-      style={styles.input}
-      placeholder="Seu nome completo"
-      placeholderTextColor="#443535ff"
-      value={nome}
-      onChangeText={setNome} 
-    />
-    <TextInput
-      style={styles.input}
-      placeholder="Seu melhor email"
-      keyboardType="email-address"
-      autoCapitalize="none"
-      placeholderTextColor="#443535ff"
-      value={email}
-      onChangeText={setEmail} 
-    />
-    <TextInput
-      style={styles.input}
-      placeholder="Crie uma senha"
-      secureTextEntry
-      placeholderTextColor="#443535ff"
-      value={senha}
-      onChangeText={setSenha} 
-    />
+    <TextInput style={styles.input} placeholder="Seu nome completo" value={nome} onChangeText={setNome} />
+    <TextInput style={styles.input} placeholder="Seu melhor email" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
+    <TextInput style={styles.input} placeholder="Crie uma senha" secureTextEntry value={senha} onChangeText={setSenha} />
 
     <View style={styles.flexSpacer} /> 
     
@@ -110,11 +90,15 @@ const RegisterUserStep: React.FC<RegisterUserStepProps> = ({
           <Text style={styles.buttonText}>Próximo Passo</Text>
       </TouchableOpacity>
     )}
+    <TouchableOpacity style={styles.secondaryButton} onPress={onGoToLogin}>
+        <Text style={styles.secondaryButtonText}>Já tenho conta</Text>
+    </TouchableOpacity>
   </KeyboardAwareScrollView>
 );
 
 
 // --- ETAPA 3: CADASTRO DO PACIENTE ---
+// (Sem mudanças, mas agora é a etapa 3)
 type RegisterPatientStepProps = {
   onComplete: () => void;
 };
@@ -126,25 +110,12 @@ const RegisterPatientStep: React.FC<RegisterPatientStepProps> = ({ onComplete })
     extraScrollHeight={Platform.OS === 'ios' ? 20 : 0}
     keyboardShouldPersistTaps="handled"
   >
-    {/* Usando os estilos corretos de formulário */}
     <Text style={styles.formTitle}>Quem será cuidado?</Text>
     <Text style={styles.formSubtitle}>Agora, cadastre os dados da pessoa que você irá cuidar.</Text>
     
-    <TextInput
-      style={styles.input}
-      placeholder="Nome da pessoa"
-      placeholderTextColor="#999"
-    />
-    <TextInput
-      style={styles.input}
-      placeholder="Data de nascimento (DD/MM/AAAA)"
-      placeholderTextColor="#999"
-    />
-    <TextInput
-      style={styles.input}
-      placeholder="Alergias (opcional)"
-      placeholderTextColor="#999"
-    />
+    <TextInput style={styles.input} placeholder="Nome da pessoa" placeholderTextColor="#999" />
+    <TextInput style={styles.input} placeholder="Data de nascimento (DD/MM/AAAA)" placeholderTextColor="#999" />
+    <TextInput style={styles.input} placeholder="Alergias (opcional)" placeholderTextColor="#999" />
     
     <View style={styles.flexSpacer} /> 
 
@@ -154,36 +125,75 @@ const RegisterPatientStep: React.FC<RegisterPatientStepProps> = ({ onComplete })
   </KeyboardAwareScrollView>
 );
 
+// --- <<< MUDANÇA: ETAPA 4 (NOVA): LOGIN ---
+type LoginStepProps = {
+  email: string;
+  setEmail: (email: string) => void;
+  senha: string;
+  setSenha: (senha: string) => void;
+  isLoading: boolean;
+  onLogin: () => void;
+  onGoToCadastro: () => void;
+};
+const LoginStep: React.FC<LoginStepProps> = ({
+  email, setEmail, senha, setSenha, isLoading, onLogin, onGoToCadastro
+}) => (
+  <KeyboardAwareScrollView
+    style={{ flex: 1, backgroundColor: cores.branco }}
+    contentContainerStyle={{ flexGrow: 1, padding: 20 }} 
+    enableOnAndroid={true}
+    extraScrollHeight={Platform.OS === 'ios' ? 20 : 0} 
+    keyboardShouldPersistTaps="handled"
+  >
+    <Text style={styles.formTitle}>Login</Text>
+    <Text style={styles.formSubtitle}>Que bom te ver de volta!</Text>
+    
+    <TextInput style={styles.input} placeholder="Seu email" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
+    <TextInput style={styles.input} placeholder="Sua senha" secureTextEntry value={senha} onChangeText={setSenha} />
 
-// ---
-// COMPONENTE PRINCIPAL (O "Pai")
-// ---
+    <View style={styles.flexSpacer} /> 
+    
+    {isLoading ? (
+      <ActivityIndicator size="large" color={cores.primaria || '#007bff'} />
+    ) : (
+      <TouchableOpacity style={styles.primaryButton} onPress={onLogin}>
+          <Text style={styles.buttonText}>Entrar</Text>
+      </TouchableOpacity>
+    )}
+    <TouchableOpacity style={styles.secondaryButton} onPress={onGoToCadastro}>
+        <Text style={styles.secondaryButtonText}>Não tenho conta (Cadastrar)</Text>
+    </TouchableOpacity>
+  </KeyboardAwareScrollView>
+);
 
+
+// --- COMPONENTE PRINCIPAL (O "Pai") ---
 type Props = {
   onComplete: () => void;
 };
-
 const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
-  // ---
-  // Todos os estados e lógicas ficam aqui
-  // ---
   const [step, setStep] = useState(1);
   
-  // Estados Etapa 2
-  const [nome, setNome] = useState('');
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
+  // Estados de Cadastro (Etapa 2)
+  const [nomeCadastro, setNomeCadastro] = useState('');
+  const [emailCadastro, setEmailCadastro] = useState('');
+  const [senhaCadastro, setSenhaCadastro] = useState('');
+  
+  // <<< MUDANÇA: Estados de Login (Etapa 4)
+  const [emailLogin, setEmailLogin] = useState('');
+  const [senhaLogin, setSenhaLogin] = useState('');
+  
   const [isLoading, setIsLoading] = useState(false); 
 
-  // Função que chama a API para cadastrar o usuário
+  // Função de Cadastro
   const handleCadastroUsuario = async () => {
-    if (!nome || !email || !senha) {
+    if (!nomeCadastro || !emailCadastro || !senhaCadastro) {
         Alert.alert('Campos incompletos', 'Por favor, preencha nome, email e senha.');
         return;
     }
     setIsLoading(true); 
     try {
-        const dadosCadastro = { nome, email, senha, tipo_usuario: 'Familiar' };
+        const dadosCadastro = { nome: nomeCadastro, email: emailCadastro, senha: senhaCadastro, tipo_usuario: 'Familiar' };
         const response = await fetch(`${API_URL}/usuarios`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -193,7 +203,7 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
         setIsLoading(false); 
         if (response.ok) {
             Alert.alert('Sucesso!', 'Sua conta foi criada. Vamos para o próximo passo.');
-            setStep(3); 
+            setStep(3); // Avança para cadastrar paciente
         } else {
             Alert.alert('Erro no Cadastro', data.message || 'Não foi possível criar a conta.');
         }
@@ -203,6 +213,48 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
         Alert.alert('Erro de Conexão', 'Não foi possível conectar ao servidor.');
     }
   };
+  
+  // <<< MUDANÇA: Função de Login
+  const handleLogin = async () => {
+    if (!emailLogin || !senhaLogin) {
+        Alert.alert('Campos incompletos', 'Por favor, preencha email e senha.');
+        return;
+    }
+    setIsLoading(true);
+    
+    // PENSANDO NO BACK-END:
+    // try {
+    //   const response = await fetch(`${API_URL}/login`, {
+    //       method: 'POST',
+    //       headers: {'Content-Type': 'application/json'},
+    //       body: JSON.stringify({ email: emailLogin, senha: senhaLogin }),
+    //   });
+    //   const data = await response.json();
+    //   setIsLoading(false);
+    //   if (response.ok) {
+    //     // 1. Salvar o Token (data.token) no AsyncStorage
+    //     // await AsyncStorage.setItem('@carehub_token', data.token);
+    //     // 2. Avisar o App.tsx que o login foi feito
+    //     onComplete();
+    //   } else {
+    //     Alert.alert('Erro no Login', data.message || 'Credenciais inválidas.');
+    //   }
+    // } catch (error) {
+    //   setIsLoading(false);
+    //   Alert.alert('Erro de Conexão', 'Não foi possível conectar ao servidor.');
+    // }
+    
+    // Mock rápido:
+    setTimeout(() => {
+      setIsLoading(false);
+      if (emailLogin === 'teste@carehub.com' && senhaLogin === 'minhasenha123') {
+        Alert.alert('Sucesso!', 'Login realizado.');
+        onComplete(); // Avisa o App.tsx que o login foi feito
+      } else {
+        Alert.alert('Erro', 'Credenciais inválVlidas (teste: teste@carehub.com, minhasenha123)');
+      }
+    }, 1000);
+  };
 
   // Renderiza a etapa correta
   switch (step) {
@@ -211,20 +263,34 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
     case 2:
       return (
         <RegisterUserStep
-          nome={nome}
-          setNome={setNome}
-          email={email}
-          setEmail={setEmail}
-          senha={senha}
-          setSenha={setSenha}
+          nome={nomeCadastro}
+          setNome={setNomeCadastro}
+          email={emailCadastro}
+          setEmail={setEmailCadastro}
+          senha={senhaCadastro}
+          setSenha={setSenhaCadastro}
           isLoading={isLoading}
           onCadastrar={handleCadastroUsuario}
+          onGoToLogin={() => setStep(4)}
         />
       );
     case 3:
       return (
         <RegisterPatientStep 
           onComplete={onComplete} 
+        />
+      );
+    // <<< MUDANÇA: Renderiza a tela de Login
+    case 4:
+      return (
+        <LoginStep
+          email={emailLogin}
+          setEmail={setEmailLogin}
+          senha={senhaLogin}
+          setSenha={setSenhaLogin}
+          isLoading={isLoading}
+          onLogin={handleLogin}
+          onGoToCadastro={() => setStep(2)}
         />
       );
     default:
