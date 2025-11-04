@@ -10,36 +10,18 @@ import {
     Platform
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { Plus, Menu, ArrowLeft, ArrowRight, PlusCircle } from 'lucide-react-native';
+import { Plus, ArrowLeft, ArrowRight, PlusCircle } from 'lucide-react-native';
 
-//importando os estilo
 import {cores} from '../constantes/cores';
 import {styles} from '../style/homeStyle';
-// <<< MUDANÇA: Importando nossos helpers de data
 import { formatarDataAmigavel, adicionarDia, subtrairDia } from '../ferramentas/logicaData';
 
 // ---
-// COMPONENTES MOVIDOS PARA FORA (Evita bug do teclado)
+// COMPONENTES
 // ---
 
-const Header = ({ onBack, title }: { title: string, onBack?: () => void }) => (
-  <View style={styles.headerContainer}>
-    {onBack ? (
-      <TouchableOpacity onPress={onBack}>
-        <ArrowLeft color={cores.primaria} />
-      </TouchableOpacity>
-    ) : (
-      <TouchableOpacity>
-        <Menu color={cores.primaria} />
-      </TouchableOpacity>
-    )}
-    <Text style={styles.headerTitle}>{title}</Text>
-    <View style={{ width: 28 }} />
-  </View>
-);
+// O 'Header' foi REMOVIDO daqui.
 
-// --- Seletor de Data ---
-// <<< MUDANÇA: Agora recebe props para funcionar
 type CardDataProps = {
   data: Date;
   onAnterior: () => void;
@@ -48,7 +30,6 @@ type CardDataProps = {
 const CardData: React.FC<CardDataProps> = ({ data, onAnterior, onProximo }) => (
   <View style={styles.viewData}> 
       <TouchableOpacity onPress={onAnterior}><ArrowLeft color={cores.preto} /></TouchableOpacity>
-      {/* <<< MUDANÇA: Exibe a data formatada */}
       <Text style={styles.textoNormal}>{formatarDataAmigavel(data)}</Text>
       <TouchableOpacity onPress={onProximo}><ArrowRight color={cores.preto} /></TouchableOpacity>
   </View>
@@ -78,10 +59,9 @@ const EmptyState = ({ onPress }: { onPress: () => void }) => (
   </View>
 );
 
-// --- Formulário de Adicionar Tarefa ---
 type AddTaskFormProps = {
-  onBack: () => void; // Função para voltar
-  dataSelecionada: Date; // Para saber em qual dia salvar
+  onBack: () => void; 
+  dataSelecionada: Date; 
 };
 const AddTaskForm: React.FC<AddTaskFormProps> = ({ onBack, dataSelecionada }) => {
   const [titulo, setTitulo] = useState('');
@@ -95,16 +75,6 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onBack, dataSelecionada }) =>
     }
     setIsLoading(true);
     
-    // PENSANDO NO BACK-END:
-    // Aqui nós chamaríamos a API
-    // const dados = { 
-    //   titulo: titulo, 
-    //   horario: horario, 
-    //   data_tarefa: dataSelecionada.toISOString().split('T')[0] // Formato YYYY-MM-DD
-    //   paciente_id: 1 // (Pegaríamos o ID do paciente ativo)
-    // };
-    // await fetch(`${API_URL}/tarefas`, { method: 'POST', body: JSON.stringify(dados), ...});
-    
     setTimeout(() => {
       setIsLoading(false);
       Alert.alert('Sucesso!', 'Tarefa salva.');
@@ -114,7 +84,13 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onBack, dataSelecionada }) =>
 
   return (
     <View style={styles.screenContainer}> 
-      <Header title="Nova Tarefa" onBack={onBack} />
+      
+      {/* A chamada <Header /> foi REMOVIDA daqui. 
+          AVISO: Precisaremos de uma solução de "Stack" para este formulário
+          ter um cabeçalho com botão "Voltar", mas por agora,
+          isso corrige o erro de crash.
+      */}
+
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ flexGrow: 1, padding: 20 }}
@@ -155,34 +131,20 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onBack, dataSelecionada }) =>
 
 // --- TELA PRINCIPAL DE TAREFAS ---
 const TarefasTela: React.FC = function(){
-  // --- Estados ---
   const [temTarefas, setTarefas] = useState(0); 
   const [isAddingTask, setIsAddingTask] = useState(false);
-  // <<< MUDANÇA: Estado para controlar a data
   const [dataSelecionada, setDataSelecionada] = useState(new Date());
 
-  // <<< MUDANÇA: Funções para mudar a data
   const handleDiaSeguinte = () => {
     setDataSelecionada(adicionarDia(dataSelecionada));
-    // PENSANDO NO BACK-END:
-    // Aqui nós buscaríamos as tarefas da nova data
-    // fetchTarefas(adicionarDia(dataSelecionada));
   };
   
   const handleDiaAnterior = () => {
     setDataSelecionada(subtrairDia(dataSelecionada));
-    // PENSANDO NO BACK-END:
-    // fetchTarefas(subtrairDia(dataSelecionada));
   };
   
-  // PENSANDO NO BACK-END:
-  // useEffect(() => {
-  //   fetchTarefas(dataSelecionada);
-  // }, [dataSelecionada]); // Roda toda vez que a data muda
-
   var titulo = temTarefas ? "Tarefas para Hoje" : "Nenhuma Tarefa"; 
 
-  // 1. Se estiver ADICIONANDO TAREFA, mostre o formulário
   if (isAddingTask) {
     return <AddTaskForm 
               onBack={() => setIsAddingTask(false)} 
@@ -190,11 +152,9 @@ const TarefasTela: React.FC = function(){
             />;
   }
 
-  // 2. Se estiver na LISTA, mostre a lista
   return(
       <View style={styles.screenContainer}>
-          <Header title="Tarefas" />
-          {/* <<< MUDANÇA: Passando a data e as funções */}
+          {/* A chamada <Header /> foi REMOVIDA daqui */}
           <CardData 
             data={dataSelecionada}
             onAnterior={handleDiaAnterior}

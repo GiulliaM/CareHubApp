@@ -7,22 +7,15 @@ import {
     Alert,
     StyleSheet
 } from 'react-native';
-import { Menu, ArrowLeft, ArrowRight, Smile, Bed, Droplet, UserCheck, AlertTriangle, MessageSquare } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, Smile, Bed, Droplet, UserCheck, AlertTriangle, MessageSquare } from 'lucide-react-native';
 
 import {cores} from '../constantes/cores';
-import {styles as estilosGlobais} from '../style/homeStyle'; // Importa estilos globais
+import {styles as estilosGlobais} from '../style/homeStyle'; 
 import { formatarDataAmigavel, adicionarDia, subtrairDia } from '../ferramentas/logicaData';
 
-// --- COMPONENTES (Reutilizados) ---
-const Header = () => (
-  <View style={estilosGlobais.headerContainer}>
-    <TouchableOpacity>
-      <Menu color={cores.primaria} />
-    </TouchableOpacity>
-    <Text style={estilosGlobais.headerTitle}>Diário</Text>
-    <View style={{ width: 28 }} />
-  </View>
-);
+// --- COMPONENTES ---
+
+// O 'Header' foi REMOVIDO daqui.
 
 type CardDataProps = {
   data: Date;
@@ -37,7 +30,6 @@ const CardData: React.FC<CardDataProps> = ({ data, onAnterior, onProximo }) => (
   </View>
 );
 
-// --- COMPONENTE NOVO: Botão de Registro ---
 type BotaoRegistroProps = {
   label: string;
   icon: React.ReactNode;
@@ -62,25 +54,13 @@ const DiarioTela: React.FC = function(){
     setDataSelecionada(subtrairDia(dataSelecionada));
   };
 
-  // PENSANDO NO BACK-END:
-  // Esta função seria chamada ao salvar o formulário/modal de registro
   const handleRegistrarEvento = (tipo: string) => {
-    // 1. Abrir um Modal/Formulário para pedir detalhes (ex: "Qual foi o humor?")
-    // 2. Enviar para a API:
-    // const dados = { 
-    //   tipo_registro: tipo, 
-    //   comentario: "O usuário estava feliz.",
-    //   data_registro: new Date(),
-    //   paciente_id: 1
-    // };
-    // await fetch(`${API_URL}/registros`, { method: 'POST', ...});
-    
     Alert.alert("Registro", `Evento "${tipo}" seria registrado aqui.`);
   };
 
   return(
       <View style={estilosGlobais.screenContainer}>
-          <Header />
+          {/* A chamada <Header /> foi REMOVIDA daqui */}
           <CardData 
             data={dataSelecionada}
             onAnterior={handleDiaAnterior}
@@ -94,7 +74,6 @@ const DiarioTela: React.FC = function(){
           >
             <Text style={estilosGlobais.formSubtitle}>O que você gostaria de registrar?</Text>
             
-            {/* Grid de Botões */}
             <View style={styles.gridContainer}>
               <BotaoRegistro 
                 label="Humor" 
@@ -113,7 +92,7 @@ const DiarioTela: React.FC = function(){
               />
               <BotaoRegistro 
                 label="Fezes" 
-                icon={<UserCheck color={cores.primaria} size={32} />} // (Ícone de exemplo)
+                icon={<UserCheck color={cores.primaria} size={32} />}
                 onPress={() => handleRegistrarEvento('Fezes')}
               />
               <BotaoRegistro 
@@ -128,7 +107,6 @@ const DiarioTela: React.FC = function(){
               />
             </View>
 
-            {/* Futura lista de registros do dia */}
             <View style={{ marginTop: 40 }}>
               <Text style={estilosGlobais.sectionTitle}>Registros de Hoje</Text>
               <View style={estilosGlobais.emptyCard}>
@@ -141,7 +119,6 @@ const DiarioTela: React.FC = function(){
   );
 }
 
-// Estilos específicos desta tela
 const styles = StyleSheet.create({
   gridContainer: {
     flexDirection: 'row',
@@ -150,8 +127,8 @@ const styles = StyleSheet.create({
   },
   botaoRegistro: {
     backgroundColor: cores.branco,
-    width: '48%', // Quase metade da tela, com espaço
-    aspectRatio: 1, // Para ser um quadrado
+    width: '48%',
+    aspectRatio: 1,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#e2e8f0',

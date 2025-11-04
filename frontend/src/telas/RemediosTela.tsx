@@ -10,34 +10,18 @@ import {
     Platform
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { Plus, Menu, ArrowLeft, ArrowRight, PlusCircle, Pill } from 'lucide-react-native';
+import { Plus, ArrowLeft, ArrowRight, PlusCircle, Pill } from 'lucide-react-native';
 import { Checkbox } from '@futurejj/react-native-checkbox';
 
-//importando os estilo
 import {cores} from '../constantes/cores';
 import {styles} from '../style/homeStyle';
-// Importando nossos helpers de data
 import { formatarDataAmigavel, adicionarDia, subtrairDia } from '../ferramentas/logicaData';
 
 // ---
-// COMPONENTES (Reutilizados da tela de Tarefas)
+// COMPONENTES
 // ---
 
-const Header = ({ onBack, title }: { title: string, onBack?: () => void }) => (
-  <View style={styles.headerContainer}>
-    {onBack ? (
-      <TouchableOpacity onPress={onBack}>
-        <ArrowLeft color={cores.primaria} />
-      </TouchableOpacity>
-    ) : (
-      <TouchableOpacity>
-        <Menu color={cores.primaria} />
-      </TouchableOpacity>
-    )}
-    <Text style={styles.headerTitle}>{title}</Text>
-    <View style={{ width: 28 }} />
-  </View>
-);
+// O 'Header' foi REMOVIDO daqui.
 
 type CardDataProps = {
   data: Date;
@@ -64,7 +48,6 @@ const ButtonAddRemedio = ({ onPress }: { onPress: () => void }) =>(
   </TouchableOpacity>
 );
 
-// --- Componente Específico de Remédio ---
 const CardListaRemedio = () => {
   const [checked, setChecked] = useState(false);
   const toggleCheckbox = () => setChecked(!checked);
@@ -97,7 +80,6 @@ const EmptyState = ({ onPress }: { onPress: () => void }) => (
   </View>
 );
 
-// --- Formulário de Adicionar Remédio ---
 type AddRemedioFormProps = {
   onBack: () => void;
   dataSelecionada: Date;
@@ -114,16 +96,6 @@ const AddRemedioForm: React.FC<AddRemedioFormProps> = ({ onBack, dataSelecionada
       return;
     }
     setIsLoading(true);
-    // PENSANDO NO BACK-END:
-    // const dados = { 
-    //   nome_medicamento: nome, 
-    //   dosagem: dosagem, 
-    //   horario: horario, 
-    //   data_inicio: dataSelecionada.toISOString().split('T')[0],
-    //   frequencia: 'Diária' // (Precisaríamos de um input para isso)
-    //   paciente_id: 1
-    // };
-    // await fetch(`${API_URL}/medicamentos`, { method: 'POST', ...});
     
     setTimeout(() => {
       setIsLoading(false);
@@ -134,7 +106,7 @@ const AddRemedioForm: React.FC<AddRemedioFormProps> = ({ onBack, dataSelecionada
 
   return (
     <View style={styles.screenContainer}> 
-      <Header title="Novo Remédio" onBack={onBack} />
+      {/* A chamada <Header /> foi REMOVIDA daqui */}
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ flexGrow: 1, padding: 20 }}
@@ -181,8 +153,7 @@ const AddRemedioForm: React.FC<AddRemedioFormProps> = ({ onBack, dataSelecionada
 
 // --- TELA PRINCIPAL DE REMÉDIOS ---
 const RemediosTela: React.FC = function(){
-  // --- Estados ---
-  const [temRemedio, setRemedio] = useState(1); // 1 = true (para mostrar o card)
+  const [temRemedio, setRemedio] = useState(1);
   const [isAddingRemedio, setIsAddingRemedio] = useState(false);
   const [dataSelecionada, setDataSelecionada] = useState(new Date());
 
@@ -196,7 +167,6 @@ const RemediosTela: React.FC = function(){
   
   var titulo = temRemedio ? "Medicamentos de Hoje" : "Nenhum Medicamento"; 
 
-  // 1. Se estiver ADICIONANDO, mostre o formulário
   if (isAddingRemedio) {
     return <AddRemedioForm 
               onBack={() => setIsAddingRemedio(false)} 
@@ -204,10 +174,9 @@ const RemediosTela: React.FC = function(){
             />;
   }
 
-  // 2. Se estiver na LISTA, mostre a lista
   return(
       <View style={styles.screenContainer}>
-          <Header title="Remédios" />
+          {/* A chamada <Header /> foi REMOVIDA daqui */}
           <CardData 
             data={dataSelecionada}
             onAnterior={handleDiaAnterior}
@@ -221,7 +190,6 @@ const RemediosTela: React.FC = function(){
           >
             {temRemedio ? (
               <View>
-                {/* Aqui viria o .map() dos remédios */}
                 <CardListaRemedio />
                 <CardListaRemedio />
               </View>
@@ -233,7 +201,6 @@ const RemediosTela: React.FC = function(){
           <ButtonAddRemedio onPress={() => setIsAddingRemedio(true)} />
       </View>
   );
-
 }
 
 export default RemediosTela;
