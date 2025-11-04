@@ -1,97 +1,133 @@
-import React from "react";//para a sintaxe
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image, ImageBackground} from "react-native";//importando os componentes que vamos usar na tela
-//pg de estilo, paragrafo, div, div q da pra descer, area de toque, imagem
+import React from "react";
+import { StyleSheet,ActivityIndicator, Text, View, ScrollView, TouchableOpacity, Image, ImageBackground} from "react-native";
+import { Menu, Camera, PlusCircle, Pill, NotepadText, Smile } from 'lucide-react-native';
 
-import { Menu, Percent, Truck, CalendarClock, Camera, PlusCircle } from 'lucide-react-native';
-
-
-//importar as cores que definimos
 import {cores} from '../constantes/cores';
 import {styles} from '../style/homeStyle';
 
+// --- COMPONENTES DA TELA HOME ---
 
-//mesmo nome do arquivo, tipo o uma funcao construtora de java
-//Home e a funcao q vai exibir a p[agina home, ent o return dela vai ter tudo q ela vai mostrar, como uma pagina em html
+const Header = () => (
+  <View style={styles.headerContainer}>
+    <TouchableOpacity>
+      <Menu color={cores.primaria} />
+    </TouchableOpacity>
+    <Text style={styles.headerTitle}>Resumo de Hoje</Text>
+    {/* Removido o espaço vazio, podemos adicionar um ícone se quisermos */}
+    <View style={{ width: 28 }} /> 
+  </View>
+);
+
+const SectionHeader = ({ title }: { title: string }) => (
+  <View style={styles.sectionHeaderContainer}>
+    <Text style={styles.sectionTitle}>{title}</Text>
+    {/* Removi a câmera, não parecia se encaixar no contexto de "cuidados" */}
+    <TouchableOpacity>
+      <Text style={{ color: cores.primaria, fontWeight: 'bold' }}>Ver todos</Text>
+    </TouchableOpacity>
+  </View>
+);
+
+// Componente para o card de "estado vazio"
+const EmptyStateCard = () => (
+  <View style={styles.emptyCard}>
+      <Text style={styles.emptyCardText}>Sem cuidados agendados para hoje.</Text>
+      <TouchableOpacity style={styles.emptyCardButton}>
+          <PlusCircle color={cores.primaria} size={18} style={{marginRight: 8}}/>
+          <Text style={styles.emptyCardButtonText}>Agendar Cuidado</Text>
+      </TouchableOpacity>
+  </View>
+);
+
+// NOVO: Componente para um item da lista de resumo
+type ResumoItemProps = {
+  icon: React.ReactNode;
+  titulo: string;
+  subtitulo: string;
+};
+const ResumoItem: React.FC<ResumoItemProps> = ({ icon, titulo, subtitulo }) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 20 }}>
+    <View style={{ 
+      padding: 10, 
+      borderRadius: 50, 
+      backgroundColor: cores.primaria + '20', // Fundo com opacidade
+      marginRight: 16 
+    }}>
+      {icon}
+    </View>
+    <View style={{ flex: 1 }}>
+      <Text style={{ fontSize: 16, fontWeight: 'bold', color: cores.preto }}>{titulo}</Text>
+      <Text style={{ fontSize: 14, color: cores.secundaria }}>{subtitulo}</Text>
+    </View>
+  </View>
+);
+
+// --- TELA PRINCIPAL DA HOME ---
 const Home: React.FC = function(){
+  
+  // PENSANDO NO BACK-END:
+  // const [proximosCuidados, setProximosCuidados] = useState([]);
+  // const [ultimosRegistros, setUltimosRegistros] = useState([]);
+  
+  // Vamos simular dados
+  const loading = false;
+  const proximosCuidados = [
+    { tipo: 'remedio', titulo: 'Paracetamol', subtitulo: '08:00 - 500mg' },
+    { tipo: 'tarefa', titulo: 'Medir pressão', subtitulo: '08:15' },
+  ];
+  const ultimosRegistros = [
+    { tipo: 'humor', titulo: 'Bom humor', subtitulo: 'Registrado às 09:30' },
+  ];
 
-    // Componente para o cabeçalho da tela
-  const Header = () => (
-    <View style={styles.headerContainer}>
-      <TouchableOpacity>
-        <Menu color={cores.primaria} />
-      </TouchableOpacity>
-      <Text style={styles.headerTitle}>CareHub</Text>
-      <View style={{ width: 28 }} />
-    </View>
-  );
-
-  // Componente para o banner principal (Clube CareHub)
-  const ClubeCareHubCard = () => (
-    <View style={styles.clubeCardContainer}>
-      <ImageBackground
-        source={{ uri: 'https://images.unsplash.com/photo-1576765608866-5b518682c379?q=80&w=1974&auto=format&fit=crop' }}
-        style={styles.clubeCardBackground}
-        imageStyle={{ borderRadius: 16 }}
-      >
-        <View style={styles.clubeCardOverlay}>
-          <Text style={styles.clubeCardTitle}>CLUBE CAREHUB</Text>
-          <Text style={styles.clubeCardSubtitle}>MAIS PRATICIDADE E ECONOMIA PARA VOCÊ!</Text>
-          <TouchableOpacity style={styles.clubeCardButton}>
-            <Text style={styles.clubeCardButtonText}>ATIVE AGORA E APROVEITE</Text>
-          </TouchableOpacity>
-          <View style={styles.clubeFeaturesContainer}>
-            <View style={styles.featureItem}>
-              <Percent color={cores.branco} size={18} />
-              <Text style={styles.featureText}>Descontos exclusivos</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Truck color={cores.branco} size={18} />
-              <Text style={styles.featureText}>Frete grátis parceiro</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <CalendarClock color={cores.branco} size={18} />
-              <Text style={styles.featureText}>Receba com recorrência</Text>
-            </View>
-          </View>
+  return(
+      <ScrollView style={styles.screenContainer} showsVerticalScrollIndicator={false}>
+      <Header />
+      
+      {/* Seção de Próximos Cuidados */}
+      <SectionHeader title="Próximos Cuidados" />
+      {loading ? (
+        <ActivityIndicator size="large" />
+      ) : proximosCuidados.length > 0 ? (
+        <View>
+          {proximosCuidados.map((item, index) => (
+            <ResumoItem 
+              key={index}
+              icon={item.tipo === 'remedio' ? 
+                <Pill color={cores.primaria} /> : 
+                <NotepadText color={cores.primaria} />
+              }
+              titulo={item.titulo}
+              subtitulo={item.subtitulo}
+            />
+          ))}
         </View>
-      </ImageBackground>
-    </View>
+      ) : (
+        <EmptyStateCard />
+      )}
+      
+      {/* Seção de Últimos Registros do Diário */}
+      <SectionHeader title="Últimos Registros do Diário" />
+      {loading ? (
+        <ActivityIndicator size="large" />
+      ) : ultimosRegistros.length > 0 ? (
+        <View>
+          {ultimosRegistros.map((item, index) => (
+            <ResumoItem 
+              key={index}
+              icon={<Smile color={cores.primaria} />}
+              titulo={item.titulo}
+              subtitulo={item.subtitulo}
+            />
+          ))}
+        </View>
+      ) : (
+         <View style={styles.emptyCard}>
+            <Text style={styles.emptyCardText}>Nenhum registro no diário hoje.</Text>
+         </View>
+      )}
+
+      </ScrollView>
   );
-
-   // Componente para o cabeçalho de uma seção
-  const SectionHeader = ({ title }: { title: string }) => (
-    <View style={styles.sectionHeaderContainer}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <TouchableOpacity>
-        <Camera color={cores.secundaria} size={24} />
-      </TouchableOpacity>
-    </View>
-  );
-
-  // Componente para o card de "estado vazio"
-  const EmptyMedicationCard = () => (
-    <View style={styles.emptyCard}>
-        <Text style={styles.emptyCardText}>Sem cuidados para exibir</Text>
-        <TouchableOpacity style={styles.emptyCardButton}>
-            <PlusCircle color={cores.primaria} size={18} style={{marginRight: 8}}/>
-            <Text style={styles.emptyCardButtonText}>Cadastrar Cuidado</Text>
-        </TouchableOpacity>
-    </View>
-  );
-
-
-    return(
-        <ScrollView style={styles.screenContainer} showsVerticalScrollIndicator={false}>
-        <Header />
-        <SectionHeader title="Próximos Cuidados" />
-        <EmptyMedicationCard />
-        </ScrollView>
-    );
 }
 
-
-
-
 export default Home;
-// React.FC significa "Functional Component". É a forma de dizer ao TypeScript
-// que esta função é um componente React.

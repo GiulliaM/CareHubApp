@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
     View, 
     Text, 
-    Button, 
     TouchableOpacity, 
     ScrollView,
     Alert,
@@ -10,20 +9,19 @@ import {
     ActivityIndicator,
     Platform
 } from 'react-native';
-// Lembre-se de instalar: npm i react-native-keyboard-aware-scroll-view
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Plus, Menu, ArrowLeft, ArrowRight, PlusCircle } from 'lucide-react-native';
 
 //importando os estilo
 import {cores} from '../constantes/cores';
-// Importa APENAS o HomeStyle (que agora contém os estilos comuns)
 import {styles} from '../style/homeStyle';
+// <<< MUDANÇA: Importando nossos helpers de data
+import { formatarDataAmigavel, adicionarDia, subtrairDia } from '../ferramentas/logicaData';
 
 // ---
 // COMPONENTES MOVIDOS PARA FORA (Evita bug do teclado)
 // ---
 
-// --- Cabeçalho (com 'onBack' para o formulário) ---
 const Header = ({ onBack, title }: { title: string, onBack?: () => void }) => (
   <View style={styles.headerContainer}>
     {onBack ? (
@@ -41,34 +39,37 @@ const Header = ({ onBack, title }: { title: string, onBack?: () => void }) => (
 );
 
 // --- Seletor de Data ---
-const CardData = () => (
-  // <<< MUDANÇA: Usando styles.viewData (do HomeStyle)
+// <<< MUDANÇA: Agora recebe props para funcionar
+type CardDataProps = {
+  data: Date;
+  onAnterior: () => void;
+  onProximo: () => void;
+};
+const CardData: React.FC<CardDataProps> = ({ data, onAnterior, onProximo }) => (
   <View style={styles.viewData}> 
-      <TouchableOpacity><ArrowLeft /></TouchableOpacity>
-      <Text>Hoje - 22 de Outubro</Text>
-      <TouchableOpacity><ArrowRight /></TouchableOpacity>
+      <TouchableOpacity onPress={onAnterior}><ArrowLeft color={cores.preto} /></TouchableOpacity>
+      {/* <<< MUDANÇA: Exibe a data formatada */}
+      <Text style={styles.textoNormal}>{formatarDataAmigavel(data)}</Text>
+      <TouchableOpacity onPress={onProximo}><ArrowRight color={cores.preto} /></TouchableOpacity>
   </View>
 );
 
-// --- Título da Seção ---
 const SectionHeader = ({ title }: { title: string }) => (
   <View style={styles.sectionHeaderContainer}>
     <Text style={styles.sectionTitle}>{title}</Text>
   </View>
 );
 
-// --- Botão de Adicionar (Agora com onPress) ---
 const ButtonAddTask = ({ onPress }: { onPress: () => void }) =>(
   <TouchableOpacity style={styles.plusButton} onPress={onPress}>
     <Plus size={35} color={cores.branco} />
   </TouchableOpacity>
 );
 
-// --- Estado Vazio (Reutilizando seu estilo 'emptyCard') ---
 const EmptyState = ({ onPress }: { onPress: () => void }) => (
   <View style={styles.emptyCard}>
     <Text style={styles.emptyCardText}>
-      Nenhuma tarefa encontrada para hoje. Que tal adicionar uma?
+      Nenhuma tarefa encontrada para este dia. Que tal adicionar uma?
     </Text>
     <TouchableOpacity style={styles.emptyCardButton} onPress={onPress}>
       <PlusCircle size={18} color={cores.primaria} style={{ marginRight: 8 }} />
@@ -77,35 +78,41 @@ const EmptyState = ({ onPress }: { onPress: () => void }) => (
   </View>
 );
 
-// ---
-// NOVO COMPONENTE: Formulário de Adicionar Tarefa
-// ---
+// --- Formulário de Adicionar Tarefa ---
 type AddTaskFormProps = {
   onBack: () => void; // Função para voltar
+  dataSelecionada: Date; // Para saber em qual dia salvar
 };
-
-const AddTaskForm: React.FC<AddTaskFormProps> = ({ onBack }) => {
+const AddTaskForm: React.FC<AddTaskFormProps> = ({ onBack, dataSelecionada }) => {
   const [titulo, setTitulo] = useState('');
   const [horario, setHorario] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Função para salvar a tarefa (chama a API, etc.)
   const handleSaveTask = async () => {
     if (!titulo) {
       Alert.alert('Erro', 'O título da tarefa é obrigatório.');
       return;
     }
     setIsLoading(true);
-    // Simula uma chamada de API
+    
+    // PENSANDO NO BACK-END:
+    // Aqui nós chamaríamos a API
+    // const dados = { 
+    //   titulo: titulo, 
+    //   horario: horario, 
+    //   data_tarefa: dataSelecionada.toISOString().split('T')[0] // Formato YYYY-MM-DD
+    //   paciente_id: 1 // (Pegaríamos o ID do paciente ativo)
+    // };
+    // await fetch(`${API_URL}/tarefas`, { method: 'POST', body: JSON.stringify(dados), ...});
+    
     setTimeout(() => {
       setIsLoading(false);
       Alert.alert('Sucesso!', 'Tarefa salva.');
-      onBack(); // Volta para a lista
+      onBack(); 
     }, 1500);
   };
 
   return (
-    // Usa o screenContainer para ter a cor de fundo correta
     <View style={styles.screenContainer}> 
       <Header title="Nova Tarefa" onBack={onBack} />
       <KeyboardAwareScrollView
@@ -114,8 +121,9 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onBack }) => {
         enableOnAndroid={true}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Usando os estilos de formulário (do comumEstilos) */}
-        <Text style={styles.formSubtitle}>Preencha os dados da nova tarefa.</Text>
+        <Text style={styles.formSubtitle}>
+          Adicionando tarefa para: {formatarDataAmigavel(dataSelecionada)}
+        </Text>
         
         <TextInput
           style={styles.input}
@@ -130,7 +138,6 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onBack }) => {
           onChangeText={setHorario}
         />
         
-        {/* Usa o flexSpacer (do comumEstilos) */}
         <View style={styles.flexSpacer} /> 
         
         {isLoading ? (
@@ -146,50 +153,61 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onBack }) => {
 };
 
 
-// ---
-// TELA PRINCIPAL DE TAREFAS
-// ---
+// --- TELA PRINCIPAL DE TAREFAS ---
 const TarefasTela: React.FC = function(){
   // --- Estados ---
-  const [temTarefas, setTarefas] = useState(0); // 0 = false, 1 = true
-  const [isAddingTask, setIsAddingTask] = useState(false); // Controla o fluxo
+  const [temTarefas, setTarefas] = useState(0); 
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  // <<< MUDANÇA: Estado para controlar a data
+  const [dataSelecionada, setDataSelecionada] = useState(new Date());
 
-  // --- Lógica do Título ---
-  var titulo;
-  if(temTarefas){
-    titulo = "Tarefas para Hoje";
-  } else {
-    titulo = "Nenhuma Tarefa"; 
-  }
+  // <<< MUDANÇA: Funções para mudar a data
+  const handleDiaSeguinte = () => {
+    setDataSelecionada(adicionarDia(dataSelecionada));
+    // PENSANDO NO BACK-END:
+    // Aqui nós buscaríamos as tarefas da nova data
+    // fetchTarefas(adicionarDia(dataSelecionada));
+  };
+  
+  const handleDiaAnterior = () => {
+    setDataSelecionada(subtrairDia(dataSelecionada));
+    // PENSANDO NO BACK-END:
+    // fetchTarefas(subtrairDia(dataSelecionada));
+  };
+  
+  // PENSANDO NO BACK-END:
+  // useEffect(() => {
+  //   fetchTarefas(dataSelecionada);
+  // }, [dataSelecionada]); // Roda toda vez que a data muda
 
-  // ---
-  // RENDERIZAÇÃO CONDICIONAL (O Fluxo)
-  // ---
+  var titulo = temTarefas ? "Tarefas para Hoje" : "Nenhuma Tarefa"; 
 
   // 1. Se estiver ADICIONANDO TAREFA, mostre o formulário
   if (isAddingTask) {
-    return <AddTaskForm onBack={() => setIsAddingTask(false)} />;
+    return <AddTaskForm 
+              onBack={() => setIsAddingTask(false)} 
+              dataSelecionada={dataSelecionada} 
+            />;
   }
 
   // 2. Se estiver na LISTA, mostre a lista
   return(
-      // Usamos o 'screenContainer' (com flex: 1) como o contêiner PAI
       <View style={styles.screenContainer}>
           <Header title="Tarefas" />
-          <CardData />
+          {/* <<< MUDANÇA: Passando a data e as funções */}
+          <CardData 
+            data={dataSelecionada}
+            onAnterior={handleDiaAnterior}
+            onProximo={handleDiaSeguinte}
+          />
           <SectionHeader title={titulo} />
           
-          {/* O ScrollView agora só envolve a lista */}
           <ScrollView 
             style={{ flex: 1 }}
             showsVerticalScrollIndicator={false}
           >
-            {/* Renderização condicional da lista ou estado vazio */}
             {temTarefas ? (
               <View>
-                {/* Aqui é onde você fará o .map() 
-                  das suas tarefas quando elas vierem da API 
-                */}
                 <Text style={{ paddingHorizontal: 20 }}>Item de Tarefa 1</Text>
                 <Text style={{ paddingHorizontal: 20 }}>Item de Tarefa 2</Text>
               </View>
@@ -198,13 +216,9 @@ const TarefasTela: React.FC = function(){
             )}
           </ScrollView>
           
-          {/* O Botão de Adicionar fica FORA do ScrollView,
-              posicionado de forma absoluta pelo 'styles.plusButton' */}
           <ButtonAddTask onPress={() => setIsAddingTask(true)} />
-          
       </View>
   );
-
 }
 
 export default TarefasTela;
