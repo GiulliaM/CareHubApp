@@ -30,6 +30,11 @@ npx expo install react-native-screens@~4.16.0
 npx expo install react-native-web@~0.21.0
 npx expo install react-native-worklets@0.5.1
 
+#duda q instalo 04/11
+npm install @react-navigation/native
+npm install @react-navigation/drawer @react-navigation/bottom-tabs
+npx expo install react-native-gesture-handler
+
 # Dev dependencies (opcional)
 npx expo install --dev @types/react@~19.1.0
 npx expo install --dev react-test-renderer@19.1.0

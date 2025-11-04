@@ -1,52 +1,58 @@
+import React, { useState } from 'react';
+import { StyleSheet } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import React, {useState} from 'react'; // importamos o React pois estamos usando a sintaxe para typescypt xml, ai la tem tudo certinho pro programa entender
-import AppNavigator from './frontend/src/navigation/AppNavigator'
-//nosso navegador entre as telas do nosso aplicativo 
-//ele e como um seletor da tela q vai ficar ativa
+// Nossas duas "seções" do app
+import AppNavigator from './frontend/src/navigation/AppNavigator'; // O NOVO Navegador com Menu
+import OnboardingFlow from './frontend/src/telas/BoasVindas'; // A tela de Login/Cadastro
 
-import OnboardingFlow from './frontend/src/telas/BoasVindas';
-import {styles} from './frontend/src/style/boasVindasStyle'
-import {StyleSheet} from 'react-native';
-import {
-  SafeAreaView,
-  SafeAreaProvider,
-  SafeAreaInsetsContext,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
-
-
-
-export default function App() {//nossa funcao principal (como o index do react)
-
-  // 1. Criamos um "estado" para saber se o usuário está autenticado.
-  //    Por padrão, ele não está (false).
+export default function App() {
+  // [isAuthenticated] é o "cérebro" que decide qual tela mostrar
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // 2. Esta função será chamada pela tela de Onboarding quando o
-  //    cadastro for concluído com sucesso.
-  const handleLoginSuccess = () => {
+  // Esta função será chamada pela tela de BoasVindas (onComplete)
+  // quando o login/cadastro for bem-sucedido.
+  const handleLogin = () => {
+    // PENSANDO NO BACK-END:
+    // Aqui é onde você salvaria o Token de login no AsyncStorage
     setIsAuthenticated(true);
   };
-
-  // 3. Esta é a lógica principal:
-  //    - Se 'isAuthenticated' for true, mostre o AppNavigator (a home).
-  //    - Se for false, mostre o OnboardingFlow (a tela de cadastro).
-
-
   
+  // Esta função será passada para o AppNavigator
+  // e chamada pelo botão "Sair" do menu.
+  const handleLogout = () => {
+    // PENSANDO NO BACK-END:
+    // Aqui você limparia o Token do AsyncStorage
+    setIsAuthenticated(false);
+  };
 
-
-
-  //app so pode retornar um componente a ser exibido (e oq vai mostrar na tela)
-  //nesse caso ele vai retornar (apontar) para o nosso navegador que ficara trocando entre as telas
   return (
-    <SafeAreaView style={styles.pageContainer}>
-      {isAuthenticated ? (
-        <AppNavigator />
-      ) : (
-        <OnboardingFlow onComplete={handleLoginSuccess} />
-      )}
-    </SafeAreaView>//aqui estamos cumprindo a regra retornando um so componente
+    // GestureHandlerRootView é OBRIGATÓRIO para o menu "Drawer" funcionar
+    <GestureHandlerRootView style={styles.container}>
+      {/* SafeAreaProvider garante que o app respeite as bordas */}
+      <SafeAreaProvider>
+        {/* NavigationContainer é o "pai" de toda a navegação */}
+        <NavigationContainer>
+          {isAuthenticated ? (
+            // Se estiver LOGADO: mostre o AppNavigator (com o menu)
+            // e passe a função de logout para ele
+            <AppNavigator onLogout={handleLogout} />
+          ) : (
+            // Se NÃO estiver logado: mostre o BoasVindas (Login/Cadastro)
+            // e passe a função de login para ele
+            <OnboardingFlow onComplete={handleLogin} />
+          )}
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
+// Estilo mínimo para o container raiz
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});

@@ -1,34 +1,23 @@
 import React from "react";
 import { StyleSheet,ActivityIndicator, Text, View, ScrollView, TouchableOpacity, Image, ImageBackground} from "react-native";
-import { Menu, Camera, PlusCircle, Pill, NotepadText, Smile } from 'lucide-react-native';
+import { Camera, PlusCircle, Pill, NotepadText, Smile } from 'lucide-react-native';
 
 import {cores} from '../constantes/cores';
 import {styles} from '../style/homeStyle';
 
 // --- COMPONENTES DA TELA HOME ---
 
-const Header = () => (
-  <View style={styles.headerContainer}>
-    <TouchableOpacity>
-      <Menu color={cores.primaria} />
-    </TouchableOpacity>
-    <Text style={styles.headerTitle}>Resumo de Hoje</Text>
-    {/* Removido o espaço vazio, podemos adicionar um ícone se quisermos */}
-    <View style={{ width: 28 }} /> 
-  </View>
-);
+// O 'Header' foi REMOVIDO daqui. O AppNavigator (Drawer) vai criá-lo.
 
 const SectionHeader = ({ title }: { title: string }) => (
   <View style={styles.sectionHeaderContainer}>
     <Text style={styles.sectionTitle}>{title}</Text>
-    {/* Removi a câmera, não parecia se encaixar no contexto de "cuidados" */}
     <TouchableOpacity>
       <Text style={{ color: cores.primaria, fontWeight: 'bold' }}>Ver todos</Text>
     </TouchableOpacity>
   </View>
 );
 
-// Componente para o card de "estado vazio"
 const EmptyStateCard = () => (
   <View style={styles.emptyCard}>
       <Text style={styles.emptyCardText}>Sem cuidados agendados para hoje.</Text>
@@ -39,7 +28,6 @@ const EmptyStateCard = () => (
   </View>
 );
 
-// NOVO: Componente para um item da lista de resumo
 type ResumoItemProps = {
   icon: React.ReactNode;
   titulo: string;
@@ -50,7 +38,7 @@ const ResumoItem: React.FC<ResumoItemProps> = ({ icon, titulo, subtitulo }) => (
     <View style={{ 
       padding: 10, 
       borderRadius: 50, 
-      backgroundColor: cores.primaria + '20', // Fundo com opacidade
+      backgroundColor: cores.primaria + '20',
       marginRight: 16 
     }}>
       {icon}
@@ -65,11 +53,6 @@ const ResumoItem: React.FC<ResumoItemProps> = ({ icon, titulo, subtitulo }) => (
 // --- TELA PRINCIPAL DA HOME ---
 const Home: React.FC = function(){
   
-  // PENSANDO NO BACK-END:
-  // const [proximosCuidados, setProximosCuidados] = useState([]);
-  // const [ultimosRegistros, setUltimosRegistros] = useState([]);
-  
-  // Vamos simular dados
   const loading = false;
   const proximosCuidados = [
     { tipo: 'remedio', titulo: 'Paracetamol', subtitulo: '08:00 - 500mg' },
@@ -81,9 +64,9 @@ const Home: React.FC = function(){
 
   return(
       <ScrollView style={styles.screenContainer} showsVerticalScrollIndicator={false}>
-      <Header />
       
-      {/* Seção de Próximos Cuidados */}
+      {/* A chamada <Header /> foi REMOVIDA daqui */}
+      
       <SectionHeader title="Próximos Cuidados" />
       {loading ? (
         <ActivityIndicator size="large" />
@@ -105,7 +88,6 @@ const Home: React.FC = function(){
         <EmptyStateCard />
       )}
       
-      {/* Seção de Últimos Registros do Diário */}
       <SectionHeader title="Últimos Registros do Diário" />
       {loading ? (
         <ActivityIndicator size="large" />
