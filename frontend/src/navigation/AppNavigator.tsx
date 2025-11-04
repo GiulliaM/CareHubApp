@@ -4,8 +4,9 @@
  * Gerencia a navegação principal (barra de abas) e renderiza a tela ativa.
  */
 import React, { useState } from 'react';
-import { StyleSheet, View, SafeAreaView, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { Home, NotepadText, Pill, Newspaper, Album } from 'lucide-react-native';
+import { SafeAreaView} from 'react-native-safe-area-context';
 
 // 1. IMPORTAÇÃO DE TODAS AS PEÇAS
 // Importamos nossas cores, ícones e, o mais importante, todas as telas que criamos.
