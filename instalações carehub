@@ -39,6 +39,10 @@ npx expo install expo-image-picker #seletor de imagem do dispositivo (colocar fo
 #05/12
 npm install express mysql2
 
+
+#05/11 backend duda
+npm install express mysql2 jsonwebtoken bcrypt
+npm install @types/express @types/node @types/bcrypt @types/jsonwebtoken --save-dev
 # Dev dependencies (opcional)
 npx expo install --dev @types/react@~19.1.0
 npx expo install --dev react-test-renderer@19.1.0
