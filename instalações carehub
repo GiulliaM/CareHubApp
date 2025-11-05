@@ -34,6 +34,10 @@ npx expo install react-native-worklets@0.5.1
 npm install @react-navigation/native
 npm install @react-navigation/drawer @react-navigation/bottom-tabs
 npx expo install react-native-gesture-handler
+npx expo install expo-image-picker #seletor de imagem do dispositivo (colocar foto)
+
+#05/12
+npm install express mysql2
 
 # Dev dependencies (opcional)
 npx expo install --dev @types/react@~19.1.0

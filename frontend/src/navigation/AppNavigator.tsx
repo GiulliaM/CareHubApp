@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+// <<< MUDANÇA 1: Importar a função helper
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native'; 
 import { 
   createDrawerNavigator,
   DrawerContentScrollView,
@@ -12,6 +14,7 @@ import { Home, Search, User, Shield, LogOut } from 'lucide-react-native';
 import TabNavigator from './TabNavigator'; 
 import { cores } from '../constantes/cores';
 
+// ----- Telas "Placeholder" -----
 const PlaceholderScreen = ({ route }: any) => (
   <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
     <Text style={{ fontSize: 24, fontWeight: 'bold' }}>{route.name}</Text>
@@ -20,9 +23,11 @@ const PlaceholderScreen = ({ route }: any) => (
 const BuscarCuidadoresTela = () => <PlaceholderScreen route={{ name: 'Buscar Cuidadores' }} />;
 const MeuPerfilTela = () => <PlaceholderScreen route={{ name: 'Meu Perfil' }} />;
 const PerfilPessoaCuidadaTela = () => <PlaceholderScreen route={{ name: 'Perfil Pessoa Cuidada' }} />;
+// ---------------------------------
 
 const Drawer = createDrawerNavigator();
 
+// --- O Conteúdo Customizado do Menu ---
 type CustomDrawerProps = DrawerContentComponentProps & {
   onLogout: () => void; 
 };
@@ -48,6 +53,7 @@ function CustomDrawerContent(props: CustomDrawerProps) {
   );
 }
 
+// --- O Navegador Principal ---
 type AppNavigatorProps = {
   onLogout: () => void; 
 };
@@ -66,14 +72,25 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout }) => {
         headerShown: true, 
       }}
     >
+      {/* <<< MUDANÇA 2: As 'options' agora são uma função */}
       <Drawer.Screen 
         name="CareHub" 
         component={TabNavigator}
-        options={{
-          title: 'Início', 
-          drawerIcon: ({ color, size }) => <Home color={color} size={size} />,
+        options={({ route }) => {
+          // Pega o nome da rota ativa dentro do TabNavigator
+          const routeName = getFocusedRouteNameFromRoute(route) ?? 'Início';
+          
+          return {
+            // O título no MENU GAVETA (sempre "Início")
+            title: 'Início', 
+            drawerIcon: ({ color, size }) => <Home color={color} size={size} />,
+            
+            // O título no CABEÇALHO (dinâmico)
+            headerTitle: routeName,
+          };
         }}
       />
+      
       <Drawer.Screen 
         name="BuscarCuidadores" 
         component={BuscarCuidadoresTela}
