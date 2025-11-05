@@ -1,6 +1,8 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, NotepadText, Pill, Newspaper, Album } from 'lucide-react-native';
+// <<< MUDANÇA: Importar o hook para "sentir" as bordas
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; 
 
 // Importando as Telas
 import HomeTela from '../telas/HomeTela';
@@ -13,6 +15,9 @@ import { cores } from '../constantes/cores';
 const Tab = createBottomTabNavigator();
 
 const TabNavigator: React.FC = () => {
+  // <<< MUDANÇA: Pegamos o tamanho das "bordas" seguras (insets)
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -20,18 +25,13 @@ const TabNavigator: React.FC = () => {
         tabBarActiveTintColor: cores.primaria,
         tabBarInactiveTintColor: cores.preto,
         
-        // <<< MUDANÇA AQUI
+        // <<< MUDANÇA: Estilo da barra corrigido
         tabBarStyle: {
           // Removemos a altura fixa para deixar o Safe Area funcionar
-          // height: 70, 
-          
-          // Aumentamos o padding superior e inferior para mais espaço
-          paddingBottom: 10, 
+          height: 'auto',
           paddingTop: 10,
-          
-          // A altura total agora será "automática" 
-          // (padding + ícone + texto + safe area)
-          height: 'auto', 
+          // Usamos a "borda" (inset) do celular + um padding extra
+          paddingBottom: insets.bottom+45, 
         },
         // ---
         
