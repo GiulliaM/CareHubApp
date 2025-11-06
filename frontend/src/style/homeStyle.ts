@@ -111,6 +111,11 @@ const homeEstilosUnicos = {
     shadowOpacity: 0.3,
     shadowRadius: 4,
   } as ViewStyle,
+  text:{
+    textAlign: 'center',
+    fontSize: 16,
+    color: cores.preto,
+  },
 };
 
 // Não usamos mais o StyleSheet.create() aqui
