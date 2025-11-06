@@ -7,6 +7,8 @@ interface PaletaCores{
     fundo: string;
     preto: string;
     branco: string;
+    azulEscuro: string;
+    azulClaro: string;
 
 }
 
@@ -19,5 +21,6 @@ export const cores: PaletaCores = {
     fundo: '#c7f9cc',
     preto: '#000000',
     branco: '#ffffff',
-
+    azulEscuro: '#0B3D91',
+    azulClaro: '#0097A7',
 };
