@@ -306,7 +306,7 @@ const LoginStep: React.FC<LoginStepProps> = ({
 
           {/* --- BOTÃO PRINCIPAL --- */}
           {isLoading ? (
-            <ActivityIndicator size="large" color={cores.azulEscuro || '#0B3D91'} />
+            <ActivityIndicator size="large" color={cores.azulClaro} />
           ) : (
             <TouchableOpacity style={styles.primaryButton} onPress={onLogin}>
               <Text style={styles.buttonText}>Entrar</Text>
