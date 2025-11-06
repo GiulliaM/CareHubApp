@@ -53,4 +53,12 @@ npx expo install --dev react-test-renderer@19.1.0
 npx expo install --dev typescript@~5.9.2
 
 
+# Instalações da giu dia 06/11
+
+npm install date-fns --save
+$ npm install multer
+npm install --save-dev @types/jsonwebtoken
+
+
+
 
