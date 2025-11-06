@@ -19,7 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { styles as estilosGlobais } from '../style/boasVindasStyle';
 import { cores } from '../constantes/cores';
-import { ViewStyle } from 'react-native/types_generated/index';
+import { ViewStyle } from 'react-native';
 
 const API_URL = 'http://54.39.173.152:3000';
 const styles = estilosGlobais; 
@@ -101,14 +101,14 @@ const RegisterUserStep: React.FC<RegisterUserStepProps> = ({
         <Text style={styles.formSubtitle}>Vamos criar a sua conta.</Text>
 
         <TextInput
-          style={styles.input as ViewStyle}
+          style={styles.input}
           placeholder="Seu nome completo"
           value={nome}
           onChangeText={setNome}
         />
 
         <TextInput
-          style={styles.input as ViewStyle}
+          style={styles.input}
           placeholder="Seu melhor email"
           keyboardType="email-address"
           autoCapitalize="none"
@@ -118,7 +118,7 @@ const RegisterUserStep: React.FC<RegisterUserStepProps> = ({
 
         <View style={styles.passwordContainer}>
           <TextInput
-            style={styles.passwordInput as ViewStyle}
+            style={styles.passwordInput}
             placeholder="Crie uma senha"
             secureTextEntry={!isSenhaVisivel}
             value={senha}
@@ -193,21 +193,21 @@ const RegisterPatientStep: React.FC<RegisterPatientStepProps> = ({
       </TouchableOpacity>
       
       <TextInput 
-        style={styles.input as ViewStyle} 
+        style={styles.input} 
         placeholder="Nome da pessoa (obrigatório)" 
         value={nomePaciente}
         onChangeText={setNomePaciente}
         placeholderTextColor="#999" 
       />
       <TextInput 
-        style={styles.input as ViewStyle} 
+        style={styles.input} 
         placeholder="Data de nascimento (DD/MM/AAAA)" 
         value={dataNascimento}
         onChangeText={setDataNascimento}
         placeholderTextColor="#999" 
       />
       <TextInput 
-        style={styles.input as ViewStyle} 
+        style={styles.input} 
         placeholder="Alergias (opcional)" 
         value={alergias}
         onChangeText={setAlergias}
@@ -274,7 +274,7 @@ const LoginStep: React.FC<LoginStepProps> = ({
           <Text style={styles.formSubtitle}>Que bom te ver de volta!</Text>
 
           <TextInput
-            style={styles.textInput as ViewStyle}
+            style={styles.textInput}
             placeholder="Seu email"
             placeholderTextColor="#888"
             keyboardType="email-address"
@@ -285,7 +285,7 @@ const LoginStep: React.FC<LoginStepProps> = ({
 
           <View style={styles.passwordContainer}>
             <TextInput
-              style={styles.passwordInput as ViewStyle}
+              style={styles.passwordInput}
               placeholder="Sua senha"
               placeholderTextColor="#888"
               secureTextEntry={!isSenhaVisivel}
@@ -595,7 +595,32 @@ const localStyles = StyleSheet.create({
   imagePickerText: {
     marginTop: 8,
     color: cores.secundaria,
-  }
+  },
+    input: {
+    width: '100%',
+    backgroundColor: '#f7f7f7',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: cores.preto,
+    marginBottom: 14,
+    elevation: 1,
+  },
+  passwordContainer: {
+      width: '100%',
+      position: 'relative',
+      marginBottom: 14,
+    },
+    passwordInput: {
+        width: '100%',
+        backgroundColor: '#f7f7f7',
+        borderRadius: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        fontSize: 16,
+        color: cores.preto,
+      }
 });
 
 export default OnboardingFlow;
