@@ -1,15 +1,38 @@
-import React from "react";
-import { StyleSheet,ActivityIndicator, Text, View, ScrollView, TouchableOpacity, Image, ImageBackground} from "react-native";
-import { Camera, PlusCircle, Pill, NotepadText, Smile } from 'lucide-react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+  StyleSheet,
+} from 'react-native';
+import {
+  Pill,
+  NotepadText,
+  Smile,
+  PlusCircle,
+  Stethoscope,
+} from 'lucide-react-native';
 
-import {cores} from '../constantes/cores';
-import {styles} from '../style/homeStyle';
-import { TextInput } from "react-native-gesture-handler";
+import { cores } from '../constantes/cores';
+import { styles } from '../style/homeStyle';
+import { IDadosDashboard, initialDashboardData } from '../tipos/IDadosDashboard';
 
-// --- COMPONENTES DA TELA HOME ---
+const API_URL = 'http://54.39.173.152:3000'; // ajuste se necessário
 
-// O 'Header' foi REMOVIDO daqui. O AppNavigator (Drawer) vai criá-lo.
+async function fetchDashboardData(pacienteId: number): Promise<IDadosDashboard> {
+  try {
+    const res = await fetch(`${API_URL}/api/dashboard/${pacienteId}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()) as IDadosDashboard;
+  } catch (e) {
+    console.warn('Falha ao buscar dashboard, usando mock/local:', e);
+    return initialDashboardData;
+  }
+}
 
+/* ----- Peças da UI ----- */
 const SectionHeader = ({ title }: { title: string }) => (
   <View style={styles.sectionHeaderContainer}>
     <Text style={styles.sectionTitle}>{title}</Text>
@@ -19,66 +42,123 @@ const SectionHeader = ({ title }: { title: string }) => (
   </View>
 );
 
-const EmptyStateCard = () => (
+const EmptyStateCard = ({ onPress }: { onPress?: () => void }) => (
   <View style={styles.emptyCard}>
-      <Text style={styles.emptyCardText}>Sem cuidados agendados para hoje.</Text>
-      <TouchableOpacity style={styles.emptyCardButton}>
-          <PlusCircle color={cores.primaria} size={18} style={{marginRight: 8}}/>
-          <Text style={styles.emptyCardButtonText}>Agendar Cuidado</Text>
-      </TouchableOpacity>
+    <Text style={styles.emptyCardText}>Sem cuidados agendados para hoje.</Text>
+    <TouchableOpacity style={styles.emptyCardButton} onPress={onPress}>
+      <PlusCircle color={cores.primaria} size={18} style={{ marginRight: 8 }} />
+      <Text style={styles.emptyCardButtonText}>Agendar Cuidado</Text>
+    </TouchableOpacity>
   </View>
 );
 
-type ResumoItemProps = {
-  icon: React.ReactNode;
-  titulo: string;
-  subtitulo: string;
-};
-const ResumoItem: React.FC<ResumoItemProps> = ({ icon, titulo, subtitulo }) => (
+const ResumoItem = ({ icon, titulo, subtitulo }: { icon: React.ReactNode; titulo: string; subtitulo?: string }) => (
   <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 20 }}>
-    <View style={{ 
-      padding: 10, 
-      borderRadius: 50, 
+    <View style={{
+      padding: 10,
+      borderRadius: 50,
       backgroundColor: cores.primaria + '20',
-      marginRight: 16 
+      marginRight: 16,
     }}>
       {icon}
     </View>
     <View style={{ flex: 1 }}>
       <Text style={{ fontSize: 16, fontWeight: 'bold', color: cores.preto }}>{titulo}</Text>
-      <Text style={{ fontSize: 14, color: cores.secundaria }}>{subtitulo}</Text>
+      {subtitulo ? <Text style={{ fontSize: 14, color: cores.secundaria }}>{subtitulo}</Text> : null}
     </View>
   </View>
 );
 
-// --- TELA PRINCIPAL DA HOME ---
-const Home: React.FC = function(){
-  
-  const loading = false;
-  const proximosCuidados = [
-    { tipo: 'remedio', titulo: 'Paracetamol', subtitulo: '08:00 - 500mg' },
-    { tipo: 'tarefa', titulo: 'Medir pressão', subtitulo: '08:15' },
-  ];
-  const ultimosRegistros = [
-    { tipo: 'humor', titulo: 'Bom humor', subtitulo: 'Registrado às 09:30' },
-  ];
+const WelcomeHeader = ({ paciente, cuidador }: { paciente?: string | null; cuidador?: string | null }) => (
+  <View style={{ padding: 20, paddingTop: 28, backgroundColor: cores.branco }}>
+    <Text style={{ fontSize: 18, color: cores.secundaria }}>Olá</Text>
+    <Text style={{ fontSize: 22, fontWeight: 'bold', color: cores.preto, marginTop: 4 }}>
+      {cuidador || 'Cuidador(a)'}
+    </Text>
+    <Text style={{ fontSize: 13, color: '#666', marginTop: 6 }}>
+      Visão de {paciente || 'Paciente'}
+    </Text>
+  </View>
+);
 
-  return(
+const SummaryCard = ({ title, count }: { title: string; count: number }) => (
+  <View style={{ flex: 1, backgroundColor: '#fff', padding: 12, margin: 8, borderRadius: 12, elevation: 1, alignItems: 'center' }}>
+    <Text style={{ fontSize: 18, fontWeight: 'bold', color: cores.preto }}>{count}</Text>
+    <Text style={{ fontSize: 13, color: '#666', marginTop: 6 }}>{title}</Text>
+  </View>
+);
 
-      <ScrollView style={styles.screenContainer} showsVerticalScrollIndicator={false}>
+/* ----- Tela Home ----- */
+const Home: React.FC = () => {
+  const pacienteId = 1; // substituir por valor real (context/navegação)
+  const [dashboardData, setDashboardData] = useState<IDadosDashboard>(initialDashboardData);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      const data = await fetchDashboardData(pacienteId);
+      if (!cancelled) {
+        setDashboardData(data);
+        // if returned initialDashboardData we might set an error flag, but keep silent
+        setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [pacienteId]);
+
+  const proximosCuidados = useMemo(() => {
+    const cuidados: { tipo: 'remedio' | 'consulta' | 'outro'; titulo: string; subtitulo?: string }[] = [];
+    if (dashboardData.proximoMedicamento) {
+      cuidados.push({
+        tipo: 'remedio',
+        titulo: dashboardData.proximoMedicamento.nome,
+        subtitulo: `Horário: ${dashboardData.proximoMedicamento.horario}`,
+      });
+    }
+    if (dashboardData.proximaConsulta) {
+      cuidados.push({
+        tipo: 'consulta',
+        titulo: dashboardData.proximaConsulta.nome,
+        subtitulo: dashboardData.proximaConsulta.horario,
+      });
+    }
+    return cuidados;
+  }, [dashboardData]);
+
+  const ultimosRegistros = useMemo(() => {
+    return (dashboardData.atividadesRecentes || []).slice(0, 3);
+  }, [dashboardData]);
+
+  const totalCuidadosHoje = proximosCuidados.length;
+  const totalRegistros = ultimosRegistros.length;
+  const pacienteNome = dashboardData.perfilPaciente?.nome_paciente ?? 'Paciente';
+  const cuidadorNome = dashboardData.cuidadorAtivo?.nome ?? 'Cuidador(a)';
+
+  return (
+    <ScrollView style={styles.screenContainer} showsVerticalScrollIndicator={false}>
+      <WelcomeHeader paciente={pacienteNome} cuidador={cuidadorNome} />
+
+      <View style={{ flexDirection: 'row', paddingHorizontal: 12 }}>
+        <SummaryCard title="Cuidados hoje" count={totalCuidadosHoje} />
+        <SummaryCard title="Registros" count={totalRegistros} />
+      </View>
 
       <SectionHeader title="Próximos Cuidados" />
       {loading ? (
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={cores.primaria} style={{ marginVertical: 20 }} />
+      ) : error ? (
+        <Text style={{ color: cores.primaria, textAlign: 'center', margin: 20 }}>{error}</Text>
       ) : proximosCuidados.length > 0 ? (
-        <View>
-          {proximosCuidados.map((item, index) => (
-            <ResumoItem 
-              key={index}
-              icon={item.tipo === 'remedio' ? 
-                <Pill color={cores.primaria} /> : 
-                <NotepadText color={cores.primaria} />
-              }
+        <View style={{ marginHorizontal: 16 }}>
+          {proximosCuidados.map((item, idx) => (
+            <ResumoItem
+              key={idx}
+              icon={item.tipo === 'remedio' ? <Pill color={cores.primaria} /> : <Stethoscope color={cores.primaria} />}
               titulo={item.titulo}
               subtitulo={item.subtitulo}
             />
@@ -87,29 +167,23 @@ const Home: React.FC = function(){
       ) : (
         <EmptyStateCard />
       )}
-      
+
       <SectionHeader title="Últimos Registros do Diário" />
       {loading ? (
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={cores.primaria} style={{ marginVertical: 20 }} />
       ) : ultimosRegistros.length > 0 ? (
-        <View>
-          {ultimosRegistros.map((item, index) => (
-            <ResumoItem 
-              key={index}
-              icon={<Smile color={cores.primaria} />}
-              titulo={item.titulo}
-              subtitulo={item.subtitulo}
-            />
+        <View style={{ marginHorizontal: 16 }}>
+          {ultimosRegistros.map((item: any, idx: number) => (
+            <ResumoItem key={idx} icon={<Smile color={cores.primaria} />} titulo={item.titulo} subtitulo={item.subtitulo} />
           ))}
         </View>
       ) : (
-         <View style={styles.emptyCard}>
-            <Text style={styles.emptyCardText}>Nenhum registro no diário hoje.</Text>
-         </View>
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyCardText}>Nenhum registro no diário hoje.</Text>
+        </View>
       )}
-
-      </ScrollView>
+    </ScrollView>
   );
-}
+};
 
 export default Home;
