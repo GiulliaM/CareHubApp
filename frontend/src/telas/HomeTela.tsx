@@ -4,6 +4,7 @@ import { Camera, PlusCircle, Pill, NotepadText, Smile } from 'lucide-react-nativ
 
 import {cores} from '../constantes/cores';
 import {styles} from '../style/homeStyle';
+import { TextInput } from "react-native-gesture-handler";
 
 // --- COMPONENTES DA TELA HOME ---
 
@@ -63,10 +64,9 @@ const Home: React.FC = function(){
   ];
 
   return(
+
       <ScrollView style={styles.screenContainer} showsVerticalScrollIndicator={false}>
-      
-      {/* A chamada <Header /> foi REMOVIDA daqui */}
-      
+
       <SectionHeader title="Próximos Cuidados" />
       {loading ? (
         <ActivityIndicator size="large" />
