@@ -3,12 +3,15 @@ import { Router } from 'express';
 import { criarPaciente } from '../controllers/pacienteController';
 import multer from 'multer';
 
-// Configura o multer. Por enquanto, não vamos salvar o upload,
-// apenas ler os campos de texto.
-const upload = multer();
+// <<< MUDANÇA AQUI
+// Configura o multer para esperar UM arquivo, com o nome de campo "foto".
+// Ele também vai ler todos os outros campos de texto (nome, etc.).
+const upload = multer(); // (Por enquanto, salva na memória)
 
 const router = Router();
 
-router.post('/pacientes', upload.none(), criarPaciente);
+// <<< MUDANÇA AQUI
+// Use 'upload.single('foto')' em vez de 'upload.none()'
+router.post('/pacientes', upload.single('foto'), criarPaciente);
 
 export default router;
