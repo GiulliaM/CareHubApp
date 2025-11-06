@@ -19,6 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { styles as estilosGlobais } from '../style/boasVindasStyle';
 import { cores } from '../constantes/cores';
+import { ViewStyle } from 'react-native/types_generated/index';
 
 const API_URL = 'http://54.39.173.152:3000';
 const styles = estilosGlobais; 
@@ -38,13 +39,15 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ onSetStep, onComplete }) => (
     <View style={styles.pageContainer}>
       <Image
         style={styles.headerImage} 
-        source="../images/bandaid-heart.webp"
+        source={require('../../../assets/images/logo.svg')}
       />
+    <View style={styles.word}>
       <Text style={styles.title}>Boas-vindas.</Text>
       <Text style={styles.subtitle}>
         Cuidar é um gesto de amor. Conecte quem cuida para oferecer mais
         atenção, segurança e afeto no dia a dia.
       </Text>
+    </View>
       <View style={styles.flexSpacer} />
       <TouchableOpacity style={styles.primaryButton} onPress={() => onSetStep(4)}>
         <Text style={styles.buttonText}>Entrar (Login)</Text>
@@ -79,53 +82,73 @@ const RegisterUserStep: React.FC<RegisterUserStepProps> = ({
   isSenhaVisivel, setIsSenhaVisivel
 }) => (
   <SafeAreaView style={localStyles.safeArea}>
-    <KeyboardAwareScrollView
-      style={{ flex: 1, backgroundColor: cores.branco }}
-      contentContainerStyle={{ flexGrow: 1, padding: 20 }} 
-      enableOnAndroid={true}
-      extraScrollHeight={Platform.OS === 'ios' ? 20 : 0} 
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.formTitle}>Criar Conta</Text>
-      <Text style={styles.formSubtitle}>Vamos criar a sua conta.</Text>
-      
-      <TextInput style={styles.input} placeholder="Seu nome completo" value={nome} onChangeText={setNome} />
-      <TextInput style={styles.input} placeholder="Seu melhor email" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
-      
-      <View style={styles.passwordContainer}>
-        <TextInput 
-          style={styles.passwordInput} 
-          placeholder="Crie uma senha" 
-          secureTextEntry={!isSenhaVisivel}
-          value={senha} 
-          onChangeText={setSenha} 
-        />
-        <TouchableOpacity 
-          style={styles.passwordEyeIcon} 
-          onPress={() => setIsSenhaVisivel(!isSenhaVisivel)}
-        >
-          {isSenhaVisivel ? (
-            <EyeOff color={cores.preto} size={20} /> 
-          ) : (
-            <Eye color={cores.preto} size={20} />
-          )}
-        </TouchableOpacity>
-      </View>
+      <KeyboardAwareScrollView
+        style={{ flex: 1, backgroundColor: cores.branco }}
+        contentContainerStyle={{ flexGrow: 1, padding: 20 }}
+        enableOnAndroid={true}
+        extraScrollHeight={Platform.OS === 'ios' ? 20 : 0}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Cabeçalho escuro com logo */}
+        <View style={styles.topContainer}>
+          <Image
+            source={require('../../../assets/images/logo.svg')}
+            style={styles.logo}
+          />
+        </View>
 
-      <View style={styles.flexSpacer} /> 
-      
-      {isLoading ? (
-        <ActivityIndicator size="large" color={cores.primaria || '#007bff'} />
-      ) : (
-        <TouchableOpacity style={styles.primaryButton} onPress={onCadastrar}>
+        <Text style={styles.formTitle}>Criar Conta</Text>
+        <Text style={styles.formSubtitle}>Vamos criar a sua conta.</Text>
+
+        <TextInput
+          style={styles.input as ViewStyle}
+          placeholder="Seu nome completo"
+          value={nome}
+          onChangeText={setNome}
+        />
+
+        <TextInput
+          style={styles.input as ViewStyle}
+          placeholder="Seu melhor email"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
+        />
+
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput as ViewStyle}
+            placeholder="Crie uma senha"
+            secureTextEntry={!isSenhaVisivel}
+            value={senha}
+            onChangeText={setSenha}
+          />
+          <TouchableOpacity
+            style={styles.passwordEyeIcon}
+            onPress={() => setIsSenhaVisivel(!isSenhaVisivel)}
+          >
+            {isSenhaVisivel ? (
+              <EyeOff color={cores.preto} size={20} />
+            ) : (
+              <Eye color={cores.preto} size={20} />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {isLoading ? (
+          <ActivityIndicator size="large" color={cores.primaria || '#007bff'} />
+        ) : (
+          <TouchableOpacity style={styles.primaryButton} onPress={onCadastrar}>
             <Text style={styles.buttonText}>Próximo Passo</Text>
-        </TouchableOpacity>
-      )}
-      <TouchableOpacity style={styles.secondaryButton} onPress={onGoToLogin}>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity style={styles.secondaryButton} onPress={onGoToLogin}>
           <Text style={styles.secondaryButtonText}>Já tenho conta</Text>
-      </TouchableOpacity>
-    </KeyboardAwareScrollView>
-  </SafeAreaView>
+        </TouchableOpacity>
+      </KeyboardAwareScrollView>
+    </SafeAreaView>
 );
 
 
@@ -170,21 +193,21 @@ const RegisterPatientStep: React.FC<RegisterPatientStepProps> = ({
       </TouchableOpacity>
       
       <TextInput 
-        style={styles.input} 
+        style={styles.input as ViewStyle} 
         placeholder="Nome da pessoa (obrigatório)" 
         value={nomePaciente}
         onChangeText={setNomePaciente}
         placeholderTextColor="#999" 
       />
       <TextInput 
-        style={styles.input} 
+        style={styles.input as ViewStyle} 
         placeholder="Data de nascimento (DD/MM/AAAA)" 
         value={dataNascimento}
         onChangeText={setDataNascimento}
         placeholderTextColor="#999" 
       />
       <TextInput 
-        style={styles.input} 
+        style={styles.input as ViewStyle} 
         placeholder="Alergias (opcional)" 
         value={alergias}
         onChangeText={setAlergias}
@@ -216,58 +239,93 @@ type LoginStepProps = {
   isSenhaVisivel: boolean;
   setIsSenhaVisivel: (val: boolean) => void;
 };
-const LoginStep: React.FC<LoginStepProps> = ({
-  email, setEmail, senha, setSenha, isLoading, onLogin, onGoToCadastro,
-  isSenhaVisivel, setIsSenhaVisivel
-}) => (
-  <SafeAreaView style={localStyles.safeArea}>
-    <KeyboardAwareScrollView
-      style={{ flex: 1, backgroundColor: cores.branco }}
-      contentContainerStyle={{ flexGrow: 1, padding: 20 }} 
-      enableOnAndroid={true}
-      extraScrollHeight={Platform.OS === 'ios' ? 20 : 0} 
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.formTitle}>Login</Text>
-      <Text style={styles.formSubtitle}>Que bom te ver de volta!</Text>
-      
-      <TextInput style={styles.input} placeholder="Seu email" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
-      
-      <View style={styles.passwordContainer}>
-        <TextInput 
-          style={styles.passwordInput} 
-          placeholder="Sua senha" 
-          secureTextEntry={!isSenhaVisivel}
-          value={senha} 
-          onChangeText={setSenha} 
-        />
-        <TouchableOpacity 
-          style={styles.passwordEyeIcon} 
-          onPress={() => setIsSenhaVisivel(!isSenhaVisivel)}
-        >
-          {isSenhaVisivel ? (
-            <EyeOff color={cores.preto} size={20} /> 
-          ) : (
-            <Eye color={cores.preto} size={20} />
-          )}
-        </TouchableOpacity>
-      </View>
 
-      <View style={styles.flexSpacer} /> 
-      
-      {isLoading ? (
-        <ActivityIndicator size="large" color={cores.primaria || '#007bff'} />
-      ) : (
-        <TouchableOpacity style={styles.primaryButton} onPress={onLogin}>
-            <Text style={styles.buttonText}>Entrar</Text>
-        </TouchableOpacity>
-      )}
-      <TouchableOpacity style={styles.secondaryButton} onPress={onGoToCadastro}>
-          <Text style={styles.secondaryButtonText}>Não tenho conta (Cadastrar)</Text>
-      </TouchableOpacity>
-    </KeyboardAwareScrollView>
-  </SafeAreaView>
-);
+const LoginStep: React.FC<LoginStepProps> = ({
+  email,
+  setEmail,
+  senha,
+  setSenha,
+  isLoading,
+  onLogin,
+  onGoToCadastro,
+  isSenhaVisivel,
+  setIsSenhaVisivel
+}) => {
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: cores.branco }}>
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        enableOnAndroid
+        extraScrollHeight={Platform.OS === 'ios' ? 20 : 0}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* --- TOPO ESCURO COM LOGO --- */}
+        <View style={styles.topContainer}>
+          <Image
+            source={require('../../../assets/images/logo.svg')}
+            style={styles.logo}
+          />
+        </View>
+
+        {/* --- FORMULÁRIO --- */}
+        <View style={styles.formContainer}>
+          <Text style={styles.formTitle}>Login</Text>
+          <Text style={styles.formSubtitle}>Que bom te ver de volta!</Text>
+
+          <TextInput
+            style={styles.textInput as ViewStyle}
+            placeholder="Seu email"
+            placeholderTextColor="#888"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+          />
+
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput as ViewStyle}
+              placeholder="Sua senha"
+              placeholderTextColor="#888"
+              secureTextEntry={!isSenhaVisivel}
+              value={senha}
+              onChangeText={setSenha}
+            />
+            <TouchableOpacity
+              style={styles.passwordEyeIcon}
+              onPress={() => setIsSenhaVisivel(!isSenhaVisivel)}
+            >
+              {isSenhaVisivel ? (
+                <EyeOff color={cores.preto} size={20} />
+              ) : (
+                <Eye color={cores.preto} size={20} />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* --- BOTÃO PRINCIPAL --- */}
+          {isLoading ? (
+            <ActivityIndicator size="large" color={cores.azulEscuro || '#0B3D91'} />
+          ) : (
+            <TouchableOpacity style={styles.primaryButton} onPress={onLogin}>
+              <Text style={styles.buttonText}>Entrar</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* --- LINK CADASTRO --- */}
+          <Text style={styles.footerText}>
+            Não tem conta?{' '}
+            <Text style={styles.linkText} onPress={onGoToCadastro}>
+              Criar Conta
+            </Text>
+          </Text>
+        </View>
+      </KeyboardAwareScrollView>
+    </SafeAreaView>
+  );
+};
+
 
 
 // --- COMPONENTE PRINCIPAL (O "Pai") ---
