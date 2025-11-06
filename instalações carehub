@@ -43,6 +43,10 @@ npm install express mysql2
 #05/11 backend duda
 npm install express mysql2 jsonwebtoken bcrypt
 npm install @types/express @types/node @types/bcrypt @types/jsonwebtoken --save-dev
+npm install multer
+npm install @types/multer --save-dev
+
+
 # Dev dependencies (opcional)
 npx expo install --dev @types/react@~19.1.0
 npx expo install --dev react-test-renderer@19.1.0

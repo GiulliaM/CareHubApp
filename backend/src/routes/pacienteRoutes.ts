@@ -1,10 +1,14 @@
 // back-end/src/routes/pacienteRoutes.ts
 import { Router } from 'express';
 import { criarPaciente } from '../controllers/pacienteController';
+import multer from 'multer';
+
+// Configura o multer. Por enquanto, não vamos salvar o upload,
+// apenas ler os campos de texto.
+const upload = multer();
 
 const router = Router();
 
-// A rota que o front-end está chamando: /api/pacientes
-router.post('/pacientes', criarPaciente);
+router.post('/pacientes', upload.none(), criarPaciente);
 
 export default router;
