@@ -1,6 +1,6 @@
 // back-end/src/routes/pacienteRoutes.ts
 import { Router } from 'express';
-import { criarPaciente } from '../controllers/PacienteController';
+import { criarPaciente } from '../controllers/pacienteController';
 
 const router = Router();
 
