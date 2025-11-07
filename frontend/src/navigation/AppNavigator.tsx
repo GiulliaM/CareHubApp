@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
 import { 
   createDrawerNavigator,
   DrawerContentScrollView,
@@ -7,12 +7,13 @@ import {
   DrawerItem,
   DrawerContentComponentProps 
 } from '@react-navigation/drawer';
-import { Home, Search, User, Shield, LogOut } from 'lucide-react-native';
-// <<< MUDANÇA: Importar a função helper de rota
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native'; 
+import { Home, Search, User, Shield, LogOut } from 'lucide-react-native';
 
 import TabNavigator from './TabNavigator'; 
 import { cores } from '../constantes/cores';
+// <<< MUDANÇA: Importar a tela REAL
+import MeuPerfilTela from '../telas/MeuPerfilTela'; 
 
 // ----- Telas "Placeholder" -----
 const PlaceholderScreen = ({ route }: any) => (
@@ -21,7 +22,7 @@ const PlaceholderScreen = ({ route }: any) => (
   </View>
 );
 const BuscarCuidadoresTela = () => <PlaceholderScreen route={{ name: 'Buscar Cuidadores' }} />;
-const MeuPerfilTela = () => <PlaceholderScreen route={{ name: 'Meu Perfil' }} />;
+// (MeuPerfilTela não é mais um placeholder)
 const PerfilPessoaCuidadaTela = () => <PlaceholderScreen route={{ name: 'Perfil Pessoa Cuidada' }} />;
 // ---------------------------------
 
@@ -38,9 +39,6 @@ function CustomDrawerContent(props: CustomDrawerProps) {
   // <<< MUDANÇA: 'isGuest' foi extraído
   const { onLogout, isGuest, ...rest } = props;
   
-  // (No futuro, podemos usar o 'isGuest' aqui para filtrar os 'rest.state.routes'
-  //  e esconder os links "Meu Perfil", etc., se for um visitante)
-  
   return (
     <DrawerContentScrollView {...rest}>
       <View style={{ flex: 1 }}>
@@ -48,11 +46,12 @@ function CustomDrawerContent(props: CustomDrawerProps) {
       </View>
       
       <View style={{ borderTopWidth: 1, borderTopColor: '#eee' }}>
+        {/* <<< MUDANÇA: O botão agora muda se for visitante */}
         <DrawerItem
-          label="Sair"
+          label={isGuest ? "Fazer Login" : "Sair"}
           icon={({ color, size }) => <LogOut color={cores.secundaria} size={size} />}
           labelStyle={{ color: cores.secundaria, fontWeight: 'bold' }}
-          onPress={onLogout}
+          onPress={onLogout} // (onLogout reseta o app, levando para o login)
         />
       </View>
     </DrawerContentScrollView>
@@ -60,13 +59,12 @@ function CustomDrawerContent(props: CustomDrawerProps) {
 }
 
 // --- O Navegador Principal ---
-// <<< MUDANÇA: Adicionado 'isGuest'
+// <<< MUDANÇA: Aceita 'isGuest'
 type AppNavigatorProps = {
   onLogout: () => void; 
   isGuest: boolean;
 };
 
-// <<< MUDANÇA: Recebendo 'isGuest'
 const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout, isGuest }) => {
   return (
     <Drawer.Navigator
@@ -76,10 +74,7 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout, isGuest }) => {
       screenOptions={{
         drawerActiveTintColor: cores.primaria,
         drawerInactiveTintColor: cores.preto,
-        drawerLabelStyle: {
-          marginLeft: -20, 
-          fontSize: 16,
-        },
+        drawerLabelStyle: { marginLeft: -20, fontSize: 16 },
         headerShown: true, 
       }}
     >
@@ -104,14 +99,19 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout, isGuest }) => {
           drawerIcon: ({ color, size }) => <Search color={color} size={size} />,
         }}
       />
+      
+      {/* <<< MUDANÇA: Passando 'isGuest' e 'onLogout' para a tela 'MeuPerfil' */}
       <Drawer.Screen 
         name="MeuPerfil" 
-        component={MeuPerfilTela}
         options={{
           title: 'Meu Perfil',
           drawerIcon: ({ color, size }) => <User color={color} size={size} />,
         }}
-      />
+      >
+        {/* Usamos a sintaxe de "render callback" para passar as props */}
+        {(props) => <MeuPerfilTela {...props} isGuest={isGuest} onLogout={onLogout} />}
+      </Drawer.Screen>
+
       <Drawer.Screen 
         name="PerfilPessoaCuidada" 
         component={PerfilPessoaCuidadaTela}
@@ -120,7 +120,6 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout, isGuest }) => {
           drawerIcon: ({ color, size }) => <Shield color={color} size={size} />,
         }}
       />
-
     </Drawer.Navigator>
   );
 };
