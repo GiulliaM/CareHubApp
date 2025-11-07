@@ -71,3 +71,15 @@ export const subtrairDia = (data: Date): Date => {
   novaData.setDate(novaData.getDate() - 1);
   return novaData;
 };
+
+/**
+ * Converte uma string no formato "yyyy-MM-dd" para Date (timezone local).
+ * Retorna null se a string for inválida.
+ */
+export const parseDateISO = (iso: string): Date | null => {
+  if (!iso || typeof iso !== 'string') return null;
+  const parts = iso.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return null;
+  const [y, m, d] = parts;
+  return new Date(y, m - 1, d);
+};

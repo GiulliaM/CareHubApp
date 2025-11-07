@@ -8,6 +8,7 @@ interface PaletaCores{
     preto: string;
     branco: string;
     azulClaro: string;
+    cinzaClaro: string;
 
 }
 
@@ -21,4 +22,5 @@ export const cores: PaletaCores = {
     preto: '#000000',
     branco: '#ffffff',
     azulClaro: '#0097A7',
+    cinzaClaro: '#f3f3f3',
 };
