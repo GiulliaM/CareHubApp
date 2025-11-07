@@ -1,3 +1,8 @@
+/**
+ * Tipos usados pelo dashboard (Home) no frontend.
+ */
+
+/** Perfil simplificado do paciente retornado pelo backend */
 export interface IPacientePerfil {
   id: number;
   nome_paciente: string;
@@ -7,11 +12,13 @@ export interface IPacientePerfil {
   nome_cuidador_ativo?: string | null;
 }
 
+/** Resumo de um cuidado (medicamento/consulta) */
 export interface ICuidadoResumo {
   nome: string;
-  horario: string;
+  horario: string; // ex: "08:00" ou "Hoje, às 08:00"
 }
 
+/** Registro resumido para exibição no feed/diário */
 export interface IRegistroResumo {
   tipo?: string;
   titulo: string;
@@ -19,6 +26,7 @@ export interface IRegistroResumo {
   data?: string;
 }
 
+/** Estrutura completa retornada pela rota /api/dashboard/:pacienteId */
 export interface IDadosDashboard {
   perfilPaciente: IPacientePerfil | null;
   proximoMedicamento: ICuidadoResumo | null;
@@ -28,6 +36,7 @@ export interface IDadosDashboard {
   atividadesRecentes: IRegistroResumo[];
 }
 
+/** Valor inicial (mock) para uso enquanto o fetch não retorna dados */
 export const initialDashboardData: IDadosDashboard = {
   perfilPaciente: null,
   proximoMedicamento: null,
