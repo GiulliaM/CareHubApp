@@ -45,6 +45,7 @@ npm install express mysql2 jsonwebtoken bcrypt
 npm install @types/express @types/node @types/bcrypt @types/jsonwebtoken --save-dev
 npm install multer
 npm install @types/multer --save-dev
+npm install date-fns
 
 
 # Dev dependencies (opcional)
