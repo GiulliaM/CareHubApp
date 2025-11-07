@@ -8,33 +8,38 @@ import {
   DrawerContentComponentProps 
 } from '@react-navigation/drawer';
 import { Home, Search, User, Shield, LogOut } from 'lucide-react-native';
+// <<< MUDANÇA: Importar a função helper de rota
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native'; 
 
 import TabNavigator from './TabNavigator'; 
 import { cores } from '../constantes/cores';
 
-// <<< MUDANÇA: Importar a nova tela
-import MeuPerfilTela from '../telas/MeuPerfilTela';
-
-// ----- Telas "Placeholder" (Ainda usamos para as outras) -----
+// ----- Telas "Placeholder" -----
 const PlaceholderScreen = ({ route }: any) => (
   <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
     <Text style={{ fontSize: 24, fontWeight: 'bold' }}>{route.name}</Text>
   </View>
 );
 const BuscarCuidadoresTela = () => <PlaceholderScreen route={{ name: 'Buscar Cuidadores' }} />;
-// const MeuPerfilTela = () => <PlaceholderScreen route={{ name: 'Meu Perfil' }} />; // <<< MUDANÇA: Não precisamos mais desta
+const MeuPerfilTela = () => <PlaceholderScreen route={{ name: 'Meu Perfil' }} />;
 const PerfilPessoaCuidadaTela = () => <PlaceholderScreen route={{ name: 'Perfil Pessoa Cuidada' }} />;
 // ---------------------------------
 
 const Drawer = createDrawerNavigator();
 
 // --- O Conteúdo Customizado do Menu ---
+// <<< MUDANÇA: Adicionado 'isGuest'
 type CustomDrawerProps = DrawerContentComponentProps & {
   onLogout: () => void; 
+  isGuest: boolean;
 };
 
 function CustomDrawerContent(props: CustomDrawerProps) {
-  const { onLogout, ...rest } = props;
+  // <<< MUDANÇA: 'isGuest' foi extraído
+  const { onLogout, isGuest, ...rest } = props;
+  
+  // (No futuro, podemos usar o 'isGuest' aqui para filtrar os 'rest.state.routes'
+  //  e esconder os links "Meu Perfil", etc., se for um visitante)
   
   return (
     <DrawerContentScrollView {...rest}>
@@ -55,26 +60,30 @@ function CustomDrawerContent(props: CustomDrawerProps) {
 }
 
 // --- O Navegador Principal ---
+// <<< MUDANÇA: Adicionado 'isGuest'
 type AppNavigatorProps = {
   onLogout: () => void; 
+  isGuest: boolean;
 };
 
-const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout }) => {
+// <<< MUDANÇA: Recebendo 'isGuest'
+const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout, isGuest }) => {
   return (
     <Drawer.Navigator
-      drawerContent={(props) => <CustomDrawerContent {...props} onLogout={onLogout} />}
-      screenOptions={({ route }) => ({
+      // <<< MUDANÇA: Passando 'isGuest' para o conteúdo do menu
+      drawerContent={(props) => <CustomDrawerContent {...props} onLogout={onLogout} isGuest={isGuest} />}
+      
+      screenOptions={{
         drawerActiveTintColor: cores.primaria,
         drawerInactiveTintColor: cores.preto,
         drawerLabelStyle: {
           marginLeft: -20, 
           fontSize: 16,
         },
-        headerShown: true,
-        // <<< MUDANÇA: Lógica do título dinâmico
-        headerTitle: getFocusedRouteNameFromRoute(route) ?? 'Início',
-      })}
+        headerShown: true, 
+      }}
     >
+      {/* Tela Principal (Abas) */}
       <Drawer.Screen 
         name="CareHub" 
         component={TabNavigator}
@@ -86,6 +95,7 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout }) => {
         })}
       />
       
+      {/* Telas do Menu Gaveta */}
       <Drawer.Screen 
         name="BuscarCuidadores" 
         component={BuscarCuidadoresTela}
@@ -94,17 +104,14 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout }) => {
           drawerIcon: ({ color, size }) => <Search color={color} size={size} />,
         }}
       />
-
-      {/* <<< MUDANÇA: 'component' agora usa a tela real */}
       <Drawer.Screen 
         name="MeuPerfil" 
-        component={MeuPerfilTela} 
+        component={MeuPerfilTela}
         options={{
           title: 'Meu Perfil',
           drawerIcon: ({ color, size }) => <User color={color} size={size} />,
         }}
       />
-
       <Drawer.Screen 
         name="PerfilPessoaCuidada" 
         component={PerfilPessoaCuidadaTela}
@@ -117,8 +124,5 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout }) => {
     </Drawer.Navigator>
   );
 };
-
-// <<< MUDANÇA: Adicionar a importação que faltava
-import { getFocusedRouteNameFromRoute } from '@react-navigation/native'; 
 
 export default AppNavigator;
