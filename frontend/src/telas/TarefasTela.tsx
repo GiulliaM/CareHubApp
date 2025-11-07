@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     View, 
     Text, 
@@ -11,9 +11,11 @@ import {
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Plus, ArrowLeft, ArrowRight, PlusCircle } from 'lucide-react-native';
+import { Calendar } from 'react-native-calendars';
+import { format } from 'date-fns';
 
-import {cores} from '../constantes/cores';
-import {styles} from '../style/homeStyle';
+import { cores } from '../constantes/cores';
+import { styles } from '../style/tarefaStyle';
 import { formatarDataAmigavel, adicionarDia, subtrairDia } from '../ferramentas/logicaData';
 
 // ---
@@ -134,6 +136,15 @@ const TarefasTela: React.FC = function(){
   const [temTarefas, setTarefas] = useState(0); 
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [dataSelecionada, setDataSelecionada] = useState(new Date());
+  const [markedDates, setMarkedDates] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    // marca a data selecionada no calendário
+    const key = format(dataSelecionada, 'yyyy-MM-dd');
+    setMarkedDates({
+      [key]: { selected: true, selectedColor: cores.primaria },
+    });
+  }, [dataSelecionada]);
 
   const handleDiaSeguinte = () => {
     setDataSelecionada(adicionarDia(dataSelecionada));
@@ -155,6 +166,25 @@ const TarefasTela: React.FC = function(){
   return(
       <View style={styles.screenContainer}>
           {/* A chamada <Header /> foi REMOVIDA daqui */}
+          {/* Calendário */}
+          <View style={{ paddingHorizontal: 12, paddingTop: 8 }}>
+            <Calendar
+              onDayPress={(day) => {
+                // day.dateString tem formato yyyy-MM-dd
+                const parts = day.dateString.split('-').map(Number);
+                const selected = new Date(parts[0], parts[1] - 1, parts[2]);
+                setDataSelecionada(selected);
+              }}
+              markedDates={markedDates}
+              theme={{
+                selectedDayBackgroundColor: cores.primaria,
+                todayTextColor: cores.primaria,
+                arrowColor: cores.primaria,
+                monthTextColor: cores.preto,
+              }}
+              firstDay={1}
+            />
+          </View>
           <CardData 
             data={dataSelecionada}
             onAnterior={handleDiaAnterior}
@@ -180,5 +210,7 @@ const TarefasTela: React.FC = function(){
       </View>
   );
 }
+
+
 
 export default TarefasTela;
