@@ -12,8 +12,8 @@ import {
 import {Image } from 'expo-image';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'; 
 import { Eye, EyeOff, Camera } from 'lucide-react-native'; 
-// <<< MUDANÇA: Importar o Safe Area
 import { SafeAreaView } from 'react-native-safe-area-context'; 
+// <<< MUDANÇA: Voltando ao import que funciona
 import * as ImagePicker from 'expo-image-picker'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -31,9 +31,10 @@ const styles = estilosGlobais;
 type WelcomeStepProps = {
   onSetStep: (step: number) => void;
   onComplete: () => void;
+  onSkip: () => void; // <<< MUDANÇA: Recebe a prop onSkip
 };
-const WelcomeStep: React.FC<WelcomeStepProps> = ({ onSetStep, onComplete }) => (
-  // <<< MUDANÇA: Adicionado SafeAreaView
+const WelcomeStep: React.FC<WelcomeStepProps> = ({ onSetStep, onComplete, onSkip }) => (
+  // <<< MUDANÇA: Adicionado SafeAreaView para corrigir layout
   <SafeAreaView style={localStyles.safeArea}>
     <View style={styles.pageContainer}>
       <Image
@@ -52,7 +53,8 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ onSetStep, onComplete }) => (
       <TouchableOpacity style={[styles.secondaryButton, { padding: 12, marginBottom: 8 }]} onPress={() => onSetStep(2)}>
         <Text style={styles.secondaryButtonText}>Criar Nova Conta</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={[styles.secondaryButton, { padding: 12 }]} onPress={onComplete}>
+      {/* <<< MUDANÇA: Botão "Pular" agora chama onSkip */}
+      <TouchableOpacity style={[styles.secondaryButton, { padding: 12 }]} onPress={onSkip}>
         <Text style={[styles.secondaryButtonText, { fontSize: 14 }]}>Pular (Modo Visitante)</Text>
       </TouchableOpacity>
     </View>
@@ -78,7 +80,7 @@ const RegisterUserStep: React.FC<RegisterUserStepProps> = ({
   nome, setNome, email, setEmail, senha, setSenha, isLoading, onCadastrar, onGoToLogin,
   isSenhaVisivel, setIsSenhaVisivel
 }) => (
-  // <<< MUDANÇA: Adicionado SafeAreaView
+  // <<< MUDANÇA: Adicionado SafeAreaView para corrigir layout
   <SafeAreaView style={localStyles.safeArea}>
     <KeyboardAwareScrollView
       style={{ flex: 1, backgroundColor: cores.branco }}
@@ -148,7 +150,7 @@ const RegisterPatientStep: React.FC<RegisterPatientStepProps> = ({
   alergias, setAlergias, imagemPaciente, onPickImage,
   isLoading, onConcluir
 }) => (
-  // <<< MUDANÇA: Adicionado SafeAreaView
+  // <<< MUDANÇA: Adicionado SafeAreaView para corrigir layout
   <SafeAreaView style={localStyles.safeArea}>
     <KeyboardAwareScrollView
       style={{ flex: 1, backgroundColor: cores.branco }}
@@ -171,6 +173,7 @@ const RegisterPatientStep: React.FC<RegisterPatientStepProps> = ({
         )}
       </TouchableOpacity>
       
+      {/* <<< MUDANÇA: Inputs agora conectados ao 'useState' */}
       <TextInput 
         style={styles.input} 
         placeholder="Nome da pessoa (obrigatório)" 
@@ -185,7 +188,7 @@ const RegisterPatientStep: React.FC<RegisterPatientStepProps> = ({
         onChangeText={setDataNascimento}
         placeholderTextColor="#999" 
       />
-      {/* <<< MUDANÇA: Placeholder "Alergias" atualizado */}
+      {/* <<< MUDANÇA: Placeholder e 'value' corretos */}
       <TextInput 
         style={styles.input} 
         placeholder="Informações Médicas (opcional)" 
@@ -223,7 +226,7 @@ const LoginStep: React.FC<LoginStepProps> = ({
   email, setEmail, senha, setSenha, isLoading, onLogin, onGoToCadastro,
   isSenhaVisivel, setIsSenhaVisivel
 }) => (
-  // <<< MUDANÇA: Adicionado SafeAreaView
+  // <<< MUDANÇA: Adicionado SafeAreaView para corrigir layout
   <SafeAreaView style={localStyles.safeArea}>
     <KeyboardAwareScrollView
       style={{ flex: 1, backgroundColor: cores.branco }}
@@ -277,18 +280,21 @@ const LoginStep: React.FC<LoginStepProps> = ({
 // --- COMPONENTE PRINCIPAL (O "Pai") ---
 type Props = {
   onComplete: () => void;
+  onSkip: () => void; // <<< MUDANÇA: Recebe a prop onSkip
 };
-const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
+const OnboardingFlow: React.FC<Props> = ({ onComplete, onSkip }) => {
   const [step, setStep] = useState(1);
   
+  // Estados Etapa 2
   const [nomeCadastro, setNomeCadastro] = useState('');
   const [emailCadastro, setEmailCadastro] = useState('');
   const [senhaCadastro, setSenhaCadastro] = useState('');
   
+  // Estados Etapa 4
   const [emailLogin, setEmailLogin] = useState('');
   const [senhaLogin, setSenhaLogin] = useState('');
   
-  // <<< MUDANÇA: Estados da Etapa 3 agora são usados
+  // Estados Etapa 3
   const [nomePaciente, setNomePaciente] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
   const [alergias, setAlergias] = useState('');
@@ -298,9 +304,9 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
   const [isSenhaVisivel, setIsSenhaVisivel] = useState(false);
 
   // --- Funções de Lógica ---
-  // (As funções 'handleCadastroUsuario' e 'handleLogin' estão corretas)
 
   const handleCadastroUsuario = async () => {
+    // (Lógica de cadastro... sem mudanças)
     if (!nomeCadastro || !emailCadastro || !senhaCadastro) {
         Alert.alert('Campos incompletos', 'Por favor, preencha nome, email e senha.');
         return;
@@ -345,6 +351,7 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
   };
   
   const handleLogin = async () => {
+    // (Lógica de login... sem mudanças)
     if (!emailLogin || !senhaLogin) {
         Alert.alert('Campos incompletos', 'Por favor, preencha email e senha.');
         return;
@@ -373,13 +380,14 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
   };
 
   const handlePickImage = async () => {
+    // <<< MUDANÇA: Voltando para 'MediaTypeOptions'
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
       Alert.alert("Permissão necessária", "Precisamos de acesso à sua galeria para escolher uma foto.");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Esta é a sintaxe correta
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,
@@ -410,7 +418,7 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
     if (dataNascimento) {
       formData.append('data_nascimento', dataNascimento);
     }
-    // <<< MUDANÇA: Campo 'alergias' agora é 'informacoes_medicas'
+    // <<< MUDANÇA: Enviando o campo correto para o back-end
     if (alergias) {
       formData.append('informacoes_medicas', alergias);
     }
@@ -453,10 +461,12 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
     }
   };
 
+
   // --- Renderização ---
   switch (step) {
     case 1:
-      return <WelcomeStep onSetStep={setStep} onComplete={onComplete} />;
+      // <<< MUDANÇA: Passando a prop onSkip
+      return <WelcomeStep onSetStep={setStep} onComplete={onComplete} onSkip={onSkip} />;
     case 2:
       return (
         <RegisterUserStep
@@ -474,7 +484,6 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
         />
       );
     case 3:
-      // <<< MUDANÇA: Passando todas as props para a Etapa 3
       return (
         <RegisterPatientStep 
           nomePaciente={nomePaciente}
@@ -504,7 +513,7 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
         />
       );
     default:
-      return <WelcomeStep onSetStep={setStep} onComplete={onComplete} />;
+      return <WelcomeStep onSetStep={setStep} onComplete={onComplete} onSkip={onSkip} />;
   }
 };
 

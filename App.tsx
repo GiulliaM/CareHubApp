@@ -11,13 +11,16 @@ import OnboardingFlow from './frontend/src/telas/BoasVindas'; // A tela de Login
 export default function App() {
   // [isAuthenticated] é o "cérebro" que decide qual tela mostrar
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // <<< MUDANÇA: Novo estado para saber se é visitante
+  const [isGuest, setIsGuest] = useState(false);
 
   // Esta função será chamada pela tela de BoasVindas (onComplete)
   // quando o login/cadastro for bem-sucedido.
   const handleLogin = () => {
     // PENSANDO NO BACK-END:
-    // Aqui é onde você salvaria o Token de login no AsyncStorage
+    // O AsyncStorage.setItem('@carehub_token', ...) já foi feito no BoasVindas
     setIsAuthenticated(true);
+    setIsGuest(false); // Garante que não é visitante
   };
   
   // Esta função será passada para o AppNavigator
@@ -25,7 +28,15 @@ export default function App() {
   const handleLogout = () => {
     // PENSANDO NO BACK-END:
     // Aqui você limparia o Token do AsyncStorage
+    // await AsyncStorage.removeItem('@carehub_token');
     setIsAuthenticated(false);
+    setIsGuest(false); // Reseta o estado de visitante
+  };
+
+  // <<< MUDANÇA: Nova função para o botão "Pular"
+  const handleSkip = () => {
+    setIsAuthenticated(true); // Entra no app
+    setIsGuest(true); // Mas como visitante
   };
 
   return (
@@ -37,12 +48,12 @@ export default function App() {
         <NavigationContainer>
           {isAuthenticated ? (
             // Se estiver LOGADO: mostre o AppNavigator (com o menu)
-            // e passe a função de logout para ele
-            <AppNavigator onLogout={handleLogout} />
+            // <<< MUDANÇA: Passa o estado 'isGuest' para o AppNavigator
+            <AppNavigator onLogout={handleLogout} isGuest={isGuest} />
           ) : (
             // Se NÃO estiver logado: mostre o BoasVindas (Login/Cadastro)
-            // e passe a função de login para ele
-            <OnboardingFlow onComplete={handleLogin} />
+            // <<< MUDANÇA: Passa a nova função 'onSkip'
+            <OnboardingFlow onComplete={handleLogin} onSkip={handleSkip} />
           )}
         </NavigationContainer>
       </SafeAreaProvider>
