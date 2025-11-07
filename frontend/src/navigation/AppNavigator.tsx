@@ -1,7 +1,5 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-// <<< MUDANÇA 1: Importar a função helper
-import { getFocusedRouteNameFromRoute } from '@react-navigation/native'; 
 import { 
   createDrawerNavigator,
   DrawerContentScrollView,
@@ -10,6 +8,8 @@ import {
   DrawerContentComponentProps 
 } from '@react-navigation/drawer';
 import { Home, Search, User, Shield, LogOut } from 'lucide-react-native';
+// <<< MUDANÇA: Importar a função helper de rota
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native'; 
 
 import TabNavigator from './TabNavigator'; 
 import { cores } from '../constantes/cores';
@@ -28,12 +28,18 @@ const PerfilPessoaCuidadaTela = () => <PlaceholderScreen route={{ name: 'Perfil 
 const Drawer = createDrawerNavigator();
 
 // --- O Conteúdo Customizado do Menu ---
+// <<< MUDANÇA: Adicionado 'isGuest'
 type CustomDrawerProps = DrawerContentComponentProps & {
   onLogout: () => void; 
+  isGuest: boolean;
 };
 
 function CustomDrawerContent(props: CustomDrawerProps) {
-  const { onLogout, ...rest } = props;
+  // <<< MUDANÇA: 'isGuest' foi extraído
+  const { onLogout, isGuest, ...rest } = props;
+  
+  // (No futuro, podemos usar o 'isGuest' aqui para filtrar os 'rest.state.routes'
+  //  e esconder os links "Meu Perfil", etc., se for um visitante)
   
   return (
     <DrawerContentScrollView {...rest}>
@@ -54,14 +60,19 @@ function CustomDrawerContent(props: CustomDrawerProps) {
 }
 
 // --- O Navegador Principal ---
+// <<< MUDANÇA: Adicionado 'isGuest'
 type AppNavigatorProps = {
   onLogout: () => void; 
+  isGuest: boolean;
 };
 
-const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout }) => {
+// <<< MUDANÇA: Recebendo 'isGuest'
+const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout, isGuest }) => {
   return (
     <Drawer.Navigator
-      drawerContent={(props) => <CustomDrawerContent {...props} onLogout={onLogout} />}
+      // <<< MUDANÇA: Passando 'isGuest' para o conteúdo do menu
+      drawerContent={(props) => <CustomDrawerContent {...props} onLogout={onLogout} isGuest={isGuest} />}
+      
       screenOptions={{
         drawerActiveTintColor: cores.primaria,
         drawerInactiveTintColor: cores.preto,
@@ -72,25 +83,19 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout }) => {
         headerShown: true, 
       }}
     >
-      {/* <<< MUDANÇA 2: As 'options' agora são uma função */}
+      {/* Tela Principal (Abas) */}
       <Drawer.Screen 
         name="CareHub" 
         component={TabNavigator}
-        options={({ route }) => {
-          // Pega o nome da rota ativa dentro do TabNavigator
-          const routeName = getFocusedRouteNameFromRoute(route) ?? 'Início';
-          
-          return {
-            // O título no MENU GAVETA (sempre "Início")
-            title: 'Início', 
-            drawerIcon: ({ color, size }) => <Home color={color} size={size} />,
-            
-            // O título no CABEÇALHO (dinâmico)
-            headerTitle: routeName,
-          };
-        }}
+        options={({ route }) => ({
+          title: 'Início', 
+          drawerIcon: ({ color, size }) => <Home color={color} size={size} />,
+          // Pega o nome da aba ativa (Início, Tarefas, etc.)
+          headerTitle: getFocusedRouteNameFromRoute(route) ?? 'Início',
+        })}
       />
       
+      {/* Telas do Menu Gaveta */}
       <Drawer.Screen 
         name="BuscarCuidadores" 
         component={BuscarCuidadoresTela}
@@ -115,6 +120,7 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout }) => {
           drawerIcon: ({ color, size }) => <Shield color={color} size={size} />,
         }}
       />
+
     </Drawer.Navigator>
   );
 };
