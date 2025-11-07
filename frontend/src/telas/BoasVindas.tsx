@@ -39,7 +39,7 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ onSetStep, onComplete, onSkip
     <View style={styles.pageContainer}>
       <Image
         style={styles.headerImage} 
-        source="../images/bandaid-heart.webp"
+        source={require('../../../assets/images/logo.svg')}
       />
       <Text style={styles.title}>Boas-vindas.</Text>
       <Text style={styles.subtitle}>
@@ -62,6 +62,7 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ onSetStep, onComplete, onSkip
 );
 
 
+
 // --- ETAPA 2: CADASTRO DO USUÁRIO ---
 type RegisterUserStepProps = {
   nome: string;
@@ -76,61 +77,118 @@ type RegisterUserStepProps = {
   isSenhaVisivel: boolean;
   setIsSenhaVisivel: (val: boolean) => void;
 };
+
 const RegisterUserStep: React.FC<RegisterUserStepProps> = ({
-  nome, setNome, email, setEmail, senha, setSenha, isLoading, onCadastrar, onGoToLogin,
+  nome, setNome, email, setEmail, senha, setSenha, 
+  isLoading, onCadastrar, onGoToLogin,
   isSenhaVisivel, setIsSenhaVisivel
-}) => (
-  // <<< MUDANÇA: Adicionado SafeAreaView para corrigir layout
-  <SafeAreaView style={localStyles.safeArea}>
-    <KeyboardAwareScrollView
-      style={{ flex: 1, backgroundColor: cores.branco }}
-      contentContainerStyle={{ flexGrow: 1, padding: 20 }} 
-      enableOnAndroid={true}
-      extraScrollHeight={Platform.OS === 'ios' ? 20 : 0} 
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.formTitle}>Criar Conta</Text>
-      <Text style={styles.formSubtitle}>Vamos criar a sua conta.</Text>
-      
-      <TextInput style={styles.input} placeholder="Seu nome completo" value={nome} onChangeText={setNome} />
-      <TextInput style={styles.input} placeholder="Seu melhor email" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
-      
-      <View style={styles.passwordContainer}>
-        <TextInput 
-          style={styles.passwordInput} 
-          placeholder="Crie uma senha" 
-          secureTextEntry={!isSenhaVisivel}
-          value={senha} 
-          onChangeText={setSenha} 
-        />
-        <TouchableOpacity 
-          style={styles.passwordEyeIcon} 
-          onPress={() => setIsSenhaVisivel(!isSenhaVisivel)}
-        >
-          {isSenhaVisivel ? (
-            <EyeOff color={cores.preto} size={20} /> 
-          ) : (
-            <Eye color={cores.preto} size={20} />
-          )}
-        </TouchableOpacity>
-      </View>
+}) => {
+  const [tipoUsuario, setTipoUsuario] = useState<string | null>(null);
 
-      <View style={styles.flexSpacer} /> 
-      
-      {isLoading ? (
-        <ActivityIndicator size="large" color={cores.primaria || '#007bff'} />
-      ) : (
-        <TouchableOpacity style={styles.primaryButton} onPress={onCadastrar}>
-            <Text style={styles.buttonText}>Próximo Passo</Text>
-        </TouchableOpacity>
-      )}
-      <TouchableOpacity style={styles.secondaryButton} onPress={onGoToLogin}>
-          <Text style={styles.secondaryButtonText}>Já tenho conta</Text>
-      </TouchableOpacity>
-    </KeyboardAwareScrollView>
-  </SafeAreaView>
-);
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: cores.branco }}>
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1, padding: 20 }}
+        enableOnAndroid={true}
+        extraScrollHeight={Platform.OS === 'ios' ? 20 : 0}
+        keyboardShouldPersistTaps="handled"
+      >
+        {!tipoUsuario ? (
+          // --- TELA DE ESCOLHA DO TIPO DE CADASTRO ---
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <Text style={[styles.formTitle, { marginBottom: 30 }]}>Como deseja se cadastrar?</Text>
 
+            <TouchableOpacity 
+              style={[styles.primaryButton, { width: '80%', marginBottom: 15 }]}
+              onPress={() => setTipoUsuario('familiar')}
+            >
+              <Text style={styles.buttonText}>Cadastrar como Familiar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.secondaryButton, { width: '80%' }]}
+              onPress={() => setTipoUsuario('cuidador')}
+            >
+              <Text style={styles.secondaryButtonText}>Cadastrar como Cuidador</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          // --- FORMULÁRIO DE CADASTRO ---
+          <View style={{ flex: 1 }}>
+            <Text style={styles.formTitle}>Criar Conta</Text>
+            <Text style={styles.formSubtitle}>
+              {tipoUsuario === 'familiar'
+                ? 'Vamos criar sua conta de familiar.'
+                : 'Vamos criar sua conta de cuidador.'}
+            </Text>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Seu nome completo"
+              value={nome}
+              onChangeText={setNome}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Seu melhor email"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+            />
+
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Crie uma senha"
+                secureTextEntry={!isSenhaVisivel}
+                value={senha}
+                onChangeText={setSenha}
+              />
+              <TouchableOpacity
+                style={styles.passwordEyeIcon}
+                onPress={() => setIsSenhaVisivel(!isSenhaVisivel)}
+              >
+                {isSenhaVisivel ? (
+                  <EyeOff color={cores.preto} size={20} />
+                ) : (
+                  <Eye color={cores.preto} size={20} />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.flexSpacer} />
+
+            {isLoading ? (
+              <ActivityIndicator size="large" color={cores.primaria || '#007bff'} />
+            ) : (
+              <TouchableOpacity style={styles.primaryButton} onPress={onCadastrar}>
+                <Text style={styles.buttonText}>Próximo Passo</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity 
+              style={styles.secondaryButton} 
+              onPress={onGoToLogin}
+            >
+              <Text style={styles.secondaryButtonText}>Já tenho conta</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={{ marginTop: 20, alignSelf: 'center' }}
+              onPress={() => setTipoUsuario(null)}
+            >
+              <Text style={{ color: cores.primaria, fontSize: 14 }}>
+                Voltar para escolha de tipo
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </KeyboardAwareScrollView>
+    </SafeAreaView>
+  );
+};
 
 // --- ETAPA 3: CADASTRO DO PACIENTE ---
 type RegisterPatientStepProps = {
@@ -227,7 +285,7 @@ const LoginStep: React.FC<LoginStepProps> = ({
   isSenhaVisivel, setIsSenhaVisivel
 }) => (
   // <<< MUDANÇA: Adicionado SafeAreaView para corrigir layout
-  <SafeAreaView style={localStyles.safeArea}>
+  <SafeAreaView style={localStyles.safeArea}>    
     <KeyboardAwareScrollView
       style={{ flex: 1, backgroundColor: cores.branco }}
       contentContainerStyle={{ flexGrow: 1, padding: 20 }} 
