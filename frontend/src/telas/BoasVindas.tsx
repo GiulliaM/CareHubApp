@@ -391,6 +391,12 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete, onSkip }) => {
               const loginData = await loginResponse.json();
               if (loginResponse.ok) {
                 await AsyncStorage.setItem('@carehub_token', loginData.token);
+                // Salva também os dados do usuário para a Home utilizar
+                try {
+                  await AsyncStorage.setItem('usuario', JSON.stringify(loginData.usuario));
+                } catch (e) {
+                  console.warn('Falha ao salvar usuário no AsyncStorage:', e);
+                }
                 setStep(3);
               } else {
                 setStep(4);
@@ -425,6 +431,12 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete, onSkip }) => {
       setIsLoading(false);
       if (response.ok) {
         await AsyncStorage.setItem('@carehub_token', data.token);
+        // Salva também os dados do usuário (chave lida por HomeTela)
+        try {
+          await AsyncStorage.setItem('usuario', JSON.stringify(data.usuario));
+        } catch (e) {
+          console.warn('Falha ao salvar usuário no AsyncStorage:', e);
+        }
         Alert.alert('Sucesso!', 'Login realizado.');
         onComplete(); 
       } else {
