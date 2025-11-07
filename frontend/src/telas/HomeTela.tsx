@@ -9,11 +9,11 @@ import {
 } from 'react-native';
 import {
   Pill,
-  NotepadText,
   Smile,
   PlusCircle,
   Stethoscope,
 } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { cores } from '../constantes/cores';
 import { styles } from '../style/homeStyle';
@@ -30,6 +30,13 @@ async function fetchDashboardData(pacienteId: number): Promise<IDadosDashboard> 
     console.warn('Falha ao buscar dashboard, usando mock/local:', e);
     return initialDashboardData;
   }
+}
+
+interface Usuario {
+  id: number;
+  nome: string;
+  email: string;
+  tipo: 'Familiar' | 'Cuidador';
 }
 
 /* ----- Peças da UI ----- */
@@ -69,21 +76,77 @@ const ResumoItem = ({ icon, titulo, subtitulo }: { icon: React.ReactNode; titulo
   </View>
 );
 
-const WelcomeHeader = ({ paciente, cuidador }: { paciente?: string | null; cuidador?: string | null }) => (
+/* ----- Cabeçalho de Boas-Vindas ----- */
+const WelcomeHeader = ({
+  paciente,
+  usuarioLogado,
+  cuidadorAtivo,
+}: {
+  paciente?: string | null;
+  usuarioLogado: Usuario | null;
+  cuidadorAtivo?: string | null;
+}) => (
   <View style={{ padding: 20, paddingTop: 28, backgroundColor: cores.branco }}>
-    <Text style={{ fontSize: 18, color: cores.secundaria }}>Olá</Text>
-    <Text style={{ fontSize: 22, fontWeight: 'bold', color: cores.preto, marginTop: 4 }}>
-      {cuidador || 'Cuidador(a)'}
+    {/* Saudação personalizada */}
+    <Text style={{ fontSize: 18, color: cores.secundaria }}>
+      {usuarioLogado
+        ? `Olá, ${usuarioLogado.tipo === 'Cuidador' ? 'cuidador(a)' : 'familiar'}`
+        : 'Olá'}
     </Text>
-    <Text style={{ fontSize: 13, color: '#666', marginTop: 6 }}>
-      Visão de {paciente || 'Paciente'}
+
+    <Text
+      style={{
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: cores.preto,
+        marginTop: 4,
+      }}
+    >
+      {usuarioLogado ? usuarioLogado.nome : 'Visitante'}
     </Text>
+
+    {/* Visão do Paciente */}
+    <View
+      style={{
+        marginTop: 15,
+        padding: 12,
+        borderRadius: 8,
+        backgroundColor: cores.primaria + '10',
+      }}
+    >
+      <Text style={{ fontSize: 16, fontWeight: 'bold', color: cores.primaria }}>
+        Visão do Paciente: {paciente || 'Não Encontrado'}
+      </Text>
+      <Text
+        style={{ fontSize: 13, color: cores.secundaria, marginTop: 4 }}
+      >
+        Cuidador Principal: {cuidadorAtivo || 'Não Definido'}
+      </Text>
+    </View>
   </View>
 );
 
-const SummaryCard = ({ title, count }: { title: string; count: number }) => (
-  <View style={{ flex: 1, backgroundColor: '#fff', padding: 12, margin: 8, borderRadius: 12, elevation: 1, alignItems: 'center' }}>
-    <Text style={{ fontSize: 18, fontWeight: 'bold', color: cores.preto }}>{count}</Text>
+const SummaryCard = ({
+  title,
+  count,
+}: {
+  title: string;
+  count: number;
+}) => (
+  <View
+    style={{
+      flex: 1,
+      backgroundColor: '#fff',
+      padding: 12,
+      margin: 8,
+      borderRadius: 12,
+      elevation: 1,
+      alignItems: 'center',
+    }}
+  >
+    <Text style={{ fontSize: 18, fontWeight: 'bold', color: cores.preto }}>
+      {count}
+    </Text>
     <Text style={{ fontSize: 13, color: '#666', marginTop: 6 }}>{title}</Text>
   </View>
 );
@@ -94,7 +157,22 @@ const Home: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<IDadosDashboard>(initialDashboardData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
 
+  // 🔹 Carregar informações do usuário logado
+  useEffect(() => {
+    const carregarUsuario = async () => {
+      try {
+        const dados = await AsyncStorage.getItem('usuario');
+        if (dados) setUsuario(JSON.parse(dados));
+      } catch (err) {
+        console.error('Erro ao carregar usuário:', err);
+      }
+    };
+    carregarUsuario();
+  }, []);
+
+  // 🔹 Carregar dados do dashboard
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -103,12 +181,13 @@ const Home: React.FC = () => {
       const data = await fetchDashboardData(pacienteId);
       if (!cancelled) {
         setDashboardData(data);
-        // if returned initialDashboardData we might set an error flag, but keep silent
         setLoading(false);
       }
     };
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [pacienteId]);
 
   const proximosCuidados = useMemo(() => {
@@ -141,7 +220,7 @@ const Home: React.FC = () => {
 
   return (
     <ScrollView style={styles.screenContainer} showsVerticalScrollIndicator={false}>
-      <WelcomeHeader paciente={pacienteNome} cuidador={cuidadorNome} />
+      <WelcomeHeader paciente={pacienteNome} usuarioLogado={usuario} cuidadorAtivo={cuidadorNome} />
 
       <View style={{ flexDirection: 'row', paddingHorizontal: 12 }}>
         <SummaryCard title="Cuidados hoje" count={totalCuidadosHoje} />
