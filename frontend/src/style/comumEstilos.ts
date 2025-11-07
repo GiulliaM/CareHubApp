@@ -164,4 +164,13 @@ export const comumEstilosObjeto = {
     fontSize: 18,
   } as TextStyle,
 
+
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: cores.preto,
+    marginBottom: 8,
+    marginLeft: 4,
+  } as TextStyle,
+
 };
