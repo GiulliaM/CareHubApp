@@ -12,8 +12,9 @@ import { Home, Search, User, Shield, LogOut } from 'lucide-react-native';
 
 import TabNavigator from './TabNavigator'; 
 import { cores } from '../constantes/cores';
-// <<< MUDANÇA: Importar a tela REAL
 import MeuPerfilTela from '../telas/MeuPerfilTela'; 
+// <<< MUDANÇA: Importar a nova tela REAL
+import PerfilPessoaCuidadaTela from '../telas/PerfilPessoaCuidadaTela';
 
 // ----- Telas "Placeholder" -----
 const PlaceholderScreen = ({ route }: any) => (
@@ -22,21 +23,17 @@ const PlaceholderScreen = ({ route }: any) => (
   </View>
 );
 const BuscarCuidadoresTela = () => <PlaceholderScreen route={{ name: 'Buscar Cuidadores' }} />;
-// (MeuPerfilTela não é mais um placeholder)
-const PerfilPessoaCuidadaTela = () => <PlaceholderScreen route={{ name: 'Perfil Pessoa Cuidada' }} />;
 // ---------------------------------
 
 const Drawer = createDrawerNavigator();
 
 // --- O Conteúdo Customizado do Menu ---
-// <<< MUDANÇA: Adicionado 'isGuest'
 type CustomDrawerProps = DrawerContentComponentProps & {
   onLogout: () => void; 
   isGuest: boolean;
 };
 
 function CustomDrawerContent(props: CustomDrawerProps) {
-  // <<< MUDANÇA: 'isGuest' foi extraído
   const { onLogout, isGuest, ...rest } = props;
   
   return (
@@ -46,12 +43,11 @@ function CustomDrawerContent(props: CustomDrawerProps) {
       </View>
       
       <View style={{ borderTopWidth: 1, borderTopColor: '#eee' }}>
-        {/* <<< MUDANÇA: O botão agora muda se for visitante */}
         <DrawerItem
           label={isGuest ? "Fazer Login" : "Sair"}
           icon={({ color, size }) => <LogOut color={cores.secundaria} size={size} />}
           labelStyle={{ color: cores.secundaria, fontWeight: 'bold' }}
-          onPress={onLogout} // (onLogout reseta o app, levando para o login)
+          onPress={onLogout}
         />
       </View>
     </DrawerContentScrollView>
@@ -59,7 +55,6 @@ function CustomDrawerContent(props: CustomDrawerProps) {
 }
 
 // --- O Navegador Principal ---
-// <<< MUDANÇA: Aceita 'isGuest'
 type AppNavigatorProps = {
   onLogout: () => void; 
   isGuest: boolean;
@@ -68,7 +63,6 @@ type AppNavigatorProps = {
 const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout, isGuest }) => {
   return (
     <Drawer.Navigator
-      // <<< MUDANÇA: Passando 'isGuest' para o conteúdo do menu
       drawerContent={(props) => <CustomDrawerContent {...props} onLogout={onLogout} isGuest={isGuest} />}
       
       screenOptions={{
@@ -78,19 +72,16 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout, isGuest }) => {
         headerShown: true, 
       }}
     >
-      {/* Tela Principal (Abas) */}
       <Drawer.Screen 
         name="CareHub" 
         component={TabNavigator}
         options={({ route }) => ({
           title: 'Início', 
           drawerIcon: ({ color, size }) => <Home color={color} size={size} />,
-          // Pega o nome da aba ativa (Início, Tarefas, etc.)
           headerTitle: getFocusedRouteNameFromRoute(route) ?? 'Início',
         })}
       />
       
-      {/* Telas do Menu Gaveta */}
       <Drawer.Screen 
         name="BuscarCuidadores" 
         component={BuscarCuidadoresTela}
@@ -100,7 +91,6 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout, isGuest }) => {
         }}
       />
       
-      {/* <<< MUDANÇA: Passando 'isGuest' e 'onLogout' para a tela 'MeuPerfil' */}
       <Drawer.Screen 
         name="MeuPerfil" 
         options={{
@@ -108,18 +98,19 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout, isGuest }) => {
           drawerIcon: ({ color, size }) => <User color={color} size={size} />,
         }}
       >
-        {/* Usamos a sintaxe de "render callback" para passar as props */}
         {(props) => <MeuPerfilTela {...props} isGuest={isGuest} onLogout={onLogout} />}
       </Drawer.Screen>
 
+      {/* <<< MUDANÇA: Conectando a tela real */}
       <Drawer.Screen 
         name="PerfilPessoaCuidada" 
-        component={PerfilPessoaCuidadaTela}
         options={{
           title: 'Perfil Pessoa Cuidada',
           drawerIcon: ({ color, size }) => <Shield color={color} size={size} />,
         }}
-      />
+      >
+         {(props) => <PerfilPessoaCuidadaTela {...props} isGuest={isGuest} onLogout={onLogout} />}
+      </Drawer.Screen>
     </Drawer.Navigator>
   );
 };
