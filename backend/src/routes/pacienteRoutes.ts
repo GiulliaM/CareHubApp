@@ -6,12 +6,13 @@ import path from 'path';
 
 // --- MUDANÇA: Configuração completa do Multer ---
 const storage = multer.diskStorage({
-  // Onde salvar o arquivo
+  // Onde salvar o arquivo (dentro da pasta 'public/uploads' que criamos)
   destination: function (req, file, cb) {
     cb(null, 'public/uploads/');
   },
   // Como nomear o arquivo (para evitar nomes iguais)
   filename: function (req, file, cb) {
+    // foto-123456789.jpg
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }

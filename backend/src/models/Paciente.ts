@@ -13,7 +13,7 @@ export type PacientePayload = {
  */
 const formatarDataParaSQL = (data: string | undefined): string | null => {
   if (!data) {
-    return null; // Salva NULL se a data for opcional e não for enviada
+    return null; // Salva NULL se a data for opcional (como você pediu)
   }
   const partes = data.split('/');
   if (partes.length === 3) {
@@ -22,7 +22,6 @@ const formatarDataParaSQL = (data: string | undefined): string | null => {
   }
   return null; // Formato inválido
 };
-
 
 export class Paciente {
   

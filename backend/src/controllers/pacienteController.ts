@@ -8,11 +8,10 @@ export const criarPaciente = async (req: Request, res: Response) => {
     const dadosPaciente = req.body;
     
     // <<< MUDANÇA: Pegamos a foto do req.file
-    // O 'req.file' só existe porque o multer (upload.single) o criou
     if (req.file) {
-      // Cria a URL pública para salvar no banco
-      // (O 'req.file.path' será algo como 'public/uploads/foto-12345.jpg')
-      dadosPaciente.foto_url = `/${req.file.path}`; 
+      // O 'req.file.filename' será algo como 'foto-12345.jpg'
+      // Nós o salvamos com a URL pública
+      dadosPaciente.foto_url = `/uploads/${req.file.filename}`; 
     }
     // --- FIM DA MUDANÇA ---
 
