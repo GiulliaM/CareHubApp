@@ -12,21 +12,19 @@ import {
 import {Image } from 'expo-image';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'; 
 import { Eye, EyeOff, Camera } from 'lucide-react-native'; 
+// <<< MUDANÇA: Importar o Safe Area
 import { SafeAreaView } from 'react-native-safe-area-context'; 
-// Importa tudo como 'ImagePicker'
 import * as ImagePicker from 'expo-image-picker'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { styles as estilosGlobais } from '../style/boasVindasStyle';
 import { cores } from '../constantes/cores';
-import { ViewStyle } from 'react-native';
 
 const API_URL = 'http://54.39.173.152:3000';
 const styles = estilosGlobais; 
 
 // ---
-// (Todos os componentes de ETAPA (WelcomeStep, RegisterUserStep, etc.)
-//  continuam IDÊNTICOS e CORRETOS)
+// COMPONENTES DAS ETAPAS (MOVIDOS PARA FORA)
 // ---
 
 // --- ETAPA 1: BOAS-VINDAS ---
@@ -35,19 +33,18 @@ type WelcomeStepProps = {
   onComplete: () => void;
 };
 const WelcomeStep: React.FC<WelcomeStepProps> = ({ onSetStep, onComplete }) => (
+  // <<< MUDANÇA: Adicionado SafeAreaView
   <SafeAreaView style={localStyles.safeArea}>
     <View style={styles.pageContainer}>
       <Image
         style={styles.headerImage} 
-        source={require('../../../assets/images/logo.svg')}
+        source="../images/bandaid-heart.webp"
       />
-    <View style={styles.word}>
       <Text style={styles.title}>Boas-vindas.</Text>
       <Text style={styles.subtitle}>
         Cuidar é um gesto de amor. Conecte quem cuida para oferecer mais
         atenção, segurança e afeto no dia a dia.
       </Text>
-    </View>
       <View style={styles.flexSpacer} />
       <TouchableOpacity style={styles.primaryButton} onPress={() => onSetStep(4)}>
         <Text style={styles.buttonText}>Entrar (Login)</Text>
@@ -81,74 +78,55 @@ const RegisterUserStep: React.FC<RegisterUserStepProps> = ({
   nome, setNome, email, setEmail, senha, setSenha, isLoading, onCadastrar, onGoToLogin,
   isSenhaVisivel, setIsSenhaVisivel
 }) => (
+  // <<< MUDANÇA: Adicionado SafeAreaView
   <SafeAreaView style={localStyles.safeArea}>
-      <KeyboardAwareScrollView
-        style={{ flex: 1, backgroundColor: cores.branco }}
-        contentContainerStyle={{ flexGrow: 1, padding: 20 }}
-        enableOnAndroid={true}
-        extraScrollHeight={Platform.OS === 'ios' ? 20 : 0}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Cabeçalho escuro com logo */}
-        <View style={styles.topContainer}>
-          <Image
-            source={require('../../../assets/images/logo.svg')}
-            style={styles.logo}
-          />
-        </View>
-
-        <Text style={styles.formTitle}>Criar Conta</Text>
-        <Text style={styles.formSubtitle}>Vamos criar a sua conta.</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Seu nome completo"
-          value={nome}
-          onChangeText={setNome}
+    <KeyboardAwareScrollView
+      style={{ flex: 1, backgroundColor: cores.branco }}
+      contentContainerStyle={{ flexGrow: 1, padding: 20 }} 
+      enableOnAndroid={true}
+      extraScrollHeight={Platform.OS === 'ios' ? 20 : 0} 
+      keyboardShouldPersistTaps="handled"
+    >
+      <Text style={styles.formTitle}>Criar Conta</Text>
+      <Text style={styles.formSubtitle}>Vamos criar a sua conta.</Text>
+      
+      <TextInput style={styles.input} placeholder="Seu nome completo" value={nome} onChangeText={setNome} />
+      <TextInput style={styles.input} placeholder="Seu melhor email" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
+      
+      <View style={styles.passwordContainer}>
+        <TextInput 
+          style={styles.passwordInput} 
+          placeholder="Crie uma senha" 
+          secureTextEntry={!isSenhaVisivel}
+          value={senha} 
+          onChangeText={setSenha} 
         />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Seu melhor email"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={email}
-          onChangeText={setEmail}
-        />
-
-        <View style={styles.passwordContainer}>
-          <TextInput
-            style={styles.passwordInput}
-            placeholder="Crie uma senha"
-            secureTextEntry={!isSenhaVisivel}
-            value={senha}
-            onChangeText={setSenha}
-          />
-          <TouchableOpacity
-            style={styles.passwordEyeIcon}
-            onPress={() => setIsSenhaVisivel(!isSenhaVisivel)}
-          >
-            {isSenhaVisivel ? (
-              <EyeOff color={cores.preto} size={20} />
-            ) : (
-              <Eye color={cores.preto} size={20} />
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {isLoading ? (
-          <ActivityIndicator size="large" color={cores.primaria || '#007bff'} />
-        ) : (
-          <TouchableOpacity style={styles.primaryButton} onPress={onCadastrar}>
-            <Text style={styles.buttonText}>Próximo Passo</Text>
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity style={styles.secondaryButton} onPress={onGoToLogin}>
-          <Text style={styles.secondaryButtonText}>Já tenho conta</Text>
+        <TouchableOpacity 
+          style={styles.passwordEyeIcon} 
+          onPress={() => setIsSenhaVisivel(!isSenhaVisivel)}
+        >
+          {isSenhaVisivel ? (
+            <EyeOff color={cores.preto} size={20} /> 
+          ) : (
+            <Eye color={cores.preto} size={20} />
+          )}
         </TouchableOpacity>
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
+      </View>
+
+      <View style={styles.flexSpacer} /> 
+      
+      {isLoading ? (
+        <ActivityIndicator size="large" color={cores.primaria || '#007bff'} />
+      ) : (
+        <TouchableOpacity style={styles.primaryButton} onPress={onCadastrar}>
+            <Text style={styles.buttonText}>Próximo Passo</Text>
+        </TouchableOpacity>
+      )}
+      <TouchableOpacity style={styles.secondaryButton} onPress={onGoToLogin}>
+          <Text style={styles.secondaryButtonText}>Já tenho conta</Text>
+      </TouchableOpacity>
+    </KeyboardAwareScrollView>
+  </SafeAreaView>
 );
 
 
@@ -170,6 +148,7 @@ const RegisterPatientStep: React.FC<RegisterPatientStepProps> = ({
   alergias, setAlergias, imagemPaciente, onPickImage,
   isLoading, onConcluir
 }) => (
+  // <<< MUDANÇA: Adicionado SafeAreaView
   <SafeAreaView style={localStyles.safeArea}>
     <KeyboardAwareScrollView
       style={{ flex: 1, backgroundColor: cores.branco }}
@@ -206,9 +185,10 @@ const RegisterPatientStep: React.FC<RegisterPatientStepProps> = ({
         onChangeText={setDataNascimento}
         placeholderTextColor="#999" 
       />
+      {/* <<< MUDANÇA: Placeholder "Alergias" atualizado */}
       <TextInput 
         style={styles.input} 
-        placeholder="Alergias (opcional)" 
+        placeholder="Informações Médicas (opcional)" 
         value={alergias}
         onChangeText={setAlergias}
         placeholderTextColor="#999" 
@@ -239,93 +219,59 @@ type LoginStepProps = {
   isSenhaVisivel: boolean;
   setIsSenhaVisivel: (val: boolean) => void;
 };
-
 const LoginStep: React.FC<LoginStepProps> = ({
-  email,
-  setEmail,
-  senha,
-  setSenha,
-  isLoading,
-  onLogin,
-  onGoToCadastro,
-  isSenhaVisivel,
-  setIsSenhaVisivel
-}) => {
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: cores.branco }}>
-      <KeyboardAwareScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1 }}
-        enableOnAndroid
-        extraScrollHeight={Platform.OS === 'ios' ? 20 : 0}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* --- TOPO ESCURO COM LOGO --- */}
-        <View style={styles.topContainer}>
-          <Image
-            source={require('../../../assets/images/logo.svg')}
-            style={styles.logo}
-          />
-        </View>
-
-        {/* --- FORMULÁRIO --- */}
-        <View style={styles.formContainer}>
-          <Text style={styles.formTitle}>Login</Text>
-          <Text style={styles.formSubtitle}>Que bom te ver de volta!</Text>
-
-          <TextInput
-            style={styles.textInput}
-            placeholder="Seu email"
-            placeholderTextColor="#888"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={email}
-            onChangeText={setEmail}
-          />
-
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={styles.passwordInput}
-              placeholder="Sua senha"
-              placeholderTextColor="#888"
-              secureTextEntry={!isSenhaVisivel}
-              value={senha}
-              onChangeText={setSenha}
-            />
-            <TouchableOpacity
-              style={styles.passwordEyeIcon}
-              onPress={() => setIsSenhaVisivel(!isSenhaVisivel)}
-            >
-              {isSenhaVisivel ? (
-                <EyeOff color={cores.preto} size={20} />
-              ) : (
-                <Eye color={cores.preto} size={20} />
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* --- BOTÃO PRINCIPAL --- */}
-          {isLoading ? (
-            <ActivityIndicator size="large" color={cores.azulClaro} />
+  email, setEmail, senha, setSenha, isLoading, onLogin, onGoToCadastro,
+  isSenhaVisivel, setIsSenhaVisivel
+}) => (
+  // <<< MUDANÇA: Adicionado SafeAreaView
+  <SafeAreaView style={localStyles.safeArea}>
+    <KeyboardAwareScrollView
+      style={{ flex: 1, backgroundColor: cores.branco }}
+      contentContainerStyle={{ flexGrow: 1, padding: 20 }} 
+      enableOnAndroid={true}
+      extraScrollHeight={Platform.OS === 'ios' ? 20 : 0} 
+      keyboardShouldPersistTaps="handled"
+    >
+      <Text style={styles.formTitle}>Login</Text>
+      <Text style={styles.formSubtitle}>Que bom te ver de volta!</Text>
+      
+      <TextInput style={styles.input} placeholder="Seu email" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
+      
+      <View style={styles.passwordContainer}>
+        <TextInput 
+          style={styles.passwordInput} 
+          placeholder="Sua senha" 
+          secureTextEntry={!isSenhaVisivel}
+          value={senha} 
+          onChangeText={setSenha} 
+        />
+        <TouchableOpacity 
+          style={styles.passwordEyeIcon} 
+          onPress={() => setIsSenhaVisivel(!isSenhaVisivel)}
+        >
+          {isSenhaVisivel ? (
+            <EyeOff color={cores.preto} size={20} /> 
           ) : (
-            <TouchableOpacity style={styles.primaryButton} onPress={onLogin}>
-              <Text style={styles.buttonText}>Entrar</Text>
-            </TouchableOpacity>
+            <Eye color={cores.preto} size={20} />
           )}
+        </TouchableOpacity>
+      </View>
 
-          {/* --- LINK CADASTRO --- */}
-          <Text style={styles.footerText}>
-            Não tem conta?{' '}
-            <Text style={styles.linkText} onPress={onGoToCadastro}>
-              Criar Conta
-            </Text>
-          </Text>
-        </View>
-      </KeyboardAwareScrollView>
-    </SafeAreaView>
-  );
-};
-
+      <View style={styles.flexSpacer} /> 
+      
+      {isLoading ? (
+        <ActivityIndicator size="large" color={cores.primaria || '#007bff'} />
+      ) : (
+        <TouchableOpacity style={styles.primaryButton} onPress={onLogin}>
+            <Text style={styles.buttonText}>Entrar</Text>
+        </TouchableOpacity>
+      )}
+      <TouchableOpacity style={styles.secondaryButton} onPress={onGoToCadastro}>
+          <Text style={styles.secondaryButtonText}>Não tenho conta (Cadastrar)</Text>
+      </TouchableOpacity>
+    </KeyboardAwareScrollView>
+  </SafeAreaView>
+);
 
 
 // --- COMPONENTE PRINCIPAL (O "Pai") ---
@@ -342,6 +288,7 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
   const [emailLogin, setEmailLogin] = useState('');
   const [senhaLogin, setSenhaLogin] = useState('');
   
+  // <<< MUDANÇA: Estados da Etapa 3 agora são usados
   const [nomePaciente, setNomePaciente] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
   const [alergias, setAlergias] = useState('');
@@ -351,9 +298,9 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
   const [isSenhaVisivel, setIsSenhaVisivel] = useState(false);
 
   // --- Funções de Lógica ---
+  // (As funções 'handleCadastroUsuario' e 'handleLogin' estão corretas)
 
   const handleCadastroUsuario = async () => {
-    // (Lógica de cadastro... sem mudanças)
     if (!nomeCadastro || !emailCadastro || !senhaCadastro) {
         Alert.alert('Campos incompletos', 'Por favor, preencha nome, email e senha.');
         return;
@@ -398,7 +345,6 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
   };
   
   const handleLogin = async () => {
-    // (Lógica de login... sem mudanças)
     if (!emailLogin || !senhaLogin) {
         Alert.alert('Campos incompletos', 'Por favor, preencha email e senha.');
         return;
@@ -432,23 +378,18 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
       Alert.alert("Permissão necessária", "Precisamos de acesso à sua galeria para escolher uma foto.");
       return;
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
-      // <<< MUDANÇA: Voltamos para 'MediaTypeOptions'
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      // ---
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,
     });
-
     if (!result.canceled) {
       setImagemPaciente(result.assets[0].uri);
     }
   };
 
   const handleCadastroPaciente = async () => {
-    // (Lógica de cadastro de paciente... sem mudanças)
     if (!nomePaciente) {
       Alert.alert('Campo obrigatório', 'Por favor, preencha o nome do paciente.');
       return;
@@ -469,6 +410,7 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
     if (dataNascimento) {
       formData.append('data_nascimento', dataNascimento);
     }
+    // <<< MUDANÇA: Campo 'alergias' agora é 'informacoes_medicas'
     if (alergias) {
       formData.append('informacoes_medicas', alergias);
     }
@@ -511,7 +453,6 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
     }
   };
 
-
   // --- Renderização ---
   switch (step) {
     case 1:
@@ -533,6 +474,7 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
         />
       );
     case 3:
+      // <<< MUDANÇA: Passando todas as props para a Etapa 3
       return (
         <RegisterPatientStep 
           nomePaciente={nomePaciente}
@@ -566,6 +508,7 @@ const OnboardingFlow: React.FC<Props> = ({ onComplete }) => {
   }
 };
 
+// <<< MUDANÇA: Estilos locais
 const localStyles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -595,32 +538,7 @@ const localStyles = StyleSheet.create({
   imagePickerText: {
     marginTop: 8,
     color: cores.secundaria,
-  },
-    input: {
-    width: '100%',
-    backgroundColor: '#f7f7f7',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: cores.preto,
-    marginBottom: 14,
-    elevation: 1,
-  },
-  passwordContainer: {
-      width: '100%',
-      position: 'relative',
-      marginBottom: 14,
-    },
-    passwordInput: {
-        width: '100%',
-        backgroundColor: '#f7f7f7',
-        borderRadius: 12,
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-        fontSize: 16,
-        color: cores.preto,
-      }
+  }
 });
 
 export default OnboardingFlow;

@@ -1,7 +1,5 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-// <<< MUDANÇA 1: Importar a função helper
-import { getFocusedRouteNameFromRoute } from '@react-navigation/native'; 
 import { 
   createDrawerNavigator,
   DrawerContentScrollView,
@@ -14,14 +12,17 @@ import { Home, Search, User, Shield, LogOut } from 'lucide-react-native';
 import TabNavigator from './TabNavigator'; 
 import { cores } from '../constantes/cores';
 
-// ----- Telas "Placeholder" -----
+// <<< MUDANÇA: Importar a nova tela
+import MeuPerfilTela from '../telas/MeuPerfilTela';
+
+// ----- Telas "Placeholder" (Ainda usamos para as outras) -----
 const PlaceholderScreen = ({ route }: any) => (
   <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
     <Text style={{ fontSize: 24, fontWeight: 'bold' }}>{route.name}</Text>
   </View>
 );
 const BuscarCuidadoresTela = () => <PlaceholderScreen route={{ name: 'Buscar Cuidadores' }} />;
-const MeuPerfilTela = () => <PlaceholderScreen route={{ name: 'Meu Perfil' }} />;
+// const MeuPerfilTela = () => <PlaceholderScreen route={{ name: 'Meu Perfil' }} />; // <<< MUDANÇA: Não precisamos mais desta
 const PerfilPessoaCuidadaTela = () => <PlaceholderScreen route={{ name: 'Perfil Pessoa Cuidada' }} />;
 // ---------------------------------
 
@@ -62,33 +63,27 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout }) => {
   return (
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} onLogout={onLogout} />}
-      screenOptions={{
+      screenOptions={({ route }) => ({
         drawerActiveTintColor: cores.primaria,
         drawerInactiveTintColor: cores.preto,
         drawerLabelStyle: {
           marginLeft: -20, 
           fontSize: 16,
         },
-        headerShown: true, 
-      }}
+        headerShown: true,
+        // <<< MUDANÇA: Lógica do título dinâmico
+        headerTitle: getFocusedRouteNameFromRoute(route) ?? 'Início',
+      })}
     >
-      {/* <<< MUDANÇA 2: As 'options' agora são uma função */}
       <Drawer.Screen 
         name="CareHub" 
         component={TabNavigator}
-        options={({ route }) => {
-          // Pega o nome da rota ativa dentro do TabNavigator
-          const routeName = getFocusedRouteNameFromRoute(route) ?? 'Início';
-          
-          return {
-            // O título no MENU GAVETA (sempre "Início")
-            title: 'Início', 
-            drawerIcon: ({ color, size }) => <Home color={color} size={size} />,
-            
-            // O título no CABEÇALHO (dinâmico)
-            headerTitle: routeName,
-          };
-        }}
+        options={({ route }) => ({
+          title: 'Início', 
+          drawerIcon: ({ color, size }) => <Home color={color} size={size} />,
+          // Pega o nome da aba ativa (Início, Tarefas, etc.)
+          headerTitle: getFocusedRouteNameFromRoute(route) ?? 'Início',
+        })}
       />
       
       <Drawer.Screen 
@@ -99,14 +94,17 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout }) => {
           drawerIcon: ({ color, size }) => <Search color={color} size={size} />,
         }}
       />
+
+      {/* <<< MUDANÇA: 'component' agora usa a tela real */}
       <Drawer.Screen 
         name="MeuPerfil" 
-        component={MeuPerfilTela}
+        component={MeuPerfilTela} 
         options={{
           title: 'Meu Perfil',
           drawerIcon: ({ color, size }) => <User color={color} size={size} />,
         }}
       />
+
       <Drawer.Screen 
         name="PerfilPessoaCuidada" 
         component={PerfilPessoaCuidadaTela}
@@ -115,8 +113,12 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout }) => {
           drawerIcon: ({ color, size }) => <Shield color={color} size={size} />,
         }}
       />
+
     </Drawer.Navigator>
   );
 };
+
+// <<< MUDANÇA: Adicionar a importação que faltava
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native'; 
 
 export default AppNavigator;
