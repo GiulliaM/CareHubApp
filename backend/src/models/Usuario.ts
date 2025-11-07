@@ -1,7 +1,8 @@
 // back-end/src/models/Usuario.ts
 import { pool } from '../db';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+// <<< MUDANÇA: Corrigindo os imports para o TypeScript (CommonJS)
+import * as bcrypt from 'bcrypt';
+import * as jwt from 'jsonwebtoken';
 
 // (Vamos precisar disso no Controller)
 const JWT_SECRET = 'M1nh4Ch4v3S3cr3t4P4r4C4r3Hub!';
@@ -85,5 +86,45 @@ export class Usuario {
         tipo: usuario.tipo_usuario
       }
     };
+  }
+
+  // ---
+  // <<< MUDANÇA: NOVAS FUNÇÕES PARA "MEU PERFIL"
+  // ---
+
+  /**
+   * (M) MODEL: Busca um usuário pelo seu ID (para o perfil)
+   */
+  static async buscarPorId(id: number): Promise<any> {
+    const [rows] = await pool.query(
+      // Selecionamos apenas os campos seguros
+      'SELECT id, nome, email, telefone, tipo_usuario FROM usuarios WHERE id = ? LIMIT 1',
+      [id]
+    );
+    // @ts-ignore
+    if (rows.length === 0) {
+      throw new Error('Usuário não encontrado.');
+    }
+    // @ts-ignore
+    return rows[0];
+  }
+
+  /**
+   * (M) MODEL: Atualiza os dados de um usuário (nome e telefone)
+   */
+  static async atualizar(id: number, dados: { nome: string, telefone?: string }): Promise<any> {
+    const { nome, telefone } = dados;
+    
+    const [result] = await pool.query(
+      'UPDATE usuarios SET nome = ?, telefone = ? WHERE id = ?',
+      [nome, telefone, id]
+    );
+    
+    // @ts-ignore
+    if (result.affectedRows === 0) {
+      throw new Error('Usuário não encontrado para atualizar.');
+    }
+
+    return { id: id, nome, telefone };
   }
 }
