@@ -14,7 +14,7 @@ const boasVindasEstilosUnicos = {
   } as ViewStyle,
   
   headerImage: {
-    width: width,
+    width: width * 1.0,
     height: height * 0.60,
     contentFit: 'cover', // <-- Funciona com 'expo-image'
     position: 'absolute',
@@ -48,17 +48,6 @@ const boasVindasEstilosUnicos = {
     borderBottomRightRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
-  } as ViewStyle,
-  logo: {
-    width: width * 5.0,
-    height: height * 0.50,
-    resizeMode: 'contain',
-  } as ImageStyle,
-  formContainer: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 30,
-    marginTop: -30, // aproxima o form da curva
   } as ViewStyle,
   formTitle: {
     fontSize: 26,
