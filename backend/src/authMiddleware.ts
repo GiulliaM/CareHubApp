@@ -1,11 +1,11 @@
 // back-end/src/authMiddleware.ts
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 
-const JWT_SECRET = 'M1nh4Ch4v3S3cr3t4P4r4C4r3Hub!'; // (A mesma chave do Usuario.ts)
+// A MESMA chave secreta do seu Usuario.ts
+const JWT_SECRET = 'M1nh4Ch4v3S3cr3t4P4r4C4r3Hub!';
 
-// Esta é uma interface para "ensinar" o TypeScript
-// que o 'req' pode ter uma propriedade 'usuario'
+// Esta interface "ensina" o TypeScript que 'req.usuario' pode existir
 export interface AuthRequest extends Request {
   usuario?: any;
 }
@@ -22,8 +22,8 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
   const token = authHeader.split(' ')[1];
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    req.usuario = payload; // <<< MÁGICA: Anexa os dados do usuário (id, email) no 'req'
-    next(); // Deixa a requisição passar para o próximo passo (o Controller)
+    req.usuario = payload; // <<< A MÁGICA: Anexa os dados do usuário ao 'req'
+    next(); // Deixa a requisição passar para o Controller
   } catch (error) {
     res.status(400).json({ message: 'Token inválido.' });
   }
