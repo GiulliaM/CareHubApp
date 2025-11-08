@@ -212,7 +212,7 @@ const RegisterUserStep: React.FC<RegisterUserStepProps> = ({
           </TouchableOpacity>
         </View>
 
-        <View style={{ flex: 1 }} />
+      <View style={{ marginBottom: 40}} />
 
         {isLoading ? (
           <ActivityIndicator size="large" color={cores.azulClaro} />
@@ -299,7 +299,7 @@ const RegisterPatientStep: React.FC<RegisterPatientStepProps> = ({
         placeholderTextColor="#999" 
       />
       
-      <View style={{ flex: 1 }} /> 
+      <View style={{ marginBottom: 40}} />
 
       {isLoading ? (
         <ActivityIndicator size="large" color={cores.azulClaro} />
@@ -363,7 +363,7 @@ const LoginStep: React.FC<LoginStepProps> = ({
         </TouchableOpacity>
       </View>
 
-      <View style={{ flex: 1 }} /> 
+      <View style={{ marginBottom: 40}} />
       
       {isLoading ? (
         <ActivityIndicator size="large" color={cores.azulClaro} />
