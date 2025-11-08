@@ -1,15 +1,16 @@
 // frontend/src/telas/PerfilPessoaCuidadaTela.tsx
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, StyleSheet } from 'react-native';
+// <<< MUDANÇA: useFocusEffect importado
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { styles } from '../style/homeStyle'; // Nossos estilos globais
+import { styles } from '../style/homeStyle'; 
 import { cores } from '../constantes/cores';
 import { LogIn, Camera } from 'lucide-react-native';
-import { Image } from 'expo-image'; // Usar o Image do Expo
+import { Image } from 'expo-image'; 
 import * as ImagePicker from 'expo-image-picker';
 
-const API_URL = 'http://54.39.173.152:3000'; // Sua API
+const API_URL = 'http://54.39.173.152:3000'; 
 
 type PerfilPacienteProps = {
   isGuest: boolean;
@@ -19,19 +20,17 @@ type PerfilPacienteProps = {
 const PerfilPessoaCuidadaTela: React.FC<PerfilPacienteProps> = ({ isGuest, onLogout }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-
-  // Estados para os dados do formulário
   const [pacienteId, setPacienteId] = useState<number | null>(null);
   const [nome, setNome] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
   const [infoMedicas, setInfoMedicas] = useState('');
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
-  const [novaFotoUri, setNovaFotoUri] = useState<string | null>(null); // Para a nova foto selecionada
+  const [novaFotoUri, setNovaFotoUri] = useState<string | null>(null); 
   
-  // Função para buscar os dados na API
+  // A função de busca (embrulhada em useCallback)
   const fetchPerfilPaciente = useCallback(async () => {
     if (isGuest) {
-      setIsLoading(false);
+      setIsLoading(false); 
       return;
     }
     
@@ -45,34 +44,42 @@ const PerfilPessoaCuidadaTela: React.FC<PerfilPacienteProps> = ({ isGuest, onLog
     }
 
     try {
-      // (Esta é a nova rota que acabamos de criar no back-end)
       const response = await fetch(`${API_URL}/api/meus-pacientes`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
       
       if (response.ok) {
-        // (Por enquanto, pegamos o primeiro paciente da lista)
         setPacienteId(data.id);
         setNome(data.nome);
-        setDataNascimento(data.data_nascimento || ''); // (Vem formatado como DD/MM/AAAA)
+        setDataNascimento(data.data_nascimento || ''); 
         setInfoMedicas(data.informacoes_medicas || '');
-        setFotoUrl(data.foto_url ? `${API_URL}${data.foto_url}` : null); // (Monta a URL completa)
+        setFotoUrl(data.foto_url ? `${API_URL}${data.foto_url}` : null); 
       } else {
         Alert.alert("Nenhum paciente", data.message || "Nenhum paciente cadastrado.");
       }
     } catch (error: any) {
-      Alert.alert("Erro de conexão", error.message);
+      // O 'JSON Parse error' acontece aqui se for um 404
+      if (error instanceof SyntaxError) {
+        Alert.alert("Erro de API", "Não foi possível conectar. Verifique se a API na VPS está atualizada.");
+      } else {
+        Alert.alert("Erro de conexão", error.message);
+      }
     } finally {
       setIsLoading(false);
     }
   }, [isGuest, onLogout]);
 
-  // Roda a busca toda vez que a tela entra em foco
-  useFocusEffect(fetchPerfilPaciente);
+  // <<< MUDANÇA: Esta é a sintaxe correta para o useFocusEffect
+  // Isso corrige o erro 'An effect function must not return...'
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchPerfilPaciente();
+    }, [fetchPerfilPaciente])
+  );
   
-  // Função para escolher uma nova imagem
   const handlePickImage = async () => {
+    // (A lógica de 'handlePickImage' continua a mesma...)
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
       Alert.alert("Permissão necessária", "Precisamos de acesso à sua galeria.");
@@ -85,12 +92,12 @@ const PerfilPessoaCuidadaTela: React.FC<PerfilPacienteProps> = ({ isGuest, onLog
       quality: 0.5,
     });
     if (!result.canceled) {
-      setNovaFotoUri(result.assets[0].uri); // Salva a URI da nova foto
+      setNovaFotoUri(result.assets[0].uri); 
     }
   };
 
-  // Função para salvar as alterações
   const handleSalvar = async () => {
+    // (A lógica de 'handleSalvar' continua a mesma...)
     if (!nome) {
       Alert.alert("Erro", "O nome é obrigatório.");
       return;
@@ -103,13 +110,11 @@ const PerfilPessoaCuidadaTela: React.FC<PerfilPacienteProps> = ({ isGuest, onLog
     setIsSaving(true);
     const token = await AsyncStorage.getItem('@carehub_token');
     
-    // 1. Criar o FormData
     const formData = new FormData();
     formData.append('nome', nome);
     formData.append('data_nascimento', dataNascimento);
     formData.append('informacoes_medicas', infoMedicas);
     
-    // 2. Anexar a foto (se o usuário escolheu uma nova)
     if (novaFotoUri) {
       const extensao = novaFotoUri.split('.').pop();
       const tipoMime = `image/${extensao === 'jpg' ? 'jpeg' : extensao}`;
@@ -122,7 +127,6 @@ const PerfilPessoaCuidadaTela: React.FC<PerfilPacienteProps> = ({ isGuest, onLog
     }
 
     try {
-      // 3. Enviar para a rota de ATUALIZAÇÃO (PUT)
       const response = await fetch(`${API_URL}/api/pacientes/${pacienteId}`, {
         method: 'PUT',
         headers: {
@@ -135,10 +139,9 @@ const PerfilPessoaCuidadaTela: React.FC<PerfilPacienteProps> = ({ isGuest, onLog
       
       if (response.ok) {
         Alert.alert("Sucesso!", "Perfil do paciente atualizado.");
-        // Atualiza a foto na tela se uma nova foi enviada
         if(data.foto_url) {
           setFotoUrl(`${API_URL}${data.foto_url}`);
-          setNovaFotoUri(null); // Limpa a "nova foto"
+          setNovaFotoUri(null); 
         }
       } else {
         Alert.alert("Erro ao salvar", data.message);
@@ -152,8 +155,8 @@ const PerfilPessoaCuidadaTela: React.FC<PerfilPacienteProps> = ({ isGuest, onLog
 
   // --- RENDERIZAÇÃO ---
   
-  // 1. Se for Visitante
   if (isGuest) {
+    // (Renderização do Visitante... continua a mesma)
     return (
       <View style={[styles.screenContainer, { padding: 20, alignItems: 'center', justifyContent: 'center' }]}>
         <LogIn size={48} color={cores.primaria} />
@@ -168,8 +171,8 @@ const PerfilPessoaCuidadaTela: React.FC<PerfilPacienteProps> = ({ isGuest, onLog
     );
   }
   
-  // 2. Se estiver carregando
   if (isLoading) {
+    // (Renderização do Loading... continua a mesma)
     return (
       <View style={[styles.screenContainer, { alignItems: 'center', justifyContent: 'center' }]}>
         <ActivityIndicator size="large" color={cores.primaria} />
@@ -177,34 +180,28 @@ const PerfilPessoaCuidadaTela: React.FC<PerfilPacienteProps> = ({ isGuest, onLog
     );
   }
 
-  // 3. Se for um usuário logado
   return (
+    // (Renderização do Formulário... continua a mesma)
     <ScrollView style={styles.screenContainer}>
       <View style={{ padding: 20 }}>
-        
         <Text style={styles.formTitle}>Perfil (Pessoa Cuidada)</Text>
         <Text style={styles.formSubtitle}>
           Visualize e edite os dados da pessoa cuidada.
         </Text>
-
-        {/* Seletor de Imagem */}
         <TouchableOpacity style={localStyles.imagePicker} onPress={handlePickImage}>
-          {/* Mostra a nova foto (se selecionada) ou a foto antiga (do banco) */}
           <Image 
             source={{ uri: novaFotoUri || fotoUrl || undefined }} 
             style={localStyles.profileImage}
-            placeholder={localStyles.imagePlaceholder} // Mostra o ícone enquanto carrega
+            placeholder={localStyles.imagePlaceholder}
             contentFit="cover"
           />
         </TouchableOpacity>
-
         <Text style={styles.inputLabel}>Nome</Text>
         <TextInput
           style={styles.input}
           value={nome}
           onChangeText={setNome}
         />
-        
         <Text style={styles.inputLabel}>Data de Nascimento (DD/MM/AAAA)</Text>
         <TextInput
           style={styles.input}
@@ -212,16 +209,14 @@ const PerfilPessoaCuidadaTela: React.FC<PerfilPacienteProps> = ({ isGuest, onLog
           onChangeText={setDataNascimento}
           placeholder="DD/MM/AAAA"
         />
-
         <Text style={styles.inputLabel}>Informações Médicas</Text>
         <TextInput
-          style={[styles.input, { height: 100 }]} // Input maior
+          style={[styles.input, { height: 100 }]}
           value={infoMedicas}
           onChangeText={setInfoMedicas}
           placeholder="Alergias, remédios contínuos, etc."
           multiline={true}
         />
-
         <TouchableOpacity 
           style={styles.primaryButton} 
           onPress={handleSalvar}
