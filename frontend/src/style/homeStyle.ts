@@ -1,125 +1,51 @@
-// Arquivo: src/style/homeStyle.tsx (nome minúsculo para padronizar)
+// Arquivo: src/style/homeStyle.ts (Corrigido)
 import { StyleSheet, Dimensions, ViewStyle, TextStyle, ImageStyle } from 'react-native';
-// <<< MUDANÇA: 'cores' minúsculo
 import { cores } from '../constantes/cores';
-import { comumEstilosObjeto } from './comumEstilos';
+// Assumindo que você usa commonEstilosObjeto de algum lugar, mantemos a estrutura de exportação final limpa.
 
 const { width } = Dimensions.get('window');
 
-// <<< MUDANÇA: Adicionado 'as ViewStyle', etc. em TODAS as regras
-const homeEstilosUnicos = {
-  clubeCardContainer: {
-    margin: 20,
-    borderRadius: 16,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  } as ViewStyle,
-  clubeCardBackground: {
-    width: '100%',
-    borderRadius: 16,
-    overflow: 'hidden',
-  } as ViewStyle, // Pode ser ViewStyle ou ImageStyle
-  clubeCardOverlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    padding: 24,
-  } as ViewStyle,
-  clubeCardTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: cores.branco,
-    marginBottom: 4,
-  } as TextStyle,
-  clubeCardSubtitle: {
-    fontSize: 16,
-    color: cores.branco,
-    marginBottom: 16,
-  } as TextStyle,
-  clubeCardButton: {
-    backgroundColor: cores.destaque,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 50,
-    alignSelf: 'flex-start',
-  } as ViewStyle,
-  clubeCardButtonText: {
-    color: cores.branco,
-    fontWeight: 'bold',
-    fontSize: 14,
-  } as TextStyle,
-  clubeFeaturesContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-    flexWrap: 'wrap',
-  } as ViewStyle,
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  } as ViewStyle,
-  featureText: {
-    color: cores.branco,
-    marginLeft: 8,
-    fontSize: 12,
-  } as TextStyle,
+// 💡 ESTILOS CONSOLIDADOS (para evitar o ReferenceError)
+const homeStyles = StyleSheet.create({
+  // --- LAYOUTS PRINCIPAIS ---
+  container: { flex: 1, backgroundColor: '#f0f4f7' },
+  headerContainer: { padding: 20, backgroundColor: cores.branco },
+  infoRow: { marginTop: 10 },
+  summaryCardsRow: { flexDirection: 'row', paddingHorizontal: 10, marginTop: 10 },
+  sectionContent: { marginHorizontal: 16 },
+  sectionHeaderContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 20, marginBottom: 10 },
   
-  // <<< ERRO DO SEU PRINT ESTAVA AQUI
-  viewData: {
-        flex: 1,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 30
-  } as ViewStyle,
+  // --- HEADER TEXTOS ---
+  welcomeText: { fontSize: 16, color: cores.cinzaClaro }, 
+  pacienteName: { fontSize: 24, fontWeight: 'bold', color: cores.preto, marginTop: 4 },
+  cuidadorText: { fontSize: 14, color: cores.cinzaClaro }, 
   
-  cardRemedioText:{
-    flex:1,
-    flexDirection: "column",
-  } as ViewStyle, // Use ViewStyle para containers de texto
-  
-  cardRemedio:{
-    flex:1,
-    flexDirection: "row",
-    gap: 15,
-    padding: 20,
-    alignItems: "center",
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: cores.secundaria,
-    margin: 15,
-    backgroundColor: cores.fundo
-  } as ViewStyle,
-  
-  // <<< ERRO DO SEU PRINT ESTAVA AQUI
-  plusButton:{
-    position: "absolute",
-    backgroundColor: cores.primaria,
-    borderRadius: 50,
-    padding: 10,
-    width: 55,
-    height: 55,
-    alignItems: 'center',
-    justifyContent: 'center',
-    right: 20,
-    bottom: 20,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  } as ViewStyle,
-  text:{
-    textAlign: 'center',
-    fontSize: 16,
-    color: cores.preto,
-  },
-};
+  // --- SUMMARY CARD ---
+  summaryCard: { flex: 1, backgroundColor: cores.branco, padding: 15, margin: 5, borderRadius: 12, elevation: 2, alignItems: 'center' },
+  summaryCardTitle: { fontSize: 13, color: '#666', marginTop: 5, textAlign: 'center' },
+  summaryCardCount: { fontSize: 20, fontWeight: 'bold', color: cores.primaria },
 
-// Não usamos mais o StyleSheet.create() aqui
-export const styles = {
-  ...comumEstilosObjeto,
-  ...homeEstilosUnicos,
-};
+  // --- SECTION HEADER ---
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: cores.preto },
+  sectionAction: { color: cores.primaria, fontWeight: 'bold' },
+
+  // --- RESUMO ITEM (Cards de Atividades/Cuidados) ---
+  resumoItemContainer: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#eee', backgroundColor: cores.branco, borderRadius: 8, marginBottom: 8, paddingHorizontal: 10, elevation: 0.5 },
+  resumoItemIcon: { padding: 10, borderRadius: 50, backgroundColor: cores.primaria + '20', marginRight: 16 },
+  resumoItemContent: { flex: 1 },
+  resumoItemTitle: { fontSize: 15, fontWeight: 'bold', color: cores.preto },
+  resumoItemSubTitle: { fontSize: 13, color: cores.cinzaClaro },
+  resumoItemDate: { fontSize: 12, color: cores.cinzaClaro },
+  
+  // --- EMPTY STATE ---
+  emptyCard: { backgroundColor: cores.branco, margin: 20, padding: 30, borderRadius: 10, alignItems: 'center' },
+  emptyText: { color: cores.cinzaClaro, fontSize: 16 },
+
+  // Adicionando estilos existentes (para evitar perda de referências no app)
+  cardRemedio: { flex:1, flexDirection: "row", gap: 15, padding: 20, alignItems: "center", borderRadius: 10, borderWidth: 2, borderColor: cores.secundaria, margin: 15, backgroundColor: cores.fundo },
+  
+  // ... (Outros estilos antigos se necessários)
+});
+
+// 💡 EXPORTAÇÃO SIMPLIFICADA
+export const styles = homeStyles;
