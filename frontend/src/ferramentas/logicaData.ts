@@ -1,85 +1,45 @@
-// Este objeto nos ajuda a traduzir os nomes dos meses
-const meses = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-];
+// frontend/src/ferramentas/logicaData.ts
+
+import { format, addDays, subDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 /**
- * Verifica se uma data é "Hoje"
+ * Formata uma data para exibição amigável (Hoje, Amanhã, Ontem, ou data curta).
  */
-const isHoje = (data: Date): boolean => {
-  const hoje = new Date();
-  return data.getDate() === hoje.getDate() &&
-         data.getMonth() === hoje.getMonth() &&
-         data.getFullYear() === hoje.getFullYear();
-};
+export const formatarDataAmigavel = (date: Date): string => {
+  const now = new Date();
+  // Normaliza para o início do dia para comparação
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
-/**
- * Verifica se uma data é "Amanhã"
- */
-const isAmanha = (data: Date): boolean => {
-  const amanha = new Date();
-  amanha.setDate(amanha.getDate() + 1);
-  return data.getDate() === amanha.getDate() &&
-         data.getMonth() === amanha.getMonth() &&
-         data.getFullYear() === amanha.getFullYear();
-};
-
-/**
- * Verifica se uma data é "Ontem"
- */
-const isOntem = (data: Date): boolean => {
-  const ontem = new Date();
-  ontem.setDate(ontem.getDate() - 1);
-  return data.getDate() === ontem.getDate() &&
-         data.getMonth() === ontem.getMonth() &&
-         data.getFullYear() === ontem.getFullYear();
-};
-
-/**
- * Formata a data para um texto amigável, como "Hoje, 04 de Novembro"
- */
-export const formatarDataAmigavel = (data: Date): string => {
-  if (isHoje(data)) {
-    return `Hoje, ${data.getDate()} de ${meses[data.getMonth()]}`;
-  }
-  if (isAmanha(data)) {
-    return `Amanhã, ${data.getDate()} de ${meses[data.getMonth()]}`;
-  }
-  if (isOntem(data)) {
-    return `Ontem, ${data.getDate()} de ${meses[data.getMonth()]}`;
+  if (normalizedDate.getTime() === today.getTime()) {
+    return 'Hoje';
   }
   
-  // Para qualquer outra data
-  return `${data.getDate()} de ${meses[data.getMonth()]} de ${data.getFullYear()}`;
+  const tomorrow = addDays(today, 1);
+  if (normalizedDate.getTime() === tomorrow.getTime()) {
+    return 'Amanhã';
+  }
+  
+  const yesterday = subDays(today, 1);
+  if (normalizedDate.getTime() === yesterday.getTime()) {
+    return 'Ontem';
+  }
+  
+  // Exemplo: Sex, 07 Jun
+  return format(date, "EEE, dd MMM", { locale: ptBR });
 };
 
 /**
- * Retorna uma nova data com um dia adicionado
+ * Adiciona um dia à data fornecida.
  */
-export const adicionarDia = (data: Date): Date => {
-  const novaData = new Date(data);
-  novaData.setDate(novaData.getDate() + 1);
-  return novaData;
+export const adicionarDia = (date: Date): Date => {
+  return addDays(date, 1);
 };
 
 /**
- * Retorna uma nova data com um dia subtraído
+ * Subtrai um dia da data fornecida.
  */
-export const subtrairDia = (data: Date): Date => {
-  const novaData = new Date(data);
-  novaData.setDate(novaData.getDate() - 1);
-  return novaData;
-};
-
-/**
- * Converte uma string no formato "yyyy-MM-dd" para Date (timezone local).
- * Retorna null se a string for inválida.
- */
-export const parseDateISO = (iso: string): Date | null => {
-  if (!iso || typeof iso !== 'string') return null;
-  const parts = iso.split('-').map(Number);
-  if (parts.length !== 3 || parts.some(isNaN)) return null;
-  const [y, m, d] = parts;
-  return new Date(y, m - 1, d);
+export const subtrairDia = (date: Date): Date => {
+  return subDays(date, 1);
 };

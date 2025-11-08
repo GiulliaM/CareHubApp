@@ -1,13 +1,21 @@
-import { Platform } from 'react-native';
-import { cores } from '../constantes/cores';
+// frontend/src/style/tarefaStyle.ts
 
-const tarefaStyle = {
+import { Platform, StyleSheet } from 'react-native';
+// Assumindo que '../constantes/cores' está definido
+const cores = {
+    branco: '#ffffff',
+    preto: '#1c1c1c',
+    cinzaClaro: '#a0a0a0',
+    primaria: '#007bff', // Azul primário
+    secundaria: '#28a745', // Verde para 'Concluída'
+    alerta: '#dc3545', // Vermelho para 'Atrasada'
+};
+
+const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
     backgroundColor: cores.branco,
   },
-
-  /* Cabeçalho / logo (opcional se usar no futuro) */
   logoContainer: {
     alignItems: 'center',
     paddingVertical: 12,
@@ -19,7 +27,6 @@ const tarefaStyle = {
     resizeMode: 'contain',
   },
 
-  /* Card com data e navegação anterior/próximo */
   viewData: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -28,7 +35,7 @@ const tarefaStyle = {
     marginTop: 12,
     paddingVertical: 10,
     paddingHorizontal: 14,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f8f8', // Fundo mais leve
     borderRadius: 12,
     ...Platform.select({
       android: { elevation: 2 },
@@ -45,7 +52,6 @@ const tarefaStyle = {
     color: cores.cinzaClaro,
   },
 
-  /* Section header */
   sectionHeaderContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -64,7 +70,6 @@ const tarefaStyle = {
     color: cores.cinzaClaro,
   },
 
-  /* Botão flutuante para adicionar tarefa */
   plusButton: {
     position: 'absolute',
     right: 18,
@@ -81,7 +86,6 @@ const tarefaStyle = {
     }),
   },
 
-  /* Estado vazio */
   emptyCard: {
     marginTop: 28,
     marginHorizontal: 20,
@@ -111,11 +115,11 @@ const tarefaStyle = {
     fontWeight: '600',
   },
 
-  /* Form / Add Task */
   formSubtitle: {
     fontSize: 14,
     color: cores.cinzaClaro,
     marginBottom: 8,
+    marginTop: 10,
   },
   input: {
     height: 48,
@@ -147,22 +151,24 @@ const tarefaStyle = {
     paddingVertical: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: cores.cinzaClaro ?? '#eee',
+    borderColor: cores.cinzaClaro,
   },
   secondaryButtonText: {
     color: cores.preto,
     fontWeight: '600',
   },
 
-  /* Cartão de tarefa */
+  // Estilo ajustado para o card de tarefa
   taskCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between', // Adicionado para separar o texto das ações
     backgroundColor: '#fff',
     marginHorizontal: 16,
     marginVertical: 8,
     padding: 12,
     borderRadius: 10,
+    borderLeftWidth: 5, // Indicador de status
     ...Platform.select({
       android: { elevation: 1 },
       ios: { shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
@@ -179,30 +185,25 @@ const tarefaStyle = {
     color: cores.cinzaClaro,
   },
 
-  /* Botões de ação na tarefa (concluir / deletar) */
-  iconButton: {
-    marginLeft: 8,
-    backgroundColor: '#f3f3f3',
+  // Novo estilo para o botão de conclusão
+  completeButton: {
+    marginLeft: 10,
     padding: 8,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iconButtonText: {
-    fontSize: 14,
-    color: cores.preto,
+    backgroundColor: cores.secundaria,
   },
   cardActions: {
     flexDirection: 'row',
     alignItems: 'center',
   },
 
-  /* Pequenos utilitários */
   loadingCenter: {
     marginTop: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
-};
+});
 
-export default tarefaStyle;
+export default styles;
