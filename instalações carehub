@@ -47,6 +47,8 @@ npm install multer
 npm install @types/multer --save-dev
 npm install date-fns
 
+npm install @types/date-fns --save-dev
+
 
 # Dev dependencies (opcional)
 npx expo install --dev @types/react@~19.1.0
