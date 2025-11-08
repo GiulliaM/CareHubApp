@@ -5,6 +5,8 @@ import usuarioRoutes from './routes/usuarioRoutes';
 import tarefasRoutes from './routes/tarefasRoutes'; // <-- IMPORTADO
 import medicamentosRoute from './routes/medicamentosRoute'; // <-- IMPORTADO
 import tarefasDataRoutes from './routes/tarefasDataRoutes';
+import dashboardRoutes from './routes/dashboradRoutes';
+
 import path from 'path'; 
 
 const app = express();
@@ -22,6 +24,7 @@ app.use('/api', pacienteRoutes); // (ex: /api/pacientes)
 app.use('/api', tarefasRoutes);
 app.use('/api', medicamentosRoute);  
 app.use('/api/paciente', tarefasDataRoutes);// <-- ADICIONADO: Rotas de Tarefas (Ex: /api/tarefas, /api/paciente/:id/tarefas/date/:date)
+app.use('/api/dashboard', dashboardRoutes);
 
 app.listen(port, () => {
     console.log(`Servidor Back-end MVC rodando em http://localhost:${port}`);
