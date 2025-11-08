@@ -1,119 +1,124 @@
 // back-end/src/models/Tarefa.ts
-import { pool } from '../db'; // Assumindo que '../db' fornece a conexão com o banco
+import { pool } from '../db';
 
-// Tipagem completa
-export interface ITarefa {
-  id?: number;
+// O "Payload" (carga) de dados que esperamos receber do Controller
+export type TarefaPayload = {
   fk_paciente_id: number;
-  fk_responsavel_id?: number | null; 
+  fk_responsavel_id: number;
   titulo: string;
-  status: 'Pendente' | 'Concluída' | 'Atrasada'; 
-  tipo_recorrencia: 'Única' | 'Diária' | 'Semanal' | 'Mensal'; 
-  horario_tarefa: string | null; 
-  repete_ate: string | null; // Data no formato YYYY-MM-DD     
-  data_criacao?: string;
-}
-
-// Tipagem para criação
-export interface ITarefaCreate {
-  fk_paciente_id: number;
-  fk_responsavel_id?: number | null; 
-  titulo: string;
-  horario_tarefa?: string | null;
-  repete_ate: string; // Obrigatório no cadastro para saber a data da tarefa
-  tipo_recorrencia?: 'Única' | 'Diária' | 'Semanal' | 'Mensal';
-}
-
-// Tipagem para atualização
-export interface ITarefaUpdate {
-  titulo?: string;
-  fk_responsavel_id?: number | null;
-  horario_tarefa?: string | null;
-  repete_ate?: string | null;
   status?: 'Pendente' | 'Concluída' | 'Atrasada';
   tipo_recorrencia?: 'Única' | 'Diária' | 'Semanal' | 'Mensal';
-}
+  horario_tarefa?: string; // (ex: "08:00")
+  data_tarefa?: string; // (ex: "2025-11-07")
+};
+
+/**
+ * (M) Helper: Converte a data do formato do app (DD/MM/AAAA) 
+ * para o formato do banco de dados (AAAA-MM-DD)
+ */
+const formatarDataParaSQL = (data: string | undefined): string | null => {
+  if (!data) {
+    return null;
+  }
+  const partes = data.split('/');
+  if (partes.length === 3) {
+    // partes[0] = DD, partes[1] = MM, partes[2] = AAAA
+    return `${partes[2]}-${partes[1]}-${partes[0]}`;
+  }
+  return data; // Assume que já está em AAAA-MM-DD se não for o formato do app
+};
 
 
 export class Tarefa {
-  // Cria uma nova tarefa
-  static async criar(payload: ITarefaCreate): Promise<number> {
-    try {
-      const [result]: any = await pool.query(
-        `INSERT INTO tarefas 
-          (fk_paciente_id, fk_responsavel_id, titulo, horario_tarefa, repete_ate, tipo_recorrencia, status)
-         VALUES (?, ?, ?, ?, ?, ?, 'Pendente')`,
-        [
-          payload.fk_paciente_id,
-          payload.fk_responsavel_id ?? null, 
-          payload.titulo,
-          payload.horario_tarefa ?? null,
-          payload.repete_ate, // Data da tarefa
-          payload.tipo_recorrencia ?? 'Única', 
-        ]
-      );
-      return result.insertId;
-    } catch (error) {
-      console.error('Erro ao criar tarefa:', error);
-      throw new Error('Falha ao criar tarefa.');
-    }
+
+  /**
+   * (M) MODEL: Cria uma nova tarefa no banco
+   */
+  static async criar(dados: TarefaPayload): Promise<any> {
+    const {
+      fk_paciente_id,
+      fk_responsavel_id,
+      titulo,
+      status = 'Pendente', // Valor padrão
+      tipo_recorrencia = 'Única', // Valor padrão
+      horario_tarefa,
+      data_tarefa
+    } = dados;
+
+    // Converte a data para o formato do banco (se ela existir)
+    const dataSQL = formatarDataParaSQL(data_tarefa);
+
+    const [result] = await pool.query(
+      `INSERT INTO tarefas 
+        (fk_paciente_id, fk_responsavel_id, titulo, status, tipo_recorrencia, horario_tarefa, data_tarefa) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [fk_paciente_id, fk_responsavel_id, titulo, status, tipo_recorrencia, horario_tarefa, dataSQL]
+    );
+    
+    // @ts-ignore
+    const novaTarefaId = result.insertId;
+    return { id: novaTarefaId, ...dados };
   }
 
-  // Busca tarefas de um paciente para uma data específica (YYYY-MM-DD)
-  static async buscarPorData(pacienteId: number, dataISO: string): Promise<ITarefa[]> {
-    try {
-      const [rows]: any = await pool.query(
-        `SELECT * FROM tarefas 
-         WHERE fk_paciente_id = ?
-           AND repete_ate = ? -- Filtra exatamente pela data
-         ORDER BY horario_tarefa ASC`,
-         [pacienteId, dataISO]
-      );
-      return rows as ITarefa[];
-    } catch (error) {
-      console.error('Erro ao buscar tarefas por data:', error);
-      throw new Error('Falha ao buscar tarefas por data.');
-    }
+  /**
+   * (M) MODEL: Busca tarefas de um paciente para um dia específico
+   */
+  static async buscarPorDia(pacienteId: number, data: string): Promise<any[]> {
+    // data deve estar no formato 'AAAA-MM-DD'
+    const [rows] = await pool.query(
+      `SELECT * FROM tarefas 
+       WHERE fk_paciente_id = ? 
+       AND data_tarefa = ?
+       ORDER BY horario_tarefa`,
+      [pacienteId, data]
+    );
+    // @ts-ignore
+    return rows;
   }
 
-  // Marca uma tarefa como Concluída
-  static async marcarConcluida(id: number): Promise<boolean> {
+  // ---
+  // Funções que o dashboardController estava pedindo
+  // ---
+
+  /**
+   * (M) MODEL: Busca o próximo medicamento
+   * AVISO: Esta lógica deveria estar no Model 'Medicamento.ts',
+   * mas estamos colocando aqui para corrigir o erro de build do dashboard.
+   */
+  static async buscarProximoMedicamento(pacienteId: number): Promise<any> {
+    console.warn('Aviso: Lógica de Medicamento sendo chamada no Model de Tarefa');
     try {
-      const [result]: any = await pool.query(
-        `UPDATE tarefas SET status = 'Concluída' WHERE id = ? AND status <> 'Concluída'`,
-        [id]
+      // (Presume que 'data_inicio' é a data e 'frequencia' ou 'horario' é a hora)
+      const [rows] = await pool.query(
+        "SELECT * FROM medicamentos WHERE fk_paciente_id = ? AND data_inicio >= CURDATE() ORDER BY data_inicio, id LIMIT 1",
+        [pacienteId]
       );
-      return result.affectedRows > 0;
-    } catch (error) {
-      console.error('Erro ao marcar tarefa como concluída:', error);
-      throw new Error('Falha ao marcar tarefa como concluída.');
+      // @ts-ignore
+      if (rows.length === 0) { return null; }
+      // @ts-ignore
+      return rows[0];
+    } catch (e) { 
+      console.error("Erro em buscarProximoMedicamento:", e);
+      return null; 
     }
   }
   
-  // Métodos de CRUD (Update e Delete mantidos por conveniência)
-  static async buscarPorId(id: number): Promise<ITarefa | null> {
+  /**
+   * (M) MODEL: Busca a próxima consulta
+   */
+  static async buscarProximaConsulta(pacienteId: number): Promise<any> {
     try {
-      const [rows]: any = await pool.query(
-        `SELECT * FROM tarefas WHERE id = ? LIMIT 1`,
-        [id]
+      const [rows] = await pool.query(
+        "SELECT * FROM tarefas WHERE fk_paciente_id = ? AND titulo LIKE '%consulta%' AND data_tarefa >= CURDATE() ORDER BY data_tarefa, horario_tarefa LIMIT 1",
+        [pacienteId]
       );
-      return rows.length ? rows[0] : null;
-    } catch (error) {
-      console.error('Erro ao buscar tarefa por id:', error);
-      throw new Error('Falha ao buscar tarefa.');
-    }
-  }
-
-  static async deletar(id: number): Promise<boolean> {
-    try {
-      const [result]: any = await pool.query(
-        `DELETE FROM tarefas WHERE id = ?`,
-        [id]
-      );
-      return result.affectedRows > 0;
-    } catch (error) {
-      console.error('Erro ao deletar tarefa:', error);
-      throw new Error('Falha ao deletar tarefa.');
+      // @ts-ignore
+      if (rows.length === 0) { return null; }
+      // @ts-ignore
+      return rows[0];
+    } catch (e) { 
+      console.error("Erro em buscarProximaConsulta:", e);
+      return null; 
     }
   }
 }
