@@ -19,7 +19,7 @@ import { cores } from '../constantes/cores';
 import { styles } from '../style/homeStyle';
 import { IDadosDashboard, initialDashboardData } from '../tipos/IDadosDashboard';
 
-const API_URL = 'http://54.39.173.152:3000'; // ajuste se necessário
+const API_URL = 'http://54.39.173.152:3000'; 
 
 async function fetchDashboardData(pacienteId: number): Promise<IDadosDashboard> {
   try {
