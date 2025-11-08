@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+// frontend/src/telas/TarefasTela.tsx
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
     View, 
     Text, 
@@ -13,16 +15,36 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { Plus, ArrowLeft, ArrowRight, PlusCircle } from 'lucide-react-native';
 import { Calendar } from 'react-native-calendars';
 import { format } from 'date-fns';
+import axios from 'axios'; 
 
 import { cores } from '../constantes/cores';
-import { styles } from '../style/tarefaStyle';
+import styles from '../style/tarefaStyle'; 
 import { formatarDataAmigavel, adicionarDia, subtrairDia } from '../ferramentas/logicaData';
 
+// URL da API
+const API_URL = 'http://54.39.173.152:3000';
+
+// TIPAGEM DA TAREFA
+type TipoRecorrencia = 'Única' | 'Diária' | 'Semanal' | 'Mensal';
+type StatusTarefa = 'Pendente' | 'Concluída' | 'Atrasada';
+
+type TarefaItem = {
+    id: number;
+    titulo: string;
+    horario_tarefa: string | null;
+    status: StatusTarefa;
+};
+
 // ---
-// COMPONENTES
+// FUNÇÕES E COMPONENTES DE LAYOUT
 // ---
 
-// O 'Header' foi REMOVIDO daqui.
+const getMarkedDates = (date: Date): Record<string, any> => {
+  const key = format(date, 'yyyy-MM-dd');
+  return {
+    [key]: { selected: true, selectedColor: cores.primaria },
+  };
+};
 
 type CardDataProps = {
   data: Date;
@@ -61,14 +83,76 @@ const EmptyState = ({ onPress }: { onPress: () => void }) => (
   </View>
 );
 
+const TarefaCard = ({ tarefa }: { tarefa: TarefaItem }) => (
+    <View style={styles.taskCard}>
+        <View style={{ flex: 1 }}>
+            <Text style={styles.taskTitle}>{tarefa.titulo}</Text>
+            <Text style={styles.taskSubtitle}>Horário: {tarefa.horario_tarefa ? tarefa.horario_tarefa.substring(0, 5) : 'Dia todo'}</Text>
+        </View>
+    </View>
+);
+
+// --- Seletor de Recorrência ---
+type RecorrenciaSelectorProps = {
+    value: TipoRecorrencia;
+    onChange: (value: TipoRecorrencia) => void;
+};
+
+const RecorrenciaSelector: React.FC<RecorrenciaSelectorProps> = ({ value, onChange }) => {
+    const options: TipoRecorrencia[] = ['Única', 'Diária', 'Semanal', 'Mensal'];
+
+    return (
+        <View style={{ marginTop: 15 }}>
+            <Text style={styles.formSubtitle}>Repetição:</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                {options.map((option) => (
+                    <TouchableOpacity
+                        key={option}
+                        style={[
+                            styles.secondaryButton, 
+                            { 
+                                width: '23%', 
+                                marginTop: 8,
+                                paddingVertical: 8,
+                                backgroundColor: value === option ? cores.secundaria : '#fff',
+                                borderColor: value === option ? cores.primaria : styles.input.borderColor,
+                                borderWidth: value === option ? 2 : 1,
+                            }
+                        ]}
+                        onPress={() => onChange(option)}
+                    >
+                        <Text 
+                            style={{ 
+                                ...styles.secondaryButtonText, 
+                                fontWeight: value === option ? '700' : '600',
+                                color: value === option ? cores.branco : cores.preto,
+                                fontSize: 11
+                            }}
+                        >
+                            {option}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+        </View>
+    );
+};
+
+
+// --- ADD TASK FORM (INTEGRAÇÃO REAL) ---
 type AddTaskFormProps = {
-  onBack: () => void; 
+  onCancelOrSave: (success: boolean) => void; 
   dataSelecionada: Date; 
 };
-const AddTaskForm: React.FC<AddTaskFormProps> = ({ onBack, dataSelecionada }) => {
+const AddTaskForm: React.FC<AddTaskFormProps> = ({ onCancelOrSave, dataSelecionada }) => {
   const [titulo, setTitulo] = useState('');
   const [horario, setHorario] = useState('');
+  const [tipoRecorrencia, setTipoRecorrencia] = useState<TipoRecorrencia>('Única'); 
   const [isLoading, setIsLoading] = useState(false);
+  
+  // TODO: Substituir pelo ID REAL do paciente logado e usuário logado
+  const PACIENTE_ID = 1;
+  const RESPONSAVEL_ID = 1; 
 
   const handleSaveTask = async () => {
     if (!titulo) {
@@ -77,43 +161,64 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onBack, dataSelecionada }) =>
     }
     setIsLoading(true);
     
-    setTimeout(() => {
+    const payload = {
+      fk_paciente_id: PACIENTE_ID,
+      fk_responsavel_id: RESPONSAVEL_ID,
+      titulo: titulo,
+      horario_tarefa: horario || null,
+      repete_ate: format(dataSelecionada, 'yyyy-MM-dd'),
+      tipo_recorrencia: tipoRecorrencia,
+    };
+    
+    try {
+      // **CHAMADA CORRIGIDA: Adicionado /api/ no path**
+      const response = await axios.post(`${API_URL}/api/tarefas`, payload);
+      
       setIsLoading(false);
-      Alert.alert('Sucesso!', 'Tarefa salva.');
-      onBack(); 
-    }, 1500);
+      Alert.alert('Sucesso!', 'Tarefa salva com ID: ' + response.data.id);
+      onCancelOrSave(true); 
+    } catch (e: any) {
+      setIsLoading(false);
+      const errorMessage = e.response?.data?.message || e.message || 'Erro de rede ou servidor';
+      Alert.alert('Erro', `Falha ao salvar a tarefa: ${errorMessage}`);
+      onCancelOrSave(false);
+    }
   };
 
   return (
     <View style={styles.screenContainer}> 
+      <TouchableOpacity onPress={() => onCancelOrSave(false)} style={{ padding: 15 }}>
+        <ArrowLeft size={24} color={cores.preto} />
+      </TouchableOpacity>
       
-      {/* A chamada <Header /> foi REMOVIDA daqui. 
-          AVISO: Precisaremos de uma solução de "Stack" para este formulário
-          ter um cabeçalho com botão "Voltar", mas por agora,
-          isso corrige o erro de crash.
-      */}
-
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ flexGrow: 1, padding: 20 }}
         enableOnAndroid={true}
         keyboardShouldPersistTaps="handled"
       >
+        <Text style={styles.sectionTitle}>Adicionar Tarefa</Text>
         <Text style={styles.formSubtitle}>
-          Adicionando tarefa para: {formatarDataAmigavel(dataSelecionada)}
+          Para o dia: {formatarDataAmigavel(dataSelecionada)}
         </Text>
         
         <TextInput
           style={styles.input}
-          placeholder="Título da tarefa (ex: Medir pressão)"
+          placeholder="Nome da tarefa (ex: Medir pressão)"
           value={titulo}
           onChangeText={setTitulo}
         />
         <TextInput
           style={styles.input}
-          placeholder="Horário (ex: 08:00)"
+          placeholder="Horário (ex: 08:00 - Opcional)"
           value={horario}
           onChangeText={setHorario}
+          keyboardType={Platform.select({ ios: 'numbers-and-punctuation', android: 'default' })}
+        />
+        
+        <RecorrenciaSelector 
+            value={tipoRecorrencia} 
+            onChange={setTipoRecorrencia} 
         />
         
         <View style={styles.flexSpacer} /> 
@@ -121,7 +226,11 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onBack, dataSelecionada }) =>
         {isLoading ? (
           <ActivityIndicator size="large" color={cores.primaria} />
         ) : (
-          <TouchableOpacity style={styles.primaryButton} onPress={handleSaveTask}>
+          <TouchableOpacity 
+            style={styles.primaryButton} 
+            onPress={handleSaveTask} 
+            disabled={!titulo}
+          >
             <Text style={styles.buttonText}>Salvar Tarefa</Text>
           </TouchableOpacity>
         )}
@@ -133,47 +242,80 @@ const AddTaskForm: React.FC<AddTaskFormProps> = ({ onBack, dataSelecionada }) =>
 
 // --- TELA PRINCIPAL DE TAREFAS ---
 const TarefasTela: React.FC = function(){
-  const [temTarefas, setTarefas] = useState(0); 
+  const [listaTarefas, setListaTarefas] = useState<TarefaItem[]>([]); 
   const [isAddingTask, setIsAddingTask] = useState(false);
+  const [isLoadingTarefas, setIsLoadingTarefas] = useState(false);
   const [dataSelecionada, setDataSelecionada] = useState(new Date());
-  const [markedDates, setMarkedDates] = useState<Record<string, any>>({});
+  const [markedDates, setMarkedDates] = useState<Record<string, any>>(() => getMarkedDates(new Date()));
+  
+  const PACIENTE_ID = 1; 
+
+  // FUNÇÃO DE BUSCA/RECARREGAMENTO DE DADOS (CHAMADA REAL À API)
+  const buscarTarefasDoDia = useCallback(async (data: Date) => {
+    const dataISO = format(data, 'yyyy-MM-dd');
+    
+    setIsLoadingTarefas(true); 
+    setListaTarefas([]); 
+    
+    try {
+      // **CHAMADA CORRIGIDA: Adicionado /api/ no path**
+      const response = await axios.get(`${API_URL}/api/paciente/${PACIENTE_ID}/tarefas/date/${dataISO}`);
+      const tarefasDoDia: TarefaItem[] = response.data;
+      
+      setListaTarefas(tarefasDoDia);
+      
+    } catch (e: any) {
+      console.error("Falha ao buscar tarefas:", e.message);
+      setListaTarefas([]);
+    } finally {
+      setIsLoadingTarefas(false);
+    }
+  }, []);
+
+  const setNovaData = useCallback((novaData: Date) => {
+    setDataSelecionada(novaData);
+    setMarkedDates(getMarkedDates(novaData));
+    buscarTarefasDoDia(novaData); 
+  }, [buscarTarefasDoDia]);
 
   useEffect(() => {
-    // marca a data selecionada no calendário
-    const key = format(dataSelecionada, 'yyyy-MM-dd');
-    setMarkedDates({
-      [key]: { selected: true, selectedColor: cores.primaria },
-    });
-  }, [dataSelecionada]);
+    setNovaData(new Date()); 
+  }, [setNovaData]);
+
+  const handleOnCancelOrSave = (success: boolean) => {
+    setIsAddingTask(false);
+    if (success) {
+      buscarTarefasDoDia(dataSelecionada); 
+    }
+  };
 
   const handleDiaSeguinte = () => {
-    setDataSelecionada(adicionarDia(dataSelecionada));
+    setNovaData(adicionarDia(dataSelecionada));
   };
   
   const handleDiaAnterior = () => {
-    setDataSelecionada(subtrairDia(dataSelecionada));
+    setNovaData(subtrairDia(dataSelecionada));
   };
   
-  var titulo = temTarefas ? "Tarefas para Hoje" : "Nenhuma Tarefa"; 
+  const temTarefas = listaTarefas.length > 0;
+  var titulo = isLoadingTarefas
+    ? "Carregando Tarefas..."
+    : (temTarefas ? `Tarefas (${listaTarefas.length})` : "Nenhuma Tarefa"); 
 
   if (isAddingTask) {
     return <AddTaskForm 
-              onBack={() => setIsAddingTask(false)} 
+              onCancelOrSave={handleOnCancelOrSave} 
               dataSelecionada={dataSelecionada} 
             />;
   }
 
   return(
       <View style={styles.screenContainer}>
-          {/* A chamada <Header /> foi REMOVIDA daqui */}
-          {/* Calendário */}
           <View style={{ paddingHorizontal: 12, paddingTop: 8 }}>
             <Calendar
               onDayPress={(day) => {
-                // day.dateString tem formato yyyy-MM-dd
-                const parts = day.dateString.split('-').map(Number);
-                const selected = new Date(parts[0], parts[1] - 1, parts[2]);
-                setDataSelecionada(selected);
+                const selected = new Date(day.dateString + 'T00:00:00');
+                setNovaData(selected);
               }}
               markedDates={markedDates}
               theme={{
@@ -196,10 +338,13 @@ const TarefasTela: React.FC = function(){
             style={{ flex: 1 }}
             showsVerticalScrollIndicator={false}
           >
-            {temTarefas ? (
+            {isLoadingTarefas ? (
+              <ActivityIndicator size="large" color={cores.primaria} style={{ marginTop: 20 }} />
+            ) : temTarefas ? (
               <View>
-                <Text style={{ paddingHorizontal: 20 }}>Item de Tarefa 1</Text>
-                <Text style={{ paddingHorizontal: 20 }}>Item de Tarefa 2</Text>
+                {listaTarefas.map((tarefa) => (
+                    <TarefaCard key={tarefa.id} tarefa={tarefa} />
+                ))}
               </View>
             ) : (
               <EmptyState onPress={() => setIsAddingTask(true)} />
@@ -210,7 +355,5 @@ const TarefasTela: React.FC = function(){
       </View>
   );
 }
-
-
 
 export default TarefasTela;
