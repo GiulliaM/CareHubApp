@@ -92,7 +92,7 @@ export const buscarDadosDashboard = async (req: AuthRequest, res: Response) => {
 
       proximoMedicamento: proximoMedicamento ? {
         // Assumindo que 'titulo' e 'horario_tarefa' são as propriedades corretas
-        nome: proximoMedicamento.titulo, 
+        nome: proximoMedicamento.nome_medicamento, 
         horario: proximoMedicamento.horario_tarefa
           ? proximoMedicamento.horario_tarefa.split(':').slice(0, 2).join(':')
           : ''
