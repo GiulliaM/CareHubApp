@@ -116,4 +116,40 @@ export class Tarefa {
       return rows[0];
     } catch (e) { return null; }
   }
+
+  static async buscarTodasPorPaciente(pacienteId: number): Promise<ITarefa[]> {
+    try {
+      const [rows]: any = await pool.query(
+        `SELECT * FROM tarefas 
+         WHERE fk_paciente_id = ?
+         ORDER BY repete_ate, horario_tarefa ASC`,
+         [pacienteId]
+      );
+      return rows as ITarefa[];
+    } catch (error) {
+      console.error('Erro ao buscar todas as tarefas por paciente:', error);
+      throw new Error('Falha ao buscar tarefas.');
+    }
+  }
+
+  /**
+   * (M) MODEL: Busca tarefas ATIVAS de um paciente para uma data
+   * (Função que faltava para o tarefasPorDataController.ts)
+   */
+  static async buscarTarefasAtivasPorData(pacienteId: number, dataISO: string): Promise<ITarefa[]> {
+    try {
+      const [rows]: any = await pool.query(
+        `SELECT * FROM tarefas 
+         WHERE fk_paciente_id = ?
+           AND repete_ate = ?
+           AND status = 'Pendente'
+         ORDER BY horario_tarefa ASC`,
+         [pacienteId, dataISO]
+      );
+      return rows as ITarefa[];
+    } catch (error) {
+      console.error('Erro ao buscar tarefas ativas por data:', error);
+      throw new Error('Falha ao buscar tarefas ativas por data.');
+    }
+  }
 }
