@@ -13,21 +13,18 @@ import { Home, Search, User, Shield, LogOut } from 'lucide-react-native';
 import TabNavigator from './TabNavigator'; 
 import { cores } from '../constantes/cores';
 import MeuPerfilTela from '../telas/MeuPerfilTela'; 
-// <<< MUDANÇA: Importar a nova tela REAL
-import PerfilPessoaCuidadaTela from '../telas/PerfilPessoaCuidadaTela';
 
-// ----- Telas "Placeholder" -----
 const PlaceholderScreen = ({ route }: any) => (
   <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
     <Text style={{ fontSize: 24, fontWeight: 'bold' }}>{route.name}</Text>
   </View>
 );
 const BuscarCuidadoresTela = () => <PlaceholderScreen route={{ name: 'Buscar Cuidadores' }} />;
-// ---------------------------------
+const PerfilPessoaCuidadaTela = () => <PlaceholderScreen route={{ name: 'Perfil Pessoa Cuidada' }} />;
 
 const Drawer = createDrawerNavigator();
 
-// --- O Conteúdo Customizado do Menu ---
+// <<< MUDANÇA: Adicionado 'isGuest'
 type CustomDrawerProps = DrawerContentComponentProps & {
   onLogout: () => void; 
   isGuest: boolean;
@@ -47,14 +44,14 @@ function CustomDrawerContent(props: CustomDrawerProps) {
           label={isGuest ? "Fazer Login" : "Sair"}
           icon={({ color, size }) => <LogOut color={cores.secundaria} size={size} />}
           labelStyle={{ color: cores.secundaria, fontWeight: 'bold' }}
-          onPress={onLogout}
+          onPress={onLogout} 
         />
       </View>
     </DrawerContentScrollView>
   );
 }
 
-// --- O Navegador Principal ---
+// <<< MUDANÇA: Aceita 'isGuest' (Isso corrige o erro da image_167064.png)
 type AppNavigatorProps = {
   onLogout: () => void; 
   isGuest: boolean;
@@ -81,7 +78,6 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout, isGuest }) => {
           headerTitle: getFocusedRouteNameFromRoute(route) ?? 'Início',
         })}
       />
-      
       <Drawer.Screen 
         name="BuscarCuidadores" 
         component={BuscarCuidadoresTela}
@@ -91,6 +87,7 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout, isGuest }) => {
         }}
       />
       
+      {/* <<< MUDANÇA: Passando 'isGuest' e 'onLogout' para a tela 'MeuPerfil' */}
       <Drawer.Screen 
         name="MeuPerfil" 
         options={{
@@ -101,16 +98,14 @@ const AppNavigator: React.FC<AppNavigatorProps> = ({ onLogout, isGuest }) => {
         {(props) => <MeuPerfilTela {...props} isGuest={isGuest} onLogout={onLogout} />}
       </Drawer.Screen>
 
-      {/* <<< MUDANÇA: Conectando a tela real */}
       <Drawer.Screen 
         name="PerfilPessoaCuidada" 
+        component={PerfilPessoaCuidadaTela}
         options={{
           title: 'Perfil Pessoa Cuidada',
           drawerIcon: ({ color, size }) => <Shield color={color} size={size} />,
         }}
-      >
-         {(props) => <PerfilPessoaCuidadaTela {...props} isGuest={isGuest} onLogout={onLogout} />}
-      </Drawer.Screen>
+      />
     </Drawer.Navigator>
   );
 };

@@ -1,24 +1,22 @@
+// frontend/src/telas/MeuPerfilTela.tsx
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
-// <<< MUDANÇA: useFocusEffect e useNavigation importados
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { styles } from '../style/homeStyle'; // Nossos estilos globais
+import { styles } from '../style/estilosGlobais'; // Nossos estilos globais
 import { cores } from '../constantes/cores';
 import { LogIn } from 'lucide-react-native';
 
 const API_URL = 'http://54.39.173.152:3000'; // (Sua API)
 
 type MeuPerfilProps = {
-  isGuest: boolean; // Recebe a prop do AppNavigator
-  onLogout: () => void; // A função de logout do App.tsx
+  isGuest: boolean; 
+  onLogout: () => void; 
 };
 
 const MeuPerfilTela: React.FC<MeuPerfilProps> = ({ isGuest, onLogout }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-
-  // Estados para os dados do formulário
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [telefone, setTelefone] = useState('');
@@ -26,7 +24,7 @@ const MeuPerfilTela: React.FC<MeuPerfilProps> = ({ isGuest, onLogout }) => {
   // <<< MUDANÇA: A função async agora está "embrulhada" por useCallback
   const fetchMeuPerfil = useCallback(async () => {
     if (isGuest) {
-      setIsLoading(false); // Visitante não carrega nada
+      setIsLoading(false); 
       return;
     }
     
@@ -35,7 +33,7 @@ const MeuPerfilTela: React.FC<MeuPerfilProps> = ({ isGuest, onLogout }) => {
     if (!token) {
       Alert.alert("Erro", "Token não encontrado. Faça login.");
       setIsLoading(false);
-      onLogout(); // Força o logout se o token sumir
+      onLogout(); 
       return;
     }
 
@@ -57,16 +55,16 @@ const MeuPerfilTela: React.FC<MeuPerfilProps> = ({ isGuest, onLogout }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [isGuest, onLogout]); // 'isGuest' e 'onLogout' são dependências
+  }, [isGuest, onLogout]);
 
   // <<< MUDANÇA: useFocusEffect agora chama a função dentro de um callback
+  // Isso corrige o erro da 'image_215c37.png'
   useFocusEffect(
     React.useCallback(() => {
       fetchMeuPerfil();
-    }, [fetchMeuPerfil]) // A dependência é a própria função
+    }, [fetchMeuPerfil])
   );
   
-  // Função para salvar as alterações
   const handleSalvar = async () => {
     if (!nome) {
       Alert.alert("Erro", "O nome é obrigatório.");
@@ -98,10 +96,7 @@ const MeuPerfilTela: React.FC<MeuPerfilProps> = ({ isGuest, onLogout }) => {
       setIsSaving(false);
     }
   };
-
-  // --- RENDERIZAÇÃO ---
   
-  // 1. Se for Visitante, mostre o botão de Login
   if (isGuest) {
     return (
       <View style={[styles.screenContainer, { padding: 20, alignItems: 'center', justifyContent: 'center' }]}>
@@ -112,7 +107,7 @@ const MeuPerfilTela: React.FC<MeuPerfilProps> = ({ isGuest, onLogout }) => {
         </Text>
         <TouchableOpacity 
           style={styles.primaryButton}
-          onPress={onLogout} // Chama a função de logout para ir ao login
+          onPress={onLogout} 
         >
           <Text style={styles.buttonText}>Ir para o Login</Text>
         </TouchableOpacity>
@@ -120,7 +115,6 @@ const MeuPerfilTela: React.FC<MeuPerfilProps> = ({ isGuest, onLogout }) => {
     );
   }
   
-  // 2. Se estiver carregando, mostre o "Loading"
   if (isLoading) {
     return (
       <View style={[styles.screenContainer, { alignItems: 'center', justifyContent: 'center' }]}>
@@ -129,7 +123,6 @@ const MeuPerfilTela: React.FC<MeuPerfilProps> = ({ isGuest, onLogout }) => {
     );
   }
 
-  // 3. Se for um usuário logado, mostre o formulário
   return (
     <ScrollView style={styles.screenContainer}>
       <View style={{ padding: 20 }}>
@@ -139,7 +132,8 @@ const MeuPerfilTela: React.FC<MeuPerfilProps> = ({ isGuest, onLogout }) => {
           Aqui você pode ver e editar seus dados.
         </Text>
 
-        {/* <<< MUDANÇA: styles.inputLabel agora é lido do 'styles' global */}
+        {/* <<< MUDANÇA: 'styles.inputLabel' agora é lido do 'styles' global */}
+        {/* Isso corrige o erro da 'image_150b49.png' */}
         <Text style={styles.inputLabel}>Nome</Text>
         <TextInput
           style={styles.input}
@@ -179,7 +173,5 @@ const MeuPerfilTela: React.FC<MeuPerfilProps> = ({ isGuest, onLogout }) => {
     </ScrollView>
   );
 };
-
-// <<< MUDANÇA: stylesLocal e Object.assign foram REMOVIDOS
 
 export default MeuPerfilTela;

@@ -7,15 +7,16 @@ import {
     Alert,
     StyleSheet
 } from 'react-native';
-import { ArrowLeft, ArrowRight, Smile, Bed, Droplet, UserCheck, AlertTriangle, MessageSquare } from 'lucide-react-native';
+import { Menu, ArrowLeft, ArrowRight, Smile, Bed, Droplet, UserCheck, AlertTriangle, MessageSquare } from 'lucide-react-native';
 
 import {cores} from '../constantes/cores';
-import {styles as estilosGlobais} from '../style/homeStyle'; 
+// <<< MUDANÇA: Importando o novo estilo mestre
+import {styles as estilosGlobais} from '../style/estilosGlobais';
 import { formatarDataAmigavel, adicionarDia, subtrairDia } from '../ferramentas/logicaData';
 
-// --- COMPONENTES ---
-
-// O 'Header' foi REMOVIDO daqui.
+// ---
+// (O Header foi removido)
+// ---
 
 type CardDataProps = {
   data: Date;
@@ -36,13 +37,12 @@ type BotaoRegistroProps = {
   onPress: () => void;
 };
 const BotaoRegistro: React.FC<BotaoRegistroProps> = ({ label, icon, onPress }) => (
-  <TouchableOpacity style={styles.botaoRegistro} onPress={onPress}>
+  <TouchableOpacity style={localStyles.botaoRegistro} onPress={onPress}>
     {icon}
-    <Text style={styles.botaoRegistroTexto}>{label}</Text>
+    <Text style={localStyles.botaoRegistroTexto}>{label}</Text>
   </TouchableOpacity>
 );
 
-// --- TELA PRINCIPAL DO DIÁRIO ---
 const DiarioTela: React.FC = function(){
   const [dataSelecionada, setDataSelecionada] = useState(new Date());
 
@@ -60,7 +60,7 @@ const DiarioTela: React.FC = function(){
 
   return(
       <View style={estilosGlobais.screenContainer}>
-          {/* A chamada <Header /> foi REMOVIDA daqui */}
+          {/* <Header /> foi removido */}
           <CardData 
             data={dataSelecionada}
             onAnterior={handleDiaAnterior}
@@ -72,9 +72,10 @@ const DiarioTela: React.FC = function(){
             contentContainerStyle={{ padding: 20 }}
             showsVerticalScrollIndicator={false}
           >
+            {/* <<< MUDANÇA: Usando estilos globais */}
             <Text style={estilosGlobais.formSubtitle}>O que você gostaria de registrar?</Text>
             
-            <View style={styles.gridContainer}>
+            <View style={localStyles.gridContainer}>
               <BotaoRegistro 
                 label="Humor" 
                 icon={<Smile color={cores.primaria} size={32} />}
@@ -119,7 +120,8 @@ const DiarioTela: React.FC = function(){
   );
 }
 
-const styles = StyleSheet.create({
+// Estilos locais (específicos desta tela)
+const localStyles = StyleSheet.create({
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -127,8 +129,8 @@ const styles = StyleSheet.create({
   },
   botaoRegistro: {
     backgroundColor: cores.branco,
-    width: '48%',
-    aspectRatio: 1,
+    width: '48%', 
+    aspectRatio: 1, 
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#e2e8f0',
