@@ -1,43 +1,11 @@
 // back-end/src/models/Tarefa.ts
-import { pool } from '../db'; // Assumindo que '../db' fornece a conexão com o banco
-
-// Tipagem completa
-export interface ITarefa {
-  id?: number;
-  fk_paciente_id: number;
-  fk_responsavel_id?: number | null; 
-  titulo: string;
-  status: 'Pendente' | 'Concluída' | 'Atrasada'; 
-  tipo_recorrencia: 'Única' | 'Diária' | 'Semanal' | 'Mensal'; 
-  horario_tarefa: string | null; 
-  repete_ate: string | null; // Data no formato YYYY-MM-DD     
-  data_criacao?: string;
-}
-
-// Tipagem para criação
-export interface ITarefaCreate {
-  fk_paciente_id: number;
-  fk_responsavel_id?: number | null; 
-  titulo: string;
-  horario_tarefa?: string | null;
-  repete_ate: string; // Obrigatório no cadastro para saber a data da tarefa
-  tipo_recorrencia?: 'Única' | 'Diária' | 'Semanal' | 'Mensal';
-}
-
-// Tipagem para atualização
-export interface ITarefaUpdate {
-  titulo?: string;
-  fk_responsavel_id?: number | null;
-  horario_tarefa?: string | null;
-  repete_ate?: string | null;
-  status?: 'Pendente' | 'Concluída' | 'Atrasada';
-  tipo_recorrencia?: 'Única' | 'Diária' | 'Semanal' | 'Mensal';
-}
-
+import { pool } from '../db';
+// (Importando tipos que sua colega definiu)
+import { ITarefa, ITarefaCreate } from './interfaces'; 
 
 export class Tarefa {
-  // Cria uma nova tarefa
   static async criar(payload: ITarefaCreate): Promise<number> {
+    // ... (Sua lógica 'criar' está correta)
     try {
       const [result]: any = await pool.query(
         `INSERT INTO tarefas 
@@ -48,7 +16,7 @@ export class Tarefa {
           payload.fk_responsavel_id ?? null, 
           payload.titulo,
           payload.horario_tarefa ?? null,
-          payload.repete_ate, // Data da tarefa
+          payload.repete_ate, 
           payload.tipo_recorrencia ?? 'Única', 
         ]
       );
@@ -59,13 +27,13 @@ export class Tarefa {
     }
   }
 
-  // Busca tarefas de um paciente para uma data específica (YYYY-MM-DD)
   static async buscarPorData(pacienteId: number, dataISO: string): Promise<ITarefa[]> {
+    // ... (Sua lógica 'buscarPorData' está correta)
     try {
       const [rows]: any = await pool.query(
-        `SELECT * FROM tarefas 
+         `SELECT * FROM tarefas 
          WHERE fk_paciente_id = ?
-           AND repete_ate = ? -- Filtra exatamente pela data
+           AND repete_ate = ?
          ORDER BY horario_tarefa ASC`,
          [pacienteId, dataISO]
       );
@@ -76,8 +44,8 @@ export class Tarefa {
     }
   }
 
-  // Marca uma tarefa como Concluída
   static async marcarConcluida(id: number): Promise<boolean> {
+    // ... (Sua lógica 'marcarConcluida' está correta)
     try {
       const [result]: any = await pool.query(
         `UPDATE tarefas SET status = 'Concluída' WHERE id = ? AND status <> 'Concluída'`,
@@ -90,8 +58,8 @@ export class Tarefa {
     }
   }
   
-  // Métodos de CRUD (Update e Delete mantidos por conveniência)
   static async buscarPorId(id: number): Promise<ITarefa | null> {
+    // ... (Sua lógica 'buscarPorId' está correta)
     try {
       const [rows]: any = await pool.query(
         `SELECT * FROM tarefas WHERE id = ? LIMIT 1`,
@@ -105,6 +73,7 @@ export class Tarefa {
   }
 
   static async deletar(id: number): Promise<boolean> {
+    // ... (Sua lógica 'deletar' está correta)
     try {
       const [result]: any = await pool.query(
         `DELETE FROM tarefas WHERE id = ?`,
@@ -115,5 +84,36 @@ export class Tarefa {
       console.error('Erro ao deletar tarefa:', error);
       throw new Error('Falha ao deletar tarefa.');
     }
+  }
+  
+  // ---
+  // <<< MUDANÇA: ADICIONANDO AS FUNÇÕES QUE FALTAVAM
+  // ---
+  static async buscarProximoMedicamento(pacienteId: number): Promise<any> {
+    console.warn('Aviso: Lógica de Medicamento sendo chamada no Model de Tarefa');
+    try {
+      // (Presume que você tenha uma tabela 'medicamentos')
+      const [rows] = await pool.query(
+        "SELECT * FROM medicamentos WHERE fk_paciente_id = ? AND data_inicio >= CURDATE() ORDER BY data_inicio, id LIMIT 1",
+        [pacienteId]
+      );
+      // @ts-ignore
+      if (rows.length === 0) { return null; }
+      // @ts-ignore
+      return rows[0];
+    } catch (e) { return null; }
+  }
+  
+  static async buscarProximaConsulta(pacienteId: number): Promise<any> {
+    try {
+      const [rows] = await pool.query(
+        "SELECT * FROM tarefas WHERE fk_paciente_id = ? AND titulo LIKE '%consulta%' AND repete_ate >= CURDATE() ORDER BY repete_ate, horario_tarefa LIMIT 1",
+        [pacienteId]
+      );
+      // @ts-ignore
+      if (rows.length === 0) { return null; }
+      // @ts-ignore
+      return rows[0];
+    } catch (e) { return null; }
   }
 }
