@@ -1,37 +1,179 @@
 import React, { useState } from "react";
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, ScrollView, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ScrollView,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import cores from "../config/cores";
 import { API_URL } from "../config/api";
 import { getToken } from "../utils/auth";
+
 export default function NovaTarefa({ navigation }: any) {
   const [titulo, setTitulo] = useState("");
   const [detalhes, setDetalhes] = useState("");
-  const criar = async () => {
-    if (!titulo) return Alert.alert("Informe o título");
-    const token = await getToken();
-    const res = await fetch(`${API_URL}/tarefas`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ titulo, detalhes })
-    });
-    if (!res.ok) return Alert.alert("Erro");
-    Alert.alert("Criado");
-    navigation.goBack();
+  const [hora, setHora] = useState(new Date());
+  const [mostraHora, setMostraHora] = useState(false);
+  const [diasSelecionados, setDiasSelecionados] = useState<string[]>([]);
+
+  const diasSemana = ["D", "S", "T", "Q", "Q", "S", "S"];
+
+  function toggleDia(index: number) {
+    const existe = diasSelecionados.includes(index.toString());
+    if (existe) {
+      setDiasSelecionados(diasSelecionados.filter((d) => d !== index.toString()));
+    } else {
+      setDiasSelecionados([...diasSelecionados, index.toString()]);
+    }
+  }
+
+  const onHoraChange = (e: DateTimePickerEvent, date?: Date) => {
+    setMostraHora(false);
+    if (date) setHora(date);
   };
+
+  async function handleSalvar() {
+    if (!titulo) {
+      Alert.alert("Erro", "Preencha o título da tarefa.");
+      return;
+    }
+
+    try {
+      const token = await getToken();
+      await fetch(`${API_URL}/tarefas`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          titulo,
+          detalhes,
+          hora: hora.toISOString().split("T")[1].substring(0, 5),
+          dias_repeticao: diasSelecionados.join(","),
+        }),
+      });
+      Alert.alert("Sucesso", "Tarefa cadastrada com sucesso!");
+      navigation.goBack();
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Erro", "Não foi possível cadastrar a tarefa.");
+    }
+  }
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.label}>Título</Text>
-      <TextInput value={titulo} onChangeText={setTitulo} style={styles.input} />
-      <Text style={styles.label}>Detalhes</Text>
-      <TextInput value={detalhes} onChangeText={setDetalhes} style={[styles.input,{height:100}]} multiline />
-      <TouchableOpacity style={styles.btn} onPress={criar}><Text style={styles.btnText}>Salvar</Text></TouchableOpacity>
-    </ScrollView>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.title}>Nova Tarefa</Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Título da tarefa"
+          value={titulo}
+          onChangeText={setTitulo}
+        />
+
+        <TextInput
+          style={[styles.input, { height: 80 }]}
+          placeholder="Detalhes (opcional)"
+          value={detalhes}
+          onChangeText={setDetalhes}
+          multiline
+        />
+
+        <TouchableOpacity style={styles.input} onPress={() => setMostraHora(true)}>
+          <Text>Hora: {hora.toLocaleTimeString().slice(0, 5)}</Text>
+        </TouchableOpacity>
+
+        {mostraHora && (
+          <DateTimePicker
+            value={hora}
+            mode="time"
+            is24Hour={true}
+            onChange={onHoraChange}
+          />
+        )}
+
+        <Text style={styles.label}>Repetir tarefa:</Text>
+        <View style={styles.diasContainer}>
+          {diasSemana.map((dia, i) => (
+            <TouchableOpacity
+              key={i}
+              style={[
+                styles.dia,
+                diasSelecionados.includes(i.toString()) && styles.diaSelecionado,
+              ]}
+              onPress={() => toggleDia(i)}
+            >
+              <Text
+                style={[
+                  styles.diaTexto,
+                  diasSelecionados.includes(i.toString()) &&
+                    styles.diaTextoSelecionado,
+                ]}
+              >
+                {dia}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <TouchableOpacity style={styles.button} onPress={handleSalvar}>
+          <Text style={styles.buttonText}>Salvar</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
-  container:{padding:16,backgroundColor:cores.background,flexGrow:1},
-  label:{fontWeight:"700",color:cores.primary,marginTop:8},
-  input:{backgroundColor:"#fff",padding:10,borderRadius:10,marginTop:8},
-  btn:{backgroundColor:cores.primary,padding:14,alignItems:"center",borderRadius:12,marginTop:12},
-  btnText:{color:"#fff",fontWeight:"700"}
+  safeArea: { flex: 1, backgroundColor: cores.background },
+  container: { padding: 16 },
+  title: {
+    fontSize: 24,
+    color: cores.primary,
+    fontWeight: "700",
+    marginBottom: 20,
+  },
+  input: {
+    backgroundColor: "#fff",
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    marginBottom: 14,
+  },
+  label: { color: "#333", fontWeight: "600", marginBottom: 6 },
+  diasContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  dia: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: cores.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  diaSelecionado: { backgroundColor: cores.primary },
+  diaTexto: { color: cores.primary, fontWeight: "600" },
+  diaTextoSelecionado: { color: "#fff" },
+  button: {
+    backgroundColor: cores.primary,
+    padding: 14,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });
