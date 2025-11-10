@@ -1,0 +1,16 @@
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import tarefaRoutes from "./routes/tarefaRoutes.js";
+import medicamentoRoutes from "./routes/medicamentoRoutes.js";
+import diarioRoutes from "./routes/diarioRoutes.js";
+dotenv.config();
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use("/api/tarefas", tarefaRoutes);
+app.use("/api/medicamentos", medicamentoRoutes);
+app.use("/api/diario", diarioRoutes);
+app.get("/", (req, res) => res.json({ message: "CareHub API OK" }));
+export default app;

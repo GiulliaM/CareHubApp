@@ -10,19 +10,18 @@ import {
     Platform
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { Plus, Menu, ArrowLeft, ArrowRight, PlusCircle, Pill } from 'lucide-react-native';
+import { Plus, ArrowLeft, ArrowRight, PlusCircle, Pill } from 'lucide-react-native';
 import { Checkbox } from '@futurejj/react-native-checkbox';
 
 import {cores} from '../constantes/cores';
-// <<< MUDANÇA: Importando o novo estilo mestre
-import {styles} from '../style/estilosGlobais';
+import {styles} from '../style/homeStyle';
 import { formatarDataAmigavel, adicionarDia, subtrairDia } from '../ferramentas/logicaData';
-// <<< MUDANÇA: Importar SafeAreaView
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 // ---
-// (O Header foi removido)
+// COMPONENTES
 // ---
+
+// O 'Header' foi REMOVIDO daqui.
 
 type CardDataProps = {
   data: Date;
@@ -92,7 +91,12 @@ const AddRemedioForm: React.FC<AddRemedioFormProps> = ({ onBack, dataSelecionada
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSaveRemedio = async () => {
-    // ... (lógica de salvar)
+    if (!nome || !horario) {
+      Alert.alert('Erro', 'Nome e horário são obrigatórios.');
+      return;
+    }
+    setIsLoading(true);
+    
     setTimeout(() => {
       setIsLoading(false);
       Alert.alert('Sucesso!', 'Remédio salvo.');
@@ -101,20 +105,14 @@ const AddRemedioForm: React.FC<AddRemedioFormProps> = ({ onBack, dataSelecionada
   };
 
   return (
-    <SafeAreaView style={styles.screenContainer}> 
-      {/* (O Header foi removido) */}
+    <View style={styles.screenContainer}> 
+      {/* A chamada <Header /> foi REMOVIDA daqui */}
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ flexGrow: 1, padding: 20 }}
         enableOnAndroid={true}
         keyboardShouldPersistTaps="handled"
       >
-        {/* (Botão de Voltar - pode ser adicionado aqui) */}
-        <TouchableOpacity onPress={onBack} style={{ marginBottom: 10 }}>
-           <ArrowLeft color={cores.primaria} />
-        </TouchableOpacity>
-        
-        <Text style={styles.formTitle}>Novo Remédio</Text>
         <Text style={styles.formSubtitle}>
           Agendando remédio para: {formatarDataAmigavel(dataSelecionada)}
         </Text>
@@ -148,7 +146,7 @@ const AddRemedioForm: React.FC<AddRemedioFormProps> = ({ onBack, dataSelecionada
           </TouchableOpacity>
         )}
       </KeyboardAwareScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -178,7 +176,7 @@ const RemediosTela: React.FC = function(){
 
   return(
       <View style={styles.screenContainer}>
-          {/* <Header /> foi removido */}
+          {/* A chamada <Header /> foi REMOVIDA daqui */}
           <CardData 
             data={dataSelecionada}
             onAnterior={handleDiaAnterior}

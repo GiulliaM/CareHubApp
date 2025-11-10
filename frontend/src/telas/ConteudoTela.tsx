@@ -4,16 +4,15 @@ import {
     Text, 
     TouchableOpacity, 
     ScrollView,
-    FlatList, 
+    FlatList,
     ImageBackground,
     StyleSheet,
     Dimensions
 } from 'react-native';
-import { Menu, ArrowRight } from 'lucide-react-native';
+import { ArrowRight } from 'lucide-react-native';
 
 import {cores} from '../constantes/cores';
-// <<< MUDANÇA: Importando o novo estilo mestre
-import {styles as estilosGlobais} from '../style/estilosGlobais';
+import {styles as estilosGlobais} from '../style/homeStyle';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -30,32 +29,33 @@ const CATEGORIAS = [
   { id: '4', title: 'Alimentação' },
 ];
 
-// ---
-// (O Header foi removido)
-// ---
+// --- COMPONENTES ---
+
+// O 'Header' foi REMOVIDO daqui.
 
 type ArtigoCardProps = {
   item: { id: string; title: string; image: string; };
 };
 const ArtigoCard: React.FC<ArtigoCardProps> = ({ item }) => (
-  <TouchableOpacity style={localStyles.cardContainer}>
+  <TouchableOpacity style={styles.cardContainer}>
     <ImageBackground
       source={{ uri: item.image }}
-      style={localStyles.cardImage}
+      style={styles.cardImage}
       imageStyle={{ borderRadius: 16 }}
     >
-      <View style={localStyles.cardOverlay}>
-        <Text style={localStyles.cardTitle}>{item.title}</Text>
+      <View style={styles.cardOverlay}>
+        <Text style={styles.cardTitle}>{item.title}</Text>
       </View>
     </ImageBackground>
   </TouchableOpacity>
 );
 
+// --- TELA PRINCIPAL DE CONTEÚDO ---
 const ConteudoTela: React.FC = function(){
 
   return(
       <View style={estilosGlobais.screenContainer}>
-          {/* <Header /> foi removido */}
+          {/* A chamada <Header /> foi REMOVIDA daqui */}
           <ScrollView 
             style={{ flex: 1 }}
             showsVerticalScrollIndicator={false}
@@ -79,8 +79,8 @@ const ConteudoTela: React.FC = function(){
             </Text>
             <View style={{ paddingHorizontal: 20 }}>
               {CATEGORIAS.map(cat => (
-                <TouchableOpacity key={cat.id} style={localStyles.categoriaItem}>
-                  <Text style={localStyles.categoriaTexto}>{cat.title}</Text>
+                <TouchableOpacity key={cat.id} style={styles.categoriaItem}>
+                  <Text style={styles.categoriaTexto}>{cat.title}</Text>
                   <ArrowRight size={18} color={cores.secundaria} />
                 </TouchableOpacity>
               ))}
@@ -91,8 +91,7 @@ const ConteudoTela: React.FC = function(){
   );
 }
 
-// Estilos locais (específicos desta tela)
-const localStyles = StyleSheet.create({
+const styles = StyleSheet.create({
   cardContainer: {
     width: screenWidth * 0.8, 
     height: screenWidth * 0.5, 
