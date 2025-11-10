@@ -1,42 +1,12 @@
 import db from "../config/db.js";
-export const criarMedicamento = (med, callback) => {
-  const sql = `INSERT INTO medicamentos (nome, dosagem, intervalo_horas, horarios, inicio, duracao_days, uso_continuo, paciente_id)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-  const values = [
-    med.nome || null,
-    med.dosagem || null,
-    med.intervalo_horas || null,
-    med.horarios || null,
-    med.inicio || null,
-    med.duracao_days || null,
-    med.uso_continuo ? 1 : 0,
-    med.paciente_id || null
-  ];
-  db.query(sql, values, callback);
+export const criarMedicamento = (m, cb) => {
+  const sql = "INSERT INTO medicamentos (nome, dosagem, horarios, inicio, duracao_days, uso_continuo, paciente_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
+  const values = [m.nome, m.dosagem || null, m.horarios || null, m.inicio || null, m.duracao_days || null, m.uso_continuo ? 1 : 0, m.paciente_id || null];
+  db.query(sql, values, cb);
 };
-export const listarMedicamentos = (callback) => {
-  db.query("SELECT * FROM medicamentos ORDER BY created_at DESC", callback);
+export const listarMedicamentosPorUsuario = (usuarioId, cb) => {
+  db.query("SELECT m.* FROM medicamentos m JOIN pacientes p ON m.paciente_id = p.paciente_id WHERE p.fk_usuario_id = ? ORDER BY m.created_at DESC", [usuarioId], cb);
 };
-export const buscarMedicamentoPorId = (id, callback) => {
-  db.query("SELECT * FROM medicamentos WHERE medicamento_id = ?", [id], callback);
-};
-export const atualizarMedicamento = (id, med, callback) => {
-  const sql = `UPDATE medicamentos
-               SET nome=?, dosagem=?, intervalo_horas=?, horarios=?, inicio=?, duracao_days=?, uso_continuo=?, paciente_id=?
-               WHERE medicamento_id=?`;
-  const values = [
-    med.nome || null,
-    med.dosagem || null,
-    med.intervalo_horas || null,
-    med.horarios || null,
-    med.inicio || null,
-    med.duracao_days || null,
-    med.uso_continuo ? 1 : 0,
-    med.paciente_id || null,
-    id
-  ];
-  db.query(sql, values, callback);
-};
-export const deletarMedicamento = (id, callback) => {
-  db.query("DELETE FROM medicamentos WHERE medicamento_id = ?", [id], callback);
+export const deletarMedicamento = (id, cb) => {
+  db.query("DELETE FROM medicamentos WHERE medicamento_id = ?", [id], cb);
 };

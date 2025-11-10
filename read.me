@@ -1,0 +1,21 @@
+1) BACKEND
+cd backend
+npm install
+cp .env.example .env
+# ajuste .env se necessário
+node src/server.js
+# ou usar pm2:
+# npm install -g pm2
+# pm2 start src/server.js --name carehub_backend
+
+2) FRONTEND
+cd frontend
+npm install
+npx expo start
+
+3) Crie as tabelas no MySQL
+mysql -u root -p carehub_db < SQL_SCHEMA.sql
+
+4) Observações
+- API_URL no frontend/src/config/api.ts já apontada para http://54.39.173.152:3000/api
+- Substitua frontend/src/config/cores.ts pelo seu arquivo cores.ts (herdado do projeto)

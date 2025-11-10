@@ -1,13 +1,8 @@
 import express from "express";
-import {
-  getRegistros,
-  getRegistroById,
-  postRegistro,
-  deleteRegistro,
-} from "../controllers/diarioController.js";
+import { postRegistro, getRegistros, deleteRegistro } from "../controllers/diarioController.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 const router = express.Router();
-router.get("/", getRegistros);
-router.get("/:id", getRegistroById);
-router.post("/", postRegistro);
-router.delete("/:id", deleteRegistro);
+router.post("/", authMiddleware, postRegistro);
+router.get("/", authMiddleware, getRegistros);
+router.delete("/:id", authMiddleware, deleteRegistro);
 export default router;
