@@ -1,42 +1,169 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, FlatList } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import cores from "../config/cores";
 import { API_URL } from "../config/api";
 import { getToken } from "../utils/auth";
-export default function Home() {
-  const [tarefas, setTarefas] = useState([]);
-  const [meds, setMeds] = useState([]);
+
+export default function Home({ navigation }: any) {
+  const [tarefas, setTarefas] = useState<any[]>([]);
+  const [medicamentos, setMedicamentos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     (async () => {
-      const token = await getToken();
       try {
-        const resT = await fetch(`${API_URL}/tarefas`, { headers: { Authorization: `Bearer ${token}` } });
-        const t = await resT.json();
-        setTarefas(t);
-        const resM = await fetch(`${API_URL}/medicamentos`, { headers: { Authorization: `Bearer ${token}` } });
-        const m = await resM.json();
-        setMeds(m);
-      } catch (err) {}
+        const token = await getToken();
+        const [resTarefas, resMedicamentos] = await Promise.all([
+          fetch(`${API_URL}/tarefas`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${API_URL}/medicamentos`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+
+        const dataTarefas = await resTarefas.json();
+        const dataMedicamentos = await resMedicamentos.json();
+
+        setTarefas(dataTarefas);
+        setMedicamentos(dataMedicamentos);
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Resumo do Dia</Text>
-      <Text style={styles.section}>Próximas Tarefas</Text>
-      <FlatList data={tarefas} keyExtractor={(i:any)=>i.tarefa_id?.toString()||Math.random().toString()} renderItem={({item})=>(
-        <View style={styles.card}><Text style={styles.cardTitle}>{item.titulo}</Text><Text>{item.data||""} {item.hora||""}</Text></View>
-      )} />
-      <Text style={styles.section}>Medicamentos</Text>
-      <FlatList data={meds} keyExtractor={(i:any)=>i.medicamento_id?.toString()||Math.random().toString()} renderItem={({item})=>(
-        <View style={styles.card}><Text style={styles.cardTitle}>{item.nome}</Text><Text>{item.horarios||""}</Text></View>
-      )} />
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Resumo do Dia</Text>
+
+        {loading ? (
+          <ActivityIndicator size="large" color={cores.primary} style={{ marginTop: 40 }} />
+        ) : (
+          <>
+            {/* 🗂️ Tarefas */}
+            <View style={styles.section}>
+              <View style={styles.header}>
+                <Text style={styles.sectionTitle}>Tarefas</Text>
+                <TouchableOpacity onPress={() => navigation.navigate("Tarefas")}>
+                  <Text style={styles.link}>Ver todas</Text>
+                </TouchableOpacity>
+              </View>
+
+              {tarefas.length === 0 ? (
+                <Text style={styles.emptyText}>Nenhuma tarefa para hoje.</Text>
+              ) : (
+                <FlatList
+                  data={tarefas.slice(0, 3)}
+                  keyExtractor={(item) => item.tarefa_id?.toString() || Math.random().toString()}
+                  renderItem={({ item }) => (
+                    <View style={styles.card}>
+                      <Text style={styles.cardTitle}>{item.titulo}</Text>
+                      <Text style={styles.cardText}>{item.detalhes}</Text>
+                    </View>
+                  )}
+                />
+              )}
+            </View>
+
+            {/* 💊 Medicamentos */}
+            <View style={styles.section}>
+              <View style={styles.header}>
+                <Text style={styles.sectionTitle}>Medicamentos</Text>
+                <TouchableOpacity onPress={() => navigation.navigate("Medicamentos")}>
+                  <Text style={styles.link}>Ver todos</Text>
+                </TouchableOpacity>
+              </View>
+
+              {medicamentos.length === 0 ? (
+                <Text style={styles.emptyText}>Nenhum medicamento agendado.</Text>
+              ) : (
+                <FlatList
+                  data={medicamentos.slice(0, 3)}
+                  keyExtractor={(item) =>
+                    item.medicamento_id?.toString() || Math.random().toString()
+                  }
+                  renderItem={({ item }) => (
+                    <View style={styles.card}>
+                      <Text style={styles.cardTitle}>{item.nome}</Text>
+                      <Text style={styles.cardText}>{item.dosagem}</Text>
+                    </View>
+                  )}
+                />
+              )}
+            </View>
+          </>
+        )}
+      </View>
+    </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
-  container:{flex:1,padding:16,backgroundColor:cores.background},
-  title:{fontSize:22,fontWeight:"700",color:cores.primary,marginBottom:12},
-  section:{fontWeight:"700",marginTop:12,marginBottom:6},
-  card:{backgroundColor:"#fff",padding:12,borderRadius:10,marginBottom:8},
-  cardTitle:{fontWeight:"700"}
+  safeArea: {
+    flex: 1,
+    backgroundColor: cores.background,
+  },
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: cores.primary,
+    marginBottom: 16,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: cores.primary,
+  },
+  link: {
+    color: cores.primary,
+    fontWeight: "600",
+  },
+  emptyText: {
+    fontSize: 15,
+    color: "#666",
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardTitle: {
+    fontWeight: "700",
+    color: cores.primary,
+    marginBottom: 2,
+  },
+  cardText: {
+    fontSize: 15,
+    color: "#333",
+  },
 });

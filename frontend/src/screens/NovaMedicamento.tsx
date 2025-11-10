@@ -1,37 +1,136 @@
 import React, { useState } from "react";
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, ScrollView, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import cores from "../config/cores";
 import { API_URL } from "../config/api";
 import { getToken } from "../utils/auth";
+
 export default function NovaMedicamento({ navigation }: any) {
   const [nome, setNome] = useState("");
   const [dosagem, setDosagem] = useState("");
-  const criar = async () => {
-    if (!nome) return Alert.alert("Informe o nome");
-    const token = await getToken();
-    const res = await fetch(`${API_URL}/medicamentos`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ nome, dosagem })
-    });
-    if (!res.ok) return Alert.alert("Erro");
-    Alert.alert("Criado");
-    navigation.goBack();
+  const [horario, setHorario] = useState(new Date());
+  const [mostraHora, setMostraHora] = useState(false);
+  const [intervalo, setIntervalo] = useState("");
+  const [usoContinuo, setUsoContinuo] = useState(false);
+
+  async function handleSalvar() {
+    if (!nome || !dosagem) {
+      Alert.alert("Campos obrigatórios", "Preencha todos os campos necessários.");
+      return;
+    }
+
+    try {
+      const token = await getToken();
+      await fetch(`${API_URL}/medicamentos`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          nome,
+          dosagem,
+          horario: horario.toISOString().split("T")[1].substring(0, 5),
+          intervalo,
+          usoContinuo,
+        }),
+      });
+      Alert.alert("Sucesso", "Medicamento cadastrado com sucesso!");
+      navigation.goBack();
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Erro", "Não foi possível cadastrar o medicamento.");
+    }
+  }
+
+  const onHoraChange = (e: DateTimePickerEvent, date?: Date) => {
+    setMostraHora(false);
+    if (date) setHorario(date);
   };
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.label}>Nome</Text>
-      <TextInput value={nome} onChangeText={setNome} style={styles.input} />
-      <Text style={styles.label}>Dosagem</Text>
-      <TextInput value={dosagem} onChangeText={setDosagem} style={styles.input} />
-      <TouchableOpacity style={styles.btn} onPress={criar}><Text style={styles.btnText}>Salvar</Text></TouchableOpacity>
-    </ScrollView>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.title}>Novo Medicamento</Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Nome do medicamento"
+          value={nome}
+          onChangeText={setNome}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Dosagem (ex: 500mg)"
+          value={dosagem}
+          onChangeText={setDosagem}
+        />
+
+        <TouchableOpacity style={styles.input} onPress={() => setMostraHora(true)}>
+          <Text>Horário: {horario.toLocaleTimeString().slice(0, 5)}</Text>
+        </TouchableOpacity>
+
+        {mostraHora && (
+          <DateTimePicker
+            value={horario}
+            mode="time"
+            is24Hour={true}
+            onChange={onHoraChange}
+          />
+        )}
+
+        <TextInput
+          style={styles.input}
+          placeholder="Intervalo (ex: a cada 8h)"
+          value={intervalo}
+          onChangeText={setIntervalo}
+        />
+
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: cores.primary }]}
+          onPress={handleSalvar}
+        >
+          <Text style={styles.buttonText}>Salvar</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
-  container:{padding:16,backgroundColor:cores.background,flexGrow:1},
-  label:{fontWeight:"700",color:cores.primary,marginTop:8},
-  input:{backgroundColor:"#fff",padding:10,borderRadius:10,marginTop:8},
-  btn:{backgroundColor:cores.primary,padding:14,alignItems:"center",borderRadius:12,marginTop:12},
-  btnText:{color:"#fff",fontWeight:"700"}
+  safeArea: { flex: 1, backgroundColor: cores.background },
+  container: { padding: 16 },
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: cores.primary,
+    marginBottom: 20,
+  },
+  input: {
+    backgroundColor: "#fff",
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  button: {
+    padding: 14,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });
