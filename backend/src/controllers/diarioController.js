@@ -1,28 +1,16 @@
-import {
-  criarRegistro,
-  listarRegistros,
-  buscarRegistroPorId,
-  deletarRegistro,
-} from "../models/diarioModel.js";
+import { criarRegistro, listarRegistrosPorUsuario, deletarRegistro } from "../models/diarioModel.js";
+export const postRegistro = (req, res) => {
+  const r = req.body;
+  r.usuario_id = req.user.usuario_id;
+  criarRegistro(r, (err, rres) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.status(201).json({ registro_id: rres.insertId });
+  });
+};
 export const getRegistros = (req, res) => {
-  listarRegistros((err, results) => {
+  listarRegistrosPorUsuario(req.user.usuario_id, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
-  });
-};
-export const getRegistroById = (req, res) => {
-  const id = req.params.id;
-  buscarRegistroPorId(id, (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!results || results.length === 0) return res.status(404).json({ message: "Registro não encontrado" });
-    res.json(results[0]);
-  });
-};
-export const postRegistro = (req, res) => {
-  const novo = req.body;
-  criarRegistro(novo, (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.status(201).json({ message: "Registro criado", registro_id: results.insertId });
   });
 };
 export const deleteRegistro = (req, res) => {

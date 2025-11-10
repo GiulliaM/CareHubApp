@@ -5,13 +5,13 @@ const connection = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
+  database: process.env.DB_NAME
 });
-connection.connect((err) => {
+connection.connect(err => {
   if (err) {
-    console.error("❌ Erro ao conectar ao MySQL:", err);
+    console.error("Erro ao conectar ao MySQL:", err);
   } else {
-    console.log("✅ Conectado ao banco", process.env.DB_NAME, "com usuário", process.env.DB_USER);
+    console.log("Conectado ao MySQL:", process.env.DB_NAME);
   }
 });
 export default connection;

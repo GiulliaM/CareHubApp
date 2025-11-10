@@ -1,15 +1,8 @@
 import express from "express";
-import {
-  getTarefas,
-  getTarefaById,
-  postTarefa,
-  putTarefa,
-  deleteTarefa,
-} from "../controllers/tarefaController.js";
+import { postTarefa, getTarefas, deleteTarefa } from "../controllers/tarefaController.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 const router = express.Router();
-router.get("/", getTarefas);
-router.get("/:id", getTarefaById);
-router.post("/", postTarefa);
-router.put("/:id", putTarefa);
-router.delete("/:id", deleteTarefa);
+router.post("/", authMiddleware, postTarefa);
+router.get("/", authMiddleware, getTarefas);
+router.delete("/:id", authMiddleware, deleteTarefa);
 export default router;
