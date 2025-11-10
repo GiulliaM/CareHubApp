@@ -4,7 +4,7 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, ActivityInd
 // <<< MUDANÇA: useFocusEffect importado
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { styles } from '../style/estilosGlobais'; 
+import { styles } from '../style/homeStyle'; 
 import { cores } from '../constantes/cores';
 import { LogIn, Camera } from 'lucide-react-native';
 import { Image } from 'expo-image'; 
