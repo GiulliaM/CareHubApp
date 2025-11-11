@@ -12,8 +12,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import axios from "axios";
 import { API_URL } from "../config/api";
 import cores from "../config/cores";
+import { saveToken, saveUserMeta } from '../utils/auth';
+import { useTheme } from '../context/ThemeContext';
 
 export default function Cadastro({ navigation }: any) {
+  const { colors } = useTheme();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -36,6 +39,17 @@ export default function Cadastro({ navigation }: any) {
       });
 
       if (res.status === 201) {
+        // backend returns token and usuario_id
+        const token = res.data?.token;
+        const usuario_id = res.data?.usuario_id;
+        if (token) {
+          await saveToken(token);
+          await saveUserMeta({ usuario_id, nome, tipo });
+          // go to patient registration so patient is linked to this user
+          navigation.reset({ index: 0, routes: [{ name: 'RegisterPatient' }] });
+          return;
+        }
+        // fallback: go to login
         Alert.alert("Sucesso", "Cadastro realizado com sucesso!");
         navigation.navigate("Login");
       }
@@ -48,9 +62,9 @@ export default function Cadastro({ navigation }: any) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: cores.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Crie sua conta</Text>
+        <Text style={[styles.title, { color: colors.primary }]}>Crie sua conta</Text>
 
         <TextInput
           style={styles.input}
@@ -111,7 +125,7 @@ export default function Cadastro({ navigation }: any) {
         </View>
 
         <TouchableOpacity
-          style={styles.btnCadastrar}
+          style={[styles.btnCadastrar, { backgroundColor: colors.primary }]}
           onPress={handleCadastro}
           disabled={loading}
         >

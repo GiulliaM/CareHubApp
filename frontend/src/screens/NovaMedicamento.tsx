@@ -13,10 +13,13 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import cores from "../config/cores";
+import { useTheme } from '../context/ThemeContext';
 import { API_URL } from "../config/api";
 import { getToken } from "../utils/auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function NovaMedicamento({ navigation }: any) {
+  const { colors } = useTheme();
   const [nome, setNome] = useState("");
   const [dosagem, setDosagem] = useState("");
   const [horario, setHorario] = useState(new Date());
@@ -32,6 +35,12 @@ export default function NovaMedicamento({ navigation }: any) {
 
     try {
       const token = await getToken();
+      const rawPaciente = await AsyncStorage.getItem("paciente");
+      const paciente = rawPaciente ? JSON.parse(rawPaciente) : null;
+      if (!paciente?.paciente_id) {
+        Alert.alert("Erro", "Paciente não encontrado. Cadastre um paciente primeiro.");
+        return;
+      }
       await fetch(`${API_URL}/medicamentos`, {
         method: "POST",
         headers: {
@@ -44,6 +53,7 @@ export default function NovaMedicamento({ navigation }: any) {
           horario: horario.toISOString().split("T")[1].substring(0, 5),
           intervalo,
           usoContinuo,
+          paciente_id: paciente.paciente_id,
         }),
       });
       Alert.alert("Sucesso", "Medicamento cadastrado com sucesso!");
@@ -60,9 +70,9 @@ export default function NovaMedicamento({ navigation }: any) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Novo Medicamento</Text>
+        <Text style={[styles.title, { color: colors.primary }]}>Novo Medicamento</Text>
 
         <TextInput
           style={styles.input}
@@ -99,7 +109,7 @@ export default function NovaMedicamento({ navigation }: any) {
         />
 
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: cores.primary }]}
+          style={[styles.button, { backgroundColor: colors.primary }]}
           onPress={handleSalvar}
         >
           <Text style={styles.buttonText}>Salvar</Text>

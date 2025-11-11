@@ -10,10 +10,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import cores from "../config/cores";
+import { useTheme } from '../context/ThemeContext';
 import { API_URL } from "../config/api";
 import { getToken } from "../utils/auth";
 
 export default function NovoRegistro({ navigation }: any) {
+  const { colors } = useTheme();
   const [texto, setTexto] = useState("");
 
   async function handleSalvar() {
@@ -41,9 +43,9 @@ export default function NovoRegistro({ navigation }: any) {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Novo Registro</Text>
+        <Text style={[styles.title, { color: colors.primary }]}>Novo Registro</Text>
 
         <TextInput
           style={[styles.input, { height: 150 }]}
@@ -53,7 +55,7 @@ export default function NovoRegistro({ navigation }: any) {
           multiline
         />
 
-        <TouchableOpacity style={styles.button} onPress={handleSalvar}>
+        <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleSalvar}>
           <Text style={styles.buttonText}>Salvar</Text>
         </TouchableOpacity>
       </ScrollView>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { Alert } from "react-native";
 import {
   View,
   Text,
@@ -9,23 +10,28 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import cores from "../config/cores";
-import { API_URL } from "../config/api";
-import { getToken } from "../utils/auth";
+import { useTheme } from '../context/ThemeContext';
+import api from "../utils/apiClient";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from '@react-navigation/native';
 
 export default function Tarefas({ navigation }: any) {
+  const { colors } = useTheme();
   const [tarefas, setTarefas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchTarefas = useCallback(async () => {
     setLoading(true);
     try {
-      const token = await getToken();
-      const res = await fetch(`${API_URL}/tarefas`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const j = await res.json();
-      setTarefas(j);
+      const rawPaciente = await AsyncStorage.getItem("paciente");
+      const paciente = rawPaciente ? JSON.parse(rawPaciente) : null;
+      if (!paciente?.paciente_id) {
+        setTarefas([]);
+        setLoading(false);
+        return;
+      }
+      const res = await api.get(`/tarefas?paciente_id=${paciente.paciente_id}`);
+      setTarefas(res.data);
     } catch (err) {
       console.error("Erro ao carregar tarefas:", err);
     } finally {
@@ -40,12 +46,12 @@ export default function Tarefas({ navigation }: any) {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <View style={styles.container}>
-        <Text style={styles.title}>Tarefas</Text>
+        <Text style={[styles.title, { color: colors.primary }]}>Tarefas</Text>
 
         {loading ? (
-          <ActivityIndicator size="large" color={cores.primary} style={{ marginTop: 30 }} />
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 30 }} />
         ) : tarefas.length === 0 ? (
           <Text style={styles.emptyText}>Nenhuma tarefa cadastrada.</Text>
         ) : (
@@ -56,15 +62,34 @@ export default function Tarefas({ navigation }: any) {
             }
             renderItem={({ item }) => (
               <View style={styles.card}>
-                <Text style={styles.cardTitle}>{item.titulo}</Text>
-                <Text>{item.detalhes || ""}</Text>
+                <TouchableOpacity
+                  style={styles.checkbox}
+                  onPress={async () => {
+                    try {
+                      await api.patch(`/tarefas/${item.tarefa_id}`, { concluida: !item.concluida });
+                      setTarefas((prev) => prev.map((t) => t.tarefa_id === item.tarefa_id ? { ...t, concluida: !t.concluida } : t));
+                    } catch (e) {
+                      Alert.alert("Erro", "Não foi possível atualizar a tarefa.");
+                    }
+                  }}
+                >
+                  <View style={[styles.checkboxBox, item.concluida && styles.checkboxChecked]} />
+                </TouchableOpacity>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.cardTitle, { color: colors.primary }]}>{item.titulo}</Text>
+                  <Text style={{ color: colors.text }}>{item.detalhes || ""}</Text>
+                </View>
+                <View style={{ alignItems: 'flex-end', marginLeft: 12 }}>
+                  <Text style={{ color: '#666', fontSize: 12 }}>{item.hora || item.horario || ''}</Text>
+                  <Text style={{ color: '#666', fontSize: 12 }}>{item.data || ''}</Text>
+                </View>
               </View>
             )}
           />
         )}
 
         <TouchableOpacity
-          style={styles.add}
+          style={[styles.add, { backgroundColor: colors.primary }]}
           onPress={() => navigation.navigate("NovaTarefa")}
         >
           <Text style={styles.addText}>+ Nova</Text>
@@ -96,6 +121,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 1,
     borderColor: "#eee",
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   cardTitle: {
     fontWeight: "700",
@@ -110,4 +137,19 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   addText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  checkbox: {
+    marginRight: 12,
+    alignSelf: 'center',
+  },
+  checkboxBox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: cores.primary,
+    backgroundColor: '#fff',
+  },
+  checkboxChecked: {
+    backgroundColor: cores.primary,
+  },
 });

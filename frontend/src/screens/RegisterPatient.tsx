@@ -10,10 +10,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import cores from "../config/cores";
+import { useTheme } from '../context/ThemeContext';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "../config/api";
 import { getToken } from "../utils/auth";
 
 export default function RegisterPatient({ navigation }: any) {
+  const { colors } = useTheme();
   const [nome, setNome] = useState("");
   const [idade, setIdade] = useState("");
 
@@ -34,17 +37,24 @@ export default function RegisterPatient({ navigation }: any) {
       const json = await res.json();
       if (!res.ok) return Alert.alert(json.message || "Erro ao cadastrar.");
 
+      // Salva paciente vinculado no AsyncStorage
+      try {
+        await AsyncStorage.setItem("paciente", JSON.stringify({ paciente_id: json.paciente_id, nome, idade }));
+      } catch (e) {
+        // fallback: não salva
+      }
+
       Alert.alert("Sucesso", "Paciente cadastrado!");
-      navigation.goBack();
+      navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
     } catch {
       Alert.alert("Erro", "Falha de conexão com o servidor.");
     }
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Cadastrar Paciente</Text>
+        <Text style={[styles.title, { color: colors.primary }]}>Cadastrar Paciente</Text>
 
         <TextInput
           placeholder="Nome do paciente"
@@ -60,9 +70,11 @@ export default function RegisterPatient({ navigation }: any) {
           style={styles.input}
         />
 
-        <TouchableOpacity style={styles.btn} onPress={cadastrar}>
+        <TouchableOpacity style={[styles.btn, { backgroundColor: colors.primary }]} onPress={cadastrar}>
           <Text style={styles.btnText}>Salvar</Text>
         </TouchableOpacity>
+
+        {/* Não mostrar botão para pular ou voltar, só avança após cadastrar paciente */}
       </ScrollView>
     </SafeAreaView>
   );

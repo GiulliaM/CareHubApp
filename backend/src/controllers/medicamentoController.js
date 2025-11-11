@@ -1,4 +1,4 @@
-import { criarMedicamento, listarMedicamentosPorUsuario, deletarMedicamento } from "../models/medicamentoModel.js";
+import { criarMedicamento, listarMedicamentosPorUsuario, deletarMedicamento, atualizarMedicamento } from "../models/medicamentoModel.js";
 export const postMedicamento = (req, res) => {
   const m = req.body;
   criarMedicamento(m, (err, r) => {
@@ -17,5 +17,14 @@ export const deleteMedicamento = (req, res) => {
   deletarMedicamento(id, (err) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ message: "Medicamento excluído" });
+  });
+};
+
+export const patchMedicamento = (req, res) => {
+  const id = req.params.id;
+  const changes = req.body;
+  atualizarMedicamento(id, changes, (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'Medicamento atualizado' });
   });
 };

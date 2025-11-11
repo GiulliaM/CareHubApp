@@ -10,3 +10,11 @@ export const listarMedicamentosPorUsuario = (usuarioId, cb) => {
 export const deletarMedicamento = (id, cb) => {
   db.query("DELETE FROM medicamentos WHERE medicamento_id = ?", [id], cb);
 };
+
+export const atualizarMedicamento = (id, changes, cb) => {
+  const fields = Object.keys(changes).map(k => `${k} = ?`).join(', ');
+  const values = Object.keys(changes).map(k => changes[k]);
+  values.push(id);
+  const sql = `UPDATE medicamentos SET ${fields} WHERE medicamento_id = ?`;
+  db.query(sql, values, cb);
+};
