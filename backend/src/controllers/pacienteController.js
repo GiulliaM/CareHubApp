@@ -1,3 +1,12 @@
+import { atualizarPaciente } from "../models/pacienteModel.js";
+export const patchPaciente = (req, res) => {
+  const id = req.params.id;
+  const changes = req.body;
+  atualizarPaciente(id, changes, (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: "Paciente atualizado" });
+  });
+};
 import { criarPaciente, listarPacientesPorUsuario, buscarPacientePorId } from "../models/pacienteModel.js";
 export const postPaciente = (req, res) => {
   const p = req.body;
