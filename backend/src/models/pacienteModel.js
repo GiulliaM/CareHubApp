@@ -1,3 +1,10 @@
+export const atualizarPaciente = (id, changes, cb) => {
+  const fields = Object.keys(changes).map(k => `${k} = ?`).join(', ');
+  const values = Object.keys(changes).map(k => changes[k]);
+  values.push(id);
+  const sql = `UPDATE pacientes SET ${fields} WHERE paciente_id = ?`;
+  db.query(sql, values, cb);
+};
 import db from "../config/db.js";
 export const criarPaciente = (paciente, cb) => {
   const sql = "INSERT INTO pacientes (nome, idade, genero, observacoes, fk_usuario_id) VALUES (?, ?, ?, ?, ?)";
