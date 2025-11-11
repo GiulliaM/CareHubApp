@@ -1,3 +1,10 @@
+export const atualizarUsuario = (id, changes, cb) => {
+  const fields = Object.keys(changes).map(k => `${k} = ?`).join(', ');
+  const values = Object.keys(changes).map(k => changes[k]);
+  values.push(id);
+  const sql = `UPDATE usuarios SET ${fields} WHERE usuario_id = ?`;
+  db.query(sql, values, cb);
+};
 import db from "../config/db.js";
 export const criarUsuario = (usuario, cb) => {
   const sql = "INSERT INTO usuarios (nome, email, senha_hash, tipo) VALUES (?, ?, ?, ?)";

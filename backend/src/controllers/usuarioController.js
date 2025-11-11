@@ -1,3 +1,12 @@
+import { atualizarUsuario } from "../models/usuarioModel.js";
+export const patchUsuario = (req, res) => {
+  const id = req.params.id;
+  const changes = req.body;
+  atualizarUsuario(id, changes, (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: "Usuário atualizado" });
+  });
+};
 import { criarUsuario, buscarPorEmail, buscarPorId } from "../models/usuarioModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
