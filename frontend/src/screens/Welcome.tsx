@@ -8,7 +8,7 @@ export default function Welcome({ navigation }: any) {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <Image
-          source={require("../assets/images/bandaid-heart.webp")}
+          source={require("../../../assets/bandaid-heart.webp")}
           style={styles.logo}
           resizeMode="contain"
         />

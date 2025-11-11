@@ -1,17 +1,23 @@
-{
-  "extends": "expo/tsconfig.base",
+{  
   "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "jsx": "react-native",
     "strict": true,
-    "paths": {
-      "@/*": [
-        "./*"
-      ]
-    }
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": [
+      "react",
+      "react-native",
+      "node"
+    ]
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "index.js",
-    "backend/src/config/api.ts"
-  ]
+    "frontend/src/**/*",
+    "App.tsx"
+  ],
+  "extends": "expo/tsconfig.base"
 }
