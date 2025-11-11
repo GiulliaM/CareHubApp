@@ -1,4 +1,4 @@
-import { criarTarefa, listarTarefasPorUsuario, deletarTarefa } from "../models/tarefaModel.js";
+import { criarTarefa, listarTarefasPorUsuario, deletarTarefa, atualizarTarefa } from "../models/tarefaModel.js";
 export const postTarefa = (req, res) => {
   const t = req.body;
   t.responsavel_id = req.user.usuario_id;
@@ -18,5 +18,14 @@ export const deleteTarefa = (req, res) => {
   deletarTarefa(id, (err) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ message: "Tarefa excluída" });
+  });
+};
+
+export const patchTarefa = (req, res) => {
+  const id = req.params.id;
+  const changes = req.body;
+  atualizarTarefa(id, changes, (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'Tarefa atualizada' });
   });
 };

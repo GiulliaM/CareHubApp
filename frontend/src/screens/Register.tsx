@@ -10,86 +10,112 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import cores from "../config/cores";
+import { useTheme } from '../context/ThemeContext';
 import { API_URL } from "../config/api";
 import { saveToken, saveUserMeta } from "../utils/auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Register({ navigation }: any) {
+  const { colors } = useTheme();
+  const [step, setStep] = useState(1);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [tipo, setTipo] = useState("familiar");
+  const [nomePaciente, setNomePaciente] = useState("");
+  const [idadePaciente, setIdadePaciente] = useState("");
 
-  const cadastrar = async () => {
-    if (!nome || !email || !senha)
-      return Alert.alert("Campos obrigatórios", "Preencha todos os campos.");
-
+  const cadastrarCompleto = async () => {
+    if (!nome || !email || !senha || !nomePaciente) {
+      Alert.alert("Campos obrigatórios", "Preencha todos os campos do usuário e do paciente.");
+      return;
+    }
     try {
+      // 1. Cadastrar usuário
       const res = await fetch(`${API_URL}/usuarios/cadastro`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nome, email, senha, tipo }),
       });
       const json = await res.json();
-
-      if (!res.ok) return Alert.alert(json.message || "Erro ao cadastrar.");
-
+      if (!res.ok) return Alert.alert(json.message || "Erro ao cadastrar usuário.");
       await saveToken(json.token);
-      // fetch profile to get full user data and save meta
-      try {
-        const profileRes = await fetch(`${API_URL}/usuarios/perfil/${json.usuario_id}`, {
-          headers: { Authorization: `Bearer ${json.token}` },
-        });
-        if (profileRes.ok) {
-          const profileJson = await profileRes.json();
-          await saveUserMeta({ usuario_id: profileJson.usuario_id, nome: profileJson.nome, tipo: profileJson.tipo });
-        } else {
-          await saveUserMeta({ usuario_id: json.usuario_id, nome });
-        }
-      } catch (e) {
-        // fallback
-        await saveUserMeta({ usuario_id: json.usuario_id, nome });
-      }
+      await saveUserMeta({ usuario_id: json.usuario_id, nome, tipo });
+
+      // 2. Cadastrar paciente vinculado
+      const token = json.token;
+      const resPac = await fetch(`${API_URL}/pacientes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ nome: nomePaciente, idade: idadePaciente || null }),
+      });
+      const jsonPac = await resPac.json();
+      if (!resPac.ok) return Alert.alert(jsonPac.message || "Erro ao cadastrar paciente.");
+      await AsyncStorage.setItem("paciente", JSON.stringify({ paciente_id: jsonPac.paciente_id, nome: nomePaciente, idade: idadePaciente }));
+
+      // 3. Ir para o app
       navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
     } catch (err) {
       Alert.alert("Erro", "Falha de conexão com o servidor.");
     }
   };
 
+  if (step === 1) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}
+      >
+        <ScrollView contentContainerStyle={styles.container}>
+          <Text style={styles.title}>Cadastrar Usuário</Text>
+          <TextInput
+            placeholder="Nome"
+            value={nome}
+            onChangeText={setNome}
+            style={styles.input}
+          />
+          <TextInput
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            style={styles.input}
+          />
+          <TextInput
+            placeholder="Senha"
+            value={senha}
+            onChangeText={setSenha}
+            secureTextEntry
+            style={styles.input}
+          />
+          <TouchableOpacity style={styles.btn} onPress={() => setStep(2)}>
+            <Text style={styles.btnText}>Próximo</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+  // Etapa 2: Cadastro do paciente
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Cadastrar Usuário</Text>
-
+        <Text style={[styles.title, { color: colors.primary }]}>Cadastrar Paciente Vinculado</Text>
         <TextInput
-          placeholder="Nome"
-          value={nome}
-          onChangeText={setNome}
+          placeholder="Nome do paciente"
+          value={nomePaciente}
+          onChangeText={setNomePaciente}
           style={styles.input}
         />
         <TextInput
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
+          placeholder="Idade"
+          value={idadePaciente}
+          onChangeText={setIdadePaciente}
+          keyboardType="numeric"
           style={styles.input}
         />
-        <TextInput
-          placeholder="Senha"
-          value={senha}
-          onChangeText={setSenha}
-          secureTextEntry
-          style={styles.input}
-        />
-
-        <TouchableOpacity style={styles.btn} onPress={cadastrar}>
-          <Text style={styles.btnText}>Criar Conta</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.linkWrap}
-          onPress={() => navigation.navigate("RegisterPatient")}
-        >
-          <Text style={styles.link}>Cadastrar Paciente</Text>
+        <TouchableOpacity style={styles.btn} onPress={cadastrarCompleto}>
+          <Text style={styles.btnText}>Finalizar Cadastro</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

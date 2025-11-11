@@ -13,14 +13,18 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import cores from "../config/cores";
-import { API_URL } from "../config/api";
-import { getToken } from "../utils/auth";
+import { useTheme } from '../context/ThemeContext';
+import api from "../utils/apiClient";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function NovaTarefa({ navigation }: any) {
+  const { colors } = useTheme();
   const [titulo, setTitulo] = useState("");
   const [detalhes, setDetalhes] = useState("");
   const [hora, setHora] = useState(new Date());
   const [mostraHora, setMostraHora] = useState(false);
+  const [data, setData] = useState(new Date());
+  const [mostraData, setMostraData] = useState(false);
   const [diasSelecionados, setDiasSelecionados] = useState<string[]>([]);
 
   const diasSemana = ["D", "S", "T", "Q", "Q", "S", "S"];
@@ -44,21 +48,20 @@ export default function NovaTarefa({ navigation }: any) {
       Alert.alert("Erro", "Preencha o título da tarefa.");
       return;
     }
-
     try {
-      const token = await getToken();
-      await fetch(`${API_URL}/tarefas`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          titulo,
-          detalhes,
-          hora: hora.toISOString().split("T")[1].substring(0, 5),
-          dias_repeticao: diasSelecionados.join(","),
-        }),
+      const rawPaciente = await AsyncStorage.getItem("paciente");
+      const paciente = rawPaciente ? JSON.parse(rawPaciente) : null;
+      if (!paciente?.paciente_id) {
+        Alert.alert("Erro", "Paciente não encontrado. Cadastre um paciente primeiro.");
+        return;
+      }
+      await api.post("/tarefas", {
+        titulo,
+        detalhes,
+        data: data.toISOString().split("T")[0],
+        hora: hora.toISOString().split("T")[1].substring(0, 5),
+        dias_repeticao: diasSelecionados.join(","),
+        paciente_id: paciente.paciente_id,
       });
       Alert.alert("Sucesso", "Tarefa cadastrada com sucesso!");
       navigation.goBack();
@@ -69,9 +72,9 @@ export default function NovaTarefa({ navigation }: any) {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Nova Tarefa</Text>
+        <Text style={[styles.title, { color: colors.primary }]}>Nova Tarefa</Text>
 
         <TextInput
           style={styles.input}
@@ -88,10 +91,24 @@ export default function NovaTarefa({ navigation }: any) {
           multiline
         />
 
+        <TouchableOpacity style={styles.input} onPress={() => setMostraData(true)}>
+          <Text>Data: {data.toLocaleDateString()}</Text>
+        </TouchableOpacity>
+        {mostraData && (
+          <DateTimePicker
+            value={data}
+            mode="date"
+            display="default"
+            onChange={(e, d) => {
+              setMostraData(false);
+              if (d) setData(d);
+            }}
+          />
+        )}
+
         <TouchableOpacity style={styles.input} onPress={() => setMostraHora(true)}>
           <Text>Hora: {hora.toLocaleTimeString().slice(0, 5)}</Text>
         </TouchableOpacity>
-
         {mostraHora && (
           <DateTimePicker
             value={hora}
@@ -125,7 +142,7 @@ export default function NovaTarefa({ navigation }: any) {
           ))}
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={handleSalvar}>
+        <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleSalvar}>
           <Text style={styles.buttonText}>Salvar</Text>
         </TouchableOpacity>
       </ScrollView>

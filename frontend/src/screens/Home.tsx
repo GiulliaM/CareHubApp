@@ -9,10 +9,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import cores from "../config/cores";
+import { useTheme } from '../context/ThemeContext';
 import { API_URL } from "../config/api";
 import { getToken } from "../utils/auth";
 
 export default function Home({ navigation }: any) {
+  const { colors } = useTheme();
   const [tarefas, setTarefas] = useState<any[]>([]);
   const [medicamentos, setMedicamentos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,9 +46,9 @@ export default function Home({ navigation }: any) {
   }, []);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }] }>
       <View style={styles.container}>
-        <Text style={styles.title}>Resumo do Dia</Text>
+        <Text style={[styles.title, { color: colors.primary }]}>Resumo do Dia</Text>
 
         {loading ? (
           <ActivityIndicator size="large" color={cores.primary} style={{ marginTop: 40 }} />
@@ -55,9 +57,9 @@ export default function Home({ navigation }: any) {
             {/* 🗂️ Tarefas */}
             <View style={styles.section}>
               <View style={styles.header}>
-                <Text style={styles.sectionTitle}>Tarefas</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.primary }]}>Tarefas</Text>
                 <TouchableOpacity onPress={() => navigation.navigate("Tarefas")}>
-                  <Text style={styles.link}>Ver todas</Text>
+                    <Text style={[styles.link, { color: colors.primary }]}>Ver todas</Text>
                 </TouchableOpacity>
               </View>
 
@@ -69,8 +71,8 @@ export default function Home({ navigation }: any) {
                   keyExtractor={(item) => item.tarefa_id?.toString() || Math.random().toString()}
                   renderItem={({ item }) => (
                     <View style={styles.card}>
-                      <Text style={styles.cardTitle}>{item.titulo}</Text>
-                      <Text style={styles.cardText}>{item.detalhes}</Text>
+                      <Text style={[styles.cardTitle, { color: colors.primary }]}>{item.titulo}</Text>
+                      <Text style={[styles.cardText, { color: colors.text }]}>{item.detalhes}</Text>
                     </View>
                   )}
                 />
@@ -80,9 +82,9 @@ export default function Home({ navigation }: any) {
             {/* 💊 Medicamentos */}
             <View style={styles.section}>
               <View style={styles.header}>
-                <Text style={styles.sectionTitle}>Medicamentos</Text>
+                <Text style={[styles.sectionTitle, { color: colors.primary }]}>Medicamentos</Text>
                 <TouchableOpacity onPress={() => navigation.navigate("Medicamentos")}>
-                  <Text style={styles.link}>Ver todos</Text>
+                  <Text style={[styles.link, { color: colors.primary }]}>Ver todos</Text>
                 </TouchableOpacity>
               </View>
 
@@ -96,8 +98,8 @@ export default function Home({ navigation }: any) {
                   }
                   renderItem={({ item }) => (
                     <View style={styles.card}>
-                      <Text style={styles.cardTitle}>{item.nome}</Text>
-                      <Text style={styles.cardText}>{item.dosagem}</Text>
+                      <Text style={[styles.cardTitle, { color: colors.primary }]}>{item.nome}</Text>
+                      <Text style={[styles.cardText, { color: colors.text }]}>{item.dosagem}</Text>
                     </View>
                   )}
                 />

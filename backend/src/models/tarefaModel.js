@@ -10,3 +10,12 @@ export const listarTarefasPorUsuario = (usuarioId, cb) => {
 export const deletarTarefa = (id, cb) => {
   db.query("DELETE FROM tarefas WHERE tarefa_id = ?", [id], cb);
 };
+
+export const atualizarTarefa = (id, changes, cb) => {
+  // changes is an object like { concluida: 1 }
+  const fields = Object.keys(changes).map(k => `${k} = ?`).join(', ');
+  const values = Object.keys(changes).map(k => changes[k]);
+  values.push(id);
+  const sql = `UPDATE tarefas SET ${fields} WHERE tarefa_id = ?`;
+  db.query(sql, values, cb);
+};

@@ -9,11 +9,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import cores from "../config/cores";
+import { useTheme } from '../context/ThemeContext';
 import { API_URL } from "../config/api";
 import { getToken } from "../utils/auth";
 import { useFocusEffect } from '@react-navigation/native';
 
 export default function Diario({ navigation }: any) {
+  const { colors } = useTheme();
   const [registros, setRegistros] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,12 +42,12 @@ export default function Diario({ navigation }: any) {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <View style={styles.container}>
-        <Text style={styles.title}>Diário</Text>
+        <Text style={[styles.title, { color: colors.primary }]}>Diário</Text>
 
         {loading ? (
-          <ActivityIndicator size="large" color={cores.primary} style={{ marginTop: 30 }} />
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 30 }} />
         ) : registros.length === 0 ? (
           <Text style={styles.emptyText}>Nenhum registro encontrado.</Text>
         ) : (
@@ -54,15 +56,15 @@ export default function Diario({ navigation }: any) {
             keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
             renderItem={({ item }) => (
               <View style={styles.card}>
-                <Text style={styles.cardTitle}>{item.data}</Text>
-                <Text style={styles.cardText}>{item.texto}</Text>
+                <Text style={[styles.cardTitle, { color: colors.primary }]}>{item.data}</Text>
+                <Text style={[styles.cardText, { color: colors.text }]}>{item.texto}</Text>
               </View>
             )}
           />
         )}
 
         <TouchableOpacity
-          style={styles.addButton}
+          style={[styles.addButton, { backgroundColor: colors.primary }]}
           onPress={() => navigation.navigate("NovoRegistro")}
         >
           <Text style={styles.addButtonText}>+ Novo Registro</Text>

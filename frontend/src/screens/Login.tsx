@@ -12,12 +12,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import axios from "axios";
 import { API_URL } from "../config/api";
 import cores from "../config/cores";
+import { useTheme } from '../context/ThemeContext';
 import { saveToken, saveUserMeta } from "../utils/auth";
 
 export default function Login({ navigation }: any) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
+  const { colors } = useTheme();
 
   async function handleLogin() {
     if (!email || !senha) {
@@ -90,7 +92,7 @@ export default function Login({ navigation }: any) {
         />
 
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.button, { backgroundColor: colors.primary }]}
           onPress={handleLogin}
           disabled={loading}
         >

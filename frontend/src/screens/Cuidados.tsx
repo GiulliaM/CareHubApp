@@ -2,31 +2,29 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import cores from "../config/cores";
+import { useTheme } from '../context/ThemeContext';
 
 export default function Cuidados({ navigation }: any) {
+  const { colors } = useTheme();
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <View style={styles.container}>
-        <Text style={styles.title}>Cuidados e Rotinas</Text>
+        <Text style={[styles.title, { color: colors.primary }]}>Cuidados e Rotinas</Text>
 
         <TouchableOpacity
           style={styles.card}
           onPress={() => navigation.navigate("Tarefas")}
         >
-          <Text style={styles.cardTitle}>Tarefas</Text>
-          <Text style={styles.cardDesc}>
-            Registre e acompanhe tarefas importantes do dia a dia.
-          </Text>
+          <Text style={[styles.cardTitle, { color: colors.primary }]}>Tarefas</Text>
+          <Text style={[styles.cardDesc, { color: colors.text }]}>Registre e acompanhe tarefas importantes do dia a dia.</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.card}
           onPress={() => navigation.navigate("Medicamentos")}
         >
-          <Text style={styles.cardTitle}>Medicamentos</Text>
-          <Text style={styles.cardDesc}>
-            Controle o uso e os horários dos medicamentos com facilidade.
-          </Text>
+          <Text style={[styles.cardTitle, { color: colors.primary }]}>Medicamentos</Text>
+          <Text style={[styles.cardDesc, { color: colors.text }]}>Controle o uso e os horários dos medicamentos com facilidade.</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

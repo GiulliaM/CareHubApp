@@ -1,6 +1,11 @@
 import React from "react";
 import RootNavigator from "./frontend/src/navigation/RootNavigator";
+import { ThemeProvider } from "./frontend/src/context/ThemeContext";
 
 export default function App() {
-  return <RootNavigator />;
+  return (
+    <ThemeProvider>
+      <RootNavigator />
+    </ThemeProvider>
+  );
 }

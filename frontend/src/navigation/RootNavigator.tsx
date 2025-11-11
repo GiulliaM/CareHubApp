@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { View, ActivityIndicator } from 'react-native';
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -6,24 +6,42 @@ import Welcome from "../screens/Welcome";
 import Login from "../screens/Login";
 import Cadastro from "../screens/Cadastro";
 import Tabs from "./Tabs";
+import RegisterPatient from "../screens/RegisterPatient";
 import NovaTarefa from "../screens/NovaTarefa";
 import NovaMedicamento from "../screens/NovaMedicamento";
 import NovoRegistro from "../screens/NovoRegistro";
 import { getToken } from "../utils/auth";
+import EditUser from "../screens/EditUser";
+import EditPatient from "../screens/EditPatient";
 
 const Stack = createNativeStackNavigator();
 
-const navigationRef = createNavigationContainerRef();
+export const navigationRef = createNavigationContainerRef();
 
 export default function RootNavigator() {
-  // Always show Welcome first. If a token exists we will navigate to Tabs programmatically
+  // show a small loading indicator while we check for a saved token
+  const [checking, setChecking] = useState(true);
+
   useEffect(() => {
     (async () => {
       const token = await getToken();
-      if (token && navigationRef.isReady()) {
-        // navigationRef.navigate has strict typing; use current?.navigate to avoid TS overload issues
-        (navigationRef as any).current?.navigate?.("Tabs");
+      if (token) {
+        // navigationRef might not be ready immediately; use resetRoot if available
+        setTimeout(() => {
+          // prefer resetRoot (clears history) and fall back to navigate
+          if ((navigationRef as any).resetRoot) {
+            try {
+              (navigationRef as any).resetRoot({ index: 0, routes: [{ name: "Tabs" }] });
+            } catch (e) {
+              // fallback
+              (navigationRef as any).navigate?.("Tabs");
+            }
+          } else {
+            (navigationRef as any).navigate?.("Tabs");
+          }
+        }, 100);
       }
+      setChecking(false);
     })();
   }, []);
 
@@ -43,6 +61,21 @@ export default function RootNavigator() {
         <Stack.Screen
           name="Cadastro"
           component={Cadastro}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="RegisterPatient"
+          component={RegisterPatient}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="EditUser"
+          component={EditUser}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="EditPatient"
+          component={EditPatient}
           options={{ headerShown: false }}
         />
         <Stack.Screen
@@ -66,6 +99,11 @@ export default function RootNavigator() {
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
+      {checking && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }} pointerEvents="none">
+          <ActivityIndicator size="large" color="#000" />
+        </View>
+      )}
     </NavigationContainer>
   );
 }
