@@ -12,7 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import axios from "axios";
 import { API_URL } from "../config/api";
 import cores from "../config/cores";
-import { saveToken } from "../utils/auth";
+import { saveToken, saveUserMeta } from "../utils/auth";
 
 export default function Login({ navigation }: any) {
   const [email, setEmail] = useState("");
@@ -34,6 +34,11 @@ export default function Login({ navigation }: any) {
 
       if (res.status === 200 && res.data.token) {
         await saveToken(res.data.token);
+        // save small user meta (id + optionally name) for quick UI access
+        try {
+          const meta = { usuario_id: res.data.usuario_id };
+          await saveUserMeta(meta as any);
+        } catch {}
         Alert.alert("Bem-vindo!", "Login realizado com sucesso.");
         navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
       } else {
