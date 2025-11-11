@@ -34,11 +34,23 @@ export default function Login({ navigation }: any) {
 
       if (res.status === 200 && res.data.token) {
         await saveToken(res.data.token);
-        // save small user meta (id + optionally name) for quick UI access
+        // fetch full profile to save user meta (name, tipo)
         try {
-          const meta = { usuario_id: res.data.usuario_id };
-          await saveUserMeta(meta as any);
-        } catch {}
+          const token = res.data.token;
+          const id = res.data.usuario_id;
+          const profileRes = await fetch(`${API_URL}/usuarios/perfil/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (profileRes.ok) {
+            const profileJson = await profileRes.json();
+            await saveUserMeta({ usuario_id: profileJson.usuario_id, nome: profileJson.nome, tipo: profileJson.tipo });
+          } else {
+            // fallback save id only
+            await saveUserMeta({ usuario_id: res.data.usuario_id });
+          }
+        } catch (e) {
+          console.warn('Não foi possível obter perfil após login', e);
+        }
         Alert.alert("Bem-vindo!", "Login realizado com sucesso.");
         navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
       } else {

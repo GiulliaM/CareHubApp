@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { NavigationContainer } from "@react-navigation/native";
+import React, { useEffect } from "react";
+import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { View, ActivityIndicator } from 'react-native';
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Welcome from "../screens/Welcome";
@@ -13,32 +13,23 @@ import { getToken } from "../utils/auth";
 
 const Stack = createNativeStackNavigator();
 
-export default function RootNavigator() {
-  const [initialRoute, setInitialRoute] = useState<"Welcome" | "Tabs" | null>(null);
+const navigationRef = createNavigationContainerRef();
 
+export default function RootNavigator() {
+  // Always show Welcome first. If a token exists we will navigate to Tabs programmatically
   useEffect(() => {
     (async () => {
       const token = await getToken();
-      if (token) {
-        setInitialRoute("Tabs");
-      } else {
-        setInitialRoute("Welcome");
+      if (token && navigationRef.isReady()) {
+        // navigationRef.navigate has strict typing; use current?.navigate to avoid TS overload issues
+        (navigationRef as any).current?.navigate?.("Tabs");
       }
     })();
   }, []);
 
-  // show a simple loading indicator while we determine initial route
-  if (initialRoute === null) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName={initialRoute}>
+    <NavigationContainer ref={navigationRef}>
+      <Stack.Navigator initialRouteName={"Welcome"}>
         <Stack.Screen
           name="Welcome"
           component={Welcome}

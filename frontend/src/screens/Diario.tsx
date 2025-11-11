@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,27 +11,33 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import cores from "../config/cores";
 import { API_URL } from "../config/api";
 import { getToken } from "../utils/auth";
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function Diario({ navigation }: any) {
   const [registros, setRegistros] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const token = await getToken();
-        const response = await fetch(`${API_URL}/diario`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await response.json();
-        setRegistros(data);
-      } catch (error) {
-        console.error("Erro ao carregar registros:", error);
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const fetchRegistros = useCallback(async () => {
+    setLoading(true);
+    try {
+      const token = await getToken();
+      const response = await fetch(`${API_URL}/diario`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      setRegistros(data);
+    } catch (error) {
+      console.error("Erro ao carregar registros:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchRegistros();
+    }, [fetchRegistros])
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>

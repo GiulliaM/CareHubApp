@@ -34,10 +34,21 @@ export default function Register({ navigation }: any) {
       if (!res.ok) return Alert.alert(json.message || "Erro ao cadastrar.");
 
       await saveToken(json.token);
-      // save small user meta so profile can show name / id quickly
+      // fetch profile to get full user data and save meta
       try {
+        const profileRes = await fetch(`${API_URL}/usuarios/perfil/${json.usuario_id}`, {
+          headers: { Authorization: `Bearer ${json.token}` },
+        });
+        if (profileRes.ok) {
+          const profileJson = await profileRes.json();
+          await saveUserMeta({ usuario_id: profileJson.usuario_id, nome: profileJson.nome, tipo: profileJson.tipo });
+        } else {
+          await saveUserMeta({ usuario_id: json.usuario_id, nome });
+        }
+      } catch (e) {
+        // fallback
         await saveUserMeta({ usuario_id: json.usuario_id, nome });
-      } catch {}
+      }
       navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
     } catch (err) {
       Alert.alert("Erro", "Falha de conexão com o servidor.");
