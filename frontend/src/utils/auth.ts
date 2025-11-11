@@ -27,7 +27,7 @@ export async function logout() {
 }
 
 // Save a small user object (id, nome) alongside the token for quick access in UI
-export async function saveUserMeta(user: { usuario_id?: number; nome?: string }) {
+export async function saveUserMeta(user: { usuario_id?: number; nome?: string; tipo?: string }) {
   try {
     await AsyncStorage.setItem("user", JSON.stringify(user));
   } catch (e) {
@@ -35,7 +35,7 @@ export async function saveUserMeta(user: { usuario_id?: number; nome?: string })
   }
 }
 
-export async function getUserMeta(): Promise<{ usuario_id?: number; nome?: string } | null> {
+export async function getUserMeta(): Promise<{ usuario_id?: number; nome?: string; tipo?: string } | null> {
   try {
     const raw = await AsyncStorage.getItem("user");
     if (!raw) return null;

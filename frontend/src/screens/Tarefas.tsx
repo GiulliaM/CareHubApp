@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,27 +11,33 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import cores from "../config/cores";
 import { API_URL } from "../config/api";
 import { getToken } from "../utils/auth";
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function Tarefas({ navigation }: any) {
   const [tarefas, setTarefas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const token = await getToken();
-        const res = await fetch(`${API_URL}/tarefas`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const j = await res.json();
-        setTarefas(j);
-      } catch (err) {
-        console.error("Erro ao carregar tarefas:", err);
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const fetchTarefas = useCallback(async () => {
+    setLoading(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`${API_URL}/tarefas`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const j = await res.json();
+      setTarefas(j);
+    } catch (err) {
+      console.error("Erro ao carregar tarefas:", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchTarefas();
+    }, [fetchTarefas])
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
