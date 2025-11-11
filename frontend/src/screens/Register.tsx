@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import cores from "../config/cores";
 import { API_URL } from "../config/api";
-import { saveToken } from "../utils/auth";
+import { saveToken, saveUserMeta } from "../utils/auth";
 
 export default function Register({ navigation }: any) {
   const [nome, setNome] = useState("");
@@ -34,6 +34,10 @@ export default function Register({ navigation }: any) {
       if (!res.ok) return Alert.alert(json.message || "Erro ao cadastrar.");
 
       await saveToken(json.token);
+      // save small user meta so profile can show name / id quickly
+      try {
+        await saveUserMeta({ usuario_id: json.usuario_id, nome });
+      } catch {}
       navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
     } catch (err) {
       Alert.alert("Erro", "Falha de conexão com o servidor.");

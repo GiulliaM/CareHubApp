@@ -1,10 +1,19 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import cores from "../config/cores";
-import { logout } from "../utils/auth";
+import { logout, getUserMeta } from "../utils/auth";
 
 export default function Perfil({ navigation }: any) {
+  const [user, setUser] = useState<{ usuario_id?: number; nome?: string } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const u = await getUserMeta();
+      setUser(u);
+    })();
+  }, []);
+
   async function handleLogout() {
     await logout();
     navigation.reset({ index: 0, routes: [{ name: "Welcome" }] });
@@ -16,8 +25,8 @@ export default function Perfil({ navigation }: any) {
         <Text style={styles.title}>Meu Perfil</Text>
 
         <View style={styles.card}>
-          <Text style={styles.text}>Nome: Giullia Meneses</Text>
-          <Text style={styles.text}>Tipo: Familiar</Text>
+          <Text style={styles.text}>Nome: {user?.nome || "-"}</Text>
+          <Text style={styles.text}>Tipo: {/* could fetch/full user later */}-</Text>
         </View>
 
         <TouchableOpacity style={styles.button} onPress={handleLogout}>

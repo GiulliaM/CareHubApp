@@ -6,6 +6,9 @@ import Welcome from "../screens/Welcome";
 import Login from "../screens/Login";
 import Cadastro from "../screens/Cadastro";
 import Tabs from "./Tabs";
+import NovaTarefa from "../screens/NovaTarefa";
+import NovaMedicamento from "../screens/NovaMedicamento";
+import NovoRegistro from "../screens/NovoRegistro";
 import { getToken } from "../utils/auth";
 
 const Stack = createNativeStackNavigator();
@@ -54,6 +57,21 @@ export default function RootNavigator() {
         <Stack.Screen
           name="Tabs"
           component={Tabs}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="NovaTarefa"
+          component={NovaTarefa}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="NovaMedicamento"
+          component={NovaMedicamento}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="NovoRegistro"
+          component={NovoRegistro}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
