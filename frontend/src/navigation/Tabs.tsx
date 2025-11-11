@@ -1,44 +1,59 @@
-import React from "react";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Ionicons } from "@expo/vector-icons";
-import Home from "../screens/Home";
-import Cuidados from "../screens/Cuidados";
-import Diario from "../screens/Diario";
-import Perfil from "../screens/Perfil";
-import cores from "../config/cores";
+import React from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { House, CalendarCheck, Pill, Notebook, User } from 'lucide-react-native';
+import { cores } from '../constantes/cores';
+
+import Home from '../screens/Home';
+import Tarefas from '../screens/Tarefas';
+import Medicamentos from '../screens/Medicamentos';
+import Diario from '../screens/Diario';
+import Perfil from '../screens/Perfil';
 
 const Tab = createBottomTabNavigator();
 
 export default function Tabs() {
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarActiveTintColor: cores.primary,
-        tabBarInactiveTintColor: "#888",
-        tabBarStyle: {
-          backgroundColor: "#fff",
-          borderTopWidth: 1,
-          borderTopColor: "#eee",
-          height: 60,
-          paddingBottom:5,
-        },
-        tabBarIcon: ({ color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap = "home-outline";
-
-          if (route.name === "Home") iconName = "home-outline";
-          else if (route.name === "Cuidados") iconName = "medkit-outline";
-          else if (route.name === "Diário") iconName = "book-outline";
-          else if (route.name === "Perfil") iconName = "person-outline";
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-      })}
-    >
-      <Tab.Screen name="Home" component={Home} />
-      <Tab.Screen name="Cuidados" component={Cuidados} />
-      <Tab.Screen name="Diário" component={Diario} />
-      <Tab.Screen name="Perfil" component={Perfil} />
-    </Tab.Navigator>
+    <SafeAreaView style={{ flex: 1, backgroundColor: cores.branco }}>
+      <Tab.Navigator
+        screenOptions={({ route }: { route: { name: string } }) => ({
+          headerShown: false,
+          tabBarShowLabel: false,
+          tabBarActiveTintColor: cores.destaque,
+          tabBarInactiveTintColor: '#A0A0A0',
+          tabBarStyle: {
+            backgroundColor: cores.branco,
+            borderTopWidth: 0,
+            elevation: 10,
+            height: 60,
+            paddingBottom: 8,
+            paddingTop: 8,
+          },
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => {
+            // lucide-react-native expects `color` and `size` props for icons
+            switch (route.name) {
+              case 'Home':
+                return <House color={color} size={size} />;
+              case 'Tarefas':
+                return <CalendarCheck color={color} size={size} />;
+              case 'Medicamentos':
+                return <Pill color={color} size={size} />;
+              case 'Diario':
+                return <Notebook color={color} size={size} />;
+              case 'Perfil':
+                return <User color={color} size={size} />;
+              default:
+                return null;
+            }
+          },
+        })}
+      >
+        <Tab.Screen name="Home" component={Home} />
+        <Tab.Screen name="Tarefas" component={Tarefas} />
+        <Tab.Screen name="Medicamentos" component={Medicamentos} />
+        <Tab.Screen name="Diario" component={Diario} />
+        <Tab.Screen name="Perfil" component={Perfil} />
+      </Tab.Navigator>
+    </SafeAreaView>
   );
 }
