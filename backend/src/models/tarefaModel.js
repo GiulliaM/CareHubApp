@@ -2,7 +2,7 @@ import db from "../config/db.js";
 
 const Tarefa = {
   getAll: (paciente_id, callback) => {
-    const query = "SELECT * FROM tarefas WHERE paciente_id = ?";
+    const query = "SELECT tarefa_id, titulo, detalhes, DATE_FORMAT(data, '%Y-%m-%d') as data, hora, concluida, dias_repeticao, responsavel_id, paciente_id, created_at FROM tarefas WHERE paciente_id = ?";
     db.query(query, [paciente_id], (err, results) => {
       if (err) return callback(err);
       callback(null, results || []);
@@ -10,7 +10,7 @@ const Tarefa = {
   },
 
   getById: (id, callback) => {
-    const query = "SELECT * FROM tarefas WHERE tarefa_id = ?";
+    const query = "SELECT tarefa_id, titulo, detalhes, DATE_FORMAT(data, '%Y-%m-%d') as data, hora, concluida, dias_repeticao, responsavel_id, paciente_id, created_at FROM tarefas WHERE tarefa_id = ?";
     db.query(query, [id], (err, results) => {
       if (err) return callback(err);
       callback(null, results[0]);

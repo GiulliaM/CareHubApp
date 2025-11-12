@@ -5,8 +5,8 @@ import medicamentoModel from "../models/medicamentoModel.js";
 export const getMedicamentos = (req, res) => {
   const { paciente_id } = req.query;
   const query = paciente_id
-    ? "SELECT * FROM medicamentos WHERE paciente_id = ?"
-    : "SELECT * FROM medicamentos";
+    ? "SELECT medicamento_id, nome, dosagem, horarios, concluido, DATE_FORMAT(inicio, '%Y-%m-%d') as inicio, duracao_days, uso_continuo, paciente_id FROM medicamentos WHERE paciente_id = ?"
+    : "SELECT medicamento_id, nome, dosagem, horarios, concluido, DATE_FORMAT(inicio, '%Y-%m-%d') as inicio, duracao_days, uso_continuo, paciente_id FROM medicamentos";
 
   db.query(query, paciente_id ? [paciente_id] : [], (err, results) => {
     if (err) {
