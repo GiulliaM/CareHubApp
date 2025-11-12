@@ -1,48 +1,220 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../context/ThemeContext';
-import api from '../utils/apiClient';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  ActivityIndicator,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import cores from "../config/cores";
+import { useTheme } from "../context/ThemeContext";
+import { API_URL } from "../config/api";
+import { getToken } from "../utils/auth";
 
 export default function EditPatient({ route, navigation }: any) {
-  const { paciente } = route.params || {};
   const { colors } = useTheme();
-  const [nome, setNome] = useState(paciente?.nome || '');
-  const [idade, setIdade] = useState(paciente?.idade || '');
+  const [paciente, setPaciente] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  async function handleSave() {
-    if (!nome) return Alert.alert('Erro', 'Preencha o nome do paciente.');
-    try {
-      await api.patch(`/pacientes/${paciente.paciente_id}`, { nome, idade: idade || null });
-      Alert.alert('Sucesso', 'Paciente atualizado.');
-      navigation.goBack();
-    } catch (err) {
-      console.error(err);
-      Alert.alert('Erro', 'Não foi possível atualizar o paciente.');
+  // Campos editáveis
+  const [nome, setNome] = useState("");
+  const [idade, setIdade] = useState("");
+  const [genero, setGenero] = useState("");
+  const [observacoes, setObservacoes] = useState("");
+
+  const pacienteParam = route.params?.paciente;
+
+  useEffect(() => {
+    if (pacienteParam) {
+      setPaciente(pacienteParam);
+      setNome(pacienteParam.nome || "");
+      setIdade(pacienteParam.idade ? pacienteParam.idade.toString() : "");
+      setGenero(pacienteParam.genero || "");
+      setObservacoes(pacienteParam.observacoes || "");
+      setLoading(false);
+    } else {
+      carregarPaciente();
     }
+  }, []);
+
+  const carregarPaciente = async () => {
+    try {
+      const token = await getToken();
+      const res = await fetch(`${API_URL}/pacientes`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (res.ok && json.length > 0) {
+        const p = json[0];
+        setPaciente(p);
+        setNome(p.nome);
+        setIdade(p.idade ? p.idade.toString() : "");
+        setGenero(p.genero || "");
+        setObservacoes(p.observacoes || "");
+      }
+    } catch (error) {
+      console.error("Erro ao carregar paciente:", error);
+      Alert.alert("Erro", "Falha ao carregar dados do paciente.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const salvarAlteracoes = async () => {
+    if (!paciente || !paciente.paciente_id) {
+      return Alert.alert("Erro", "Paciente inválido.");
+    }
+
+    try {
+      const token = await getToken();
+      const res = await fetch(`${API_URL}/pacientes/${paciente.paciente_id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          nome,
+          idade: idade || null,
+          genero: genero || null,
+          observacoes: observacoes || null,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        console.error(json);
+        return Alert.alert("Erro", json.message || "Erro ao atualizar paciente.");
+      }
+
+      Alert.alert("Sucesso", "Informações atualizadas com sucesso!");
+      navigation.goBack();
+    } catch (error) {
+      console.error("Erro ao atualizar:", error);
+      Alert.alert("Erro", "Falha ao conectar com o servidor.");
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <View style={styles.container}>
-        <Text style={[styles.title, { color: colors.primary }]}>Editar Paciente</Text>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.background }]}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={[styles.title, { color: colors.primary }]}>
+          Editar Informações do Paciente
+        </Text>
 
-        <TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Nome do paciente" />
-        <TextInput style={styles.input} value={idade} onChangeText={setIdade} placeholder="Idade" keyboardType="numeric" />
+        {/* Nome */}
+        <TextInput
+          placeholder="Nome do paciente"
+          value={nome}
+          onChangeText={setNome}
+          style={styles.input}
+        />
 
-        <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleSave}>
-          <Text style={styles.buttonText}>Salvar</Text>
+        {/* Idade */}
+        <TextInput
+          placeholder="Idade"
+          value={idade}
+          onChangeText={setIdade}
+          keyboardType="numeric"
+          style={styles.input}
+        />
+
+        {/* Gênero */}
+        <TextInput
+          placeholder="Gênero (Masculino, Feminino, Outro)"
+          value={genero}
+          onChangeText={setGenero}
+          style={styles.input}
+        />
+
+        {/* Observações */}
+        <TextInput
+          placeholder="Observações"
+          value={observacoes}
+          onChangeText={setObservacoes}
+          multiline
+          numberOfLines={4}
+          style={[styles.input, styles.textArea]}
+        />
+
+        <TouchableOpacity
+          style={[styles.btn, { backgroundColor: colors.primary }]}
+          onPress={salvarAlteracoes}
+        >
+          <Text style={styles.btnText}>Salvar Alterações</Text>
         </TouchableOpacity>
-      </View>
+
+        <TouchableOpacity
+          style={[styles.btnSecundario]}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.btnSecText}>Cancelar</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  container: { flex: 1, padding: 16 },
-  title: { fontSize: 22, fontWeight: '700', marginBottom: 16 },
-  input: { backgroundColor: '#fff', padding: 12, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: '#ddd' },
-  button: { padding: 12, borderRadius: 8, alignItems: 'center', marginTop: 8 },
-  buttonText: { color: '#fff', fontWeight: '700' },
+  safeArea: { flex: 1, backgroundColor: cores.background },
+  container: { flexGrow: 1, padding: 16, justifyContent: "center" },
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  input: {
+    backgroundColor: "#fff",
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    fontSize: 16,
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: "top",
+  },
+  btn: {
+    padding: 14,
+    borderRadius: 10,
+    marginTop: 20,
+    alignItems: "center",
+  },
+  btnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  btnSecundario: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: cores.primary,
+    marginTop: 12,
+    alignItems: "center",
+  },
+  btnSecText: {
+    color: cores.primary,
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });

@@ -1,40 +1,49 @@
-import axios from 'axios';
-import { API_URL } from '../config/api';
-import { getToken, logout } from './auth';
-import { navigationRef } from '../navigation/RootNavigator';
+import axios from "axios";
+import { getToken } from "../utils/auth";
 
+// Ajuste para a URL base do seu backend:
+const API_URL = "http://SEU_IP:3000"; // substitua pelo seu backend
+
+// Cria a instância principal
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 10000,
+  timeout: 15000,
 });
 
-api.interceptors.request.use(async (config) => {
+// Helper para adicionar token dinamicamente
+const withAuth = async (config = {}) => {
   const token = await getToken();
-  if (token) {
-    config.headers = config.headers || {};
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+  const headers = (config as any).headers ? { ...(config as any).headers } : {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return { ...(config || {}), headers };
+};
 
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response && error.response.status === 401) {
-      await logout();
-      // Redirect the app to the Welcome/login screen using the shared navigation ref
-      try {
-        if ((navigationRef as any).resetRoot) {
-          (navigationRef as any).resetRoot({ index: 0, routes: [{ name: 'Welcome' }] });
-        } else {
-          (navigationRef as any).navigate?.('Welcome');
-        }
-      } catch (e) {
-        // ignore navigation errors
-      }
-    }
-    return Promise.reject(error);
-  }
-);
-
-export default api;
+// Funções com async/await para evitar interceptores async
+export default {
+  get: async (url: string, config?: any) => {
+    const cfg = await withAuth(config);
+    const res = await api.get(url, cfg);
+    return res.data;
+  },
+  post: async (url: string, data?: any, config?: any) => {
+    const cfg = await withAuth(config);
+    const res = await api.post(url, data, cfg);
+    return res.data;
+  },
+  put: async (url: string, data?: any, config?: any) => {
+    const cfg = await withAuth(config);
+    const res = await api.put(url, data, cfg);
+    return res.data;
+  },
+  patch: async (url: string, data?: any, config?: any) => {
+    const cfg = await withAuth(config);
+    const res = await api.patch(url, data, cfg);
+    return res.data;
+  },
+  delete: async (url: string, config?: any) => {
+    const cfg = await withAuth(config);
+    const res = await api.delete(url, cfg);
+    return res.data;
+  },
+  axiosInstance: api,
+};

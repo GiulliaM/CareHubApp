@@ -10,15 +10,19 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import cores from "../config/cores";
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from "../context/ThemeContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "../config/api";
 import { getToken } from "../utils/auth";
 
 export default function RegisterPatient({ navigation }: any) {
   const { colors } = useTheme();
+
+  // Campos do paciente
   const [nome, setNome] = useState("");
   const [idade, setIdade] = useState("");
+  const [genero, setGenero] = useState("");
+  const [observacoes, setObservacoes] = useState("");
 
   const cadastrar = async () => {
     if (!nome) return Alert.alert("Erro", "Informe o nome do paciente.");
@@ -31,37 +35,62 @@ export default function RegisterPatient({ navigation }: any) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ nome, idade: idade || null }),
+        body: JSON.stringify({
+          nome,
+          idade: idade || null,
+          genero: genero || null,
+          observacoes: observacoes || null,
+        }),
       });
 
       const json = await res.json();
-      if (!res.ok) return Alert.alert(json.message || "Erro ao cadastrar.");
-
-      // Salva paciente vinculado no AsyncStorage
-      try {
-        await AsyncStorage.setItem("paciente", JSON.stringify({ paciente_id: json.paciente_id, nome, idade }));
-      } catch (e) {
-        // fallback: não salva
+      if (!res.ok) {
+        console.error(json);
+        return Alert.alert("Erro", json.message || "Erro ao cadastrar paciente.");
       }
 
-      Alert.alert("Sucesso", "Paciente cadastrado!");
+      // Salva o paciente no AsyncStorage (para acesso rápido)
+      try {
+        await AsyncStorage.setItem(
+          "paciente",
+          JSON.stringify({
+            paciente_id: json.paciente_id,
+            nome,
+            idade,
+            genero,
+            observacoes,
+          })
+        );
+      } catch (e) {
+        console.warn("Falha ao salvar paciente localmente:", e);
+      }
+
+      Alert.alert("Sucesso", "Paciente cadastrado com sucesso!");
       navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
-    } catch {
-      Alert.alert("Erro", "Falha de conexão com o servidor.");
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Erro", "Falha ao conectar com o servidor.");
     }
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.background }]}
+    >
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={[styles.title, { color: colors.primary }]}>Cadastrar Paciente</Text>
+        <Text style={[styles.title, { color: colors.primary }]}>
+          Cadastrar Paciente
+        </Text>
 
+        {/* Nome */}
         <TextInput
           placeholder="Nome do paciente"
           value={nome}
           onChangeText={setNome}
           style={styles.input}
         />
+
+        {/* Idade */}
         <TextInput
           placeholder="Idade"
           value={idade}
@@ -70,11 +99,30 @@ export default function RegisterPatient({ navigation }: any) {
           style={styles.input}
         />
 
-        <TouchableOpacity style={[styles.btn, { backgroundColor: colors.primary }]} onPress={cadastrar}>
-          <Text style={styles.btnText}>Salvar</Text>
-        </TouchableOpacity>
+        {/* Gênero */}
+        <TextInput
+          placeholder="Gênero (Masculino, Feminino, Outro)"
+          value={genero}
+          onChangeText={setGenero}
+          style={styles.input}
+        />
 
-        {/* Não mostrar botão para pular ou voltar, só avança após cadastrar paciente */}
+        {/* Observações */}
+        <TextInput
+          placeholder="Observações (condições, cuidados, anotações...)"
+          value={observacoes}
+          onChangeText={setObservacoes}
+          multiline
+          numberOfLines={4}
+          style={[styles.input, styles.textArea]}
+        />
+
+        <TouchableOpacity
+          style={[styles.btn, { backgroundColor: colors.primary }]}
+          onPress={cadastrar}
+        >
+          <Text style={styles.btnText}>Salvar Paciente</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -97,6 +145,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderWidth: 1,
     borderColor: "#ddd",
+    fontSize: 16,
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: "top",
   },
   btn: {
     backgroundColor: cores.primary,

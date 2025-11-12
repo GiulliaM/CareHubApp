@@ -5,71 +5,93 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
+  ActivityIndicator,
   ScrollView,
+  Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
-import cores from "../config/cores";
-import { useTheme } from '../context/ThemeContext';
-import api from "../utils/apiClient";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import Toast from "react-native-root-toast";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import api from "../utils/apiClient";
+import { useTheme } from "../context/ThemeContext";
 
 export default function NovaTarefa({ navigation }: any) {
   const { colors } = useTheme();
+
   const [titulo, setTitulo] = useState("");
   const [detalhes, setDetalhes] = useState("");
-  const [hora, setHora] = useState(new Date());
-  const [mostraHora, setMostraHora] = useState(false);
   const [data, setData] = useState(new Date());
-  const [mostraData, setMostraData] = useState(false);
-  const [diasSelecionados, setDiasSelecionados] = useState<string[]>([]);
+  const [hora, setHora] = useState(new Date());
+  const [showData, setShowData] = useState(false);
+  const [showHora, setShowHora] = useState(false);
+  const [diasRepeticao, setDiasRepeticao] = useState<string[]>([]);
+  const [novoDia, setNovoDia] = useState("Segunda");
+  const [salvando, setSalvando] = useState(false);
 
-  const diasSemana = ["D", "S", "T", "Q", "Q", "S", "S"];
-
-  function toggleDia(index: number) {
-    const existe = diasSelecionados.includes(index.toString());
-    if (existe) {
-      setDiasSelecionados(diasSelecionados.filter((d) => d !== index.toString()));
-    } else {
-      setDiasSelecionados([...diasSelecionados, index.toString()]);
-    }
-  }
-
-  const onHoraChange = (e: DateTimePickerEvent, date?: Date) => {
-    setMostraHora(false);
-    if (date) setHora(date);
+  const showToast = (msg: string, success = false) => {
+    Toast.show(msg, {
+      duration: Toast.durations.SHORT,
+      position: Toast.positions.BOTTOM,
+      backgroundColor: success ? "#1a73e8" : "#c62828",
+      textColor: "#fff",
+      shadow: true,
+      animation: true,
+      hideOnPress: true,
+    });
   };
 
-  async function handleSalvar() {
-    if (!titulo) {
-      Alert.alert("Erro", "Preencha o título da tarefa.");
+  const diasSemana = [
+    "Domingo",
+    "Segunda",
+    "Terça",
+    "Quarta",
+    "Quinta",
+    "Sexta",
+    "Sábado",
+  ];
+
+  const toggleDia = (dia: string) => {
+    setDiasRepeticao((prev) =>
+      prev.includes(dia) ? prev.filter((d) => d !== dia) : [...prev, dia]
+    );
+  };
+
+  const handleSalvar = async () => {
+    if (!titulo.trim()) {
+      showToast("Informe o título da tarefa!");
       return;
     }
+
+    setSalvando(true);
     try {
       const rawPaciente = await AsyncStorage.getItem("paciente");
       const paciente = rawPaciente ? JSON.parse(rawPaciente) : null;
+
       if (!paciente?.paciente_id) {
-        Alert.alert("Erro", "Paciente não encontrado. Cadastre um paciente primeiro.");
+        showToast("Nenhum paciente encontrado!");
+        setSalvando(false);
         return;
       }
+
       await api.post("/tarefas", {
         titulo,
         detalhes,
         data: data.toISOString().split("T")[0],
-        hora: hora.toISOString().split("T")[1].substring(0, 5),
-        dias_repeticao: diasSelecionados.join(","),
+        hora: hora.toTimeString().slice(0, 5),
+        dias_repeticao: diasRepeticao.join(", "),
         paciente_id: paciente.paciente_id,
       });
-      Alert.alert("Sucesso", "Tarefa cadastrada com sucesso!");
-      navigation.goBack();
+
+      showToast("Tarefa cadastrada com sucesso!", true);
+      setTimeout(() => navigation.navigate("Tabs", { screen: "Tarefas" }), 1000);
     } catch (err) {
-      console.error(err);
-      Alert.alert("Erro", "Não foi possível cadastrar a tarefa.");
+      console.error("Erro ao cadastrar tarefa:", err);
+      showToast("Não foi possível cadastrar a tarefa.");
+    } finally {
+      setSalvando(false);
     }
-  }
+  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
@@ -82,68 +104,79 @@ export default function NovaTarefa({ navigation }: any) {
           value={titulo}
           onChangeText={setTitulo}
         />
-
         <TextInput
-          style={[styles.input, { height: 80 }]}
-          placeholder="Detalhes (opcional)"
+          style={[styles.input, { height: 90 }]}
+          placeholder="Detalhes"
           value={detalhes}
-          onChangeText={setDetalhes}
           multiline
+          onChangeText={setDetalhes}
         />
 
-        <TouchableOpacity style={styles.input} onPress={() => setMostraData(true)}>
-          <Text>Data: {data.toLocaleDateString()}</Text>
+        <TouchableOpacity style={styles.input} onPress={() => setShowData(true)}>
+          <Text>📅 {data.toLocaleDateString("pt-BR")}</Text>
         </TouchableOpacity>
-        {mostraData && (
+        {showData && (
           <DateTimePicker
             value={data}
             mode="date"
-            display="default"
-            onChange={(e, d) => {
-              setMostraData(false);
-              if (d) setData(d);
+            onChange={(e, date) => {
+              setShowData(false);
+              if (date) setData(date);
             }}
           />
         )}
 
-        <TouchableOpacity style={styles.input} onPress={() => setMostraHora(true)}>
-          <Text>Hora: {hora.toLocaleTimeString().slice(0, 5)}</Text>
+        <TouchableOpacity style={styles.input} onPress={() => setShowHora(true)}>
+          <Text>🕒 {hora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</Text>
         </TouchableOpacity>
-        {mostraHora && (
+        {showHora && (
           <DateTimePicker
             value={hora}
             mode="time"
             is24Hour={true}
-            onChange={onHoraChange}
+            onChange={(e, time) => {
+              setShowHora(false);
+              if (time) setHora(time);
+            }}
           />
         )}
 
-        <Text style={styles.label}>Repetir tarefa:</Text>
-        <View style={styles.diasContainer}>
-          {diasSemana.map((dia, i) => (
+        <Text style={styles.subtitle}>Dias de repetição:</Text>
+        <View style={styles.daysContainer}>
+          {diasSemana.map((dia) => (
             <TouchableOpacity
-              key={i}
+              key={dia}
               style={[
-                styles.dia,
-                diasSelecionados.includes(i.toString()) && styles.diaSelecionado,
+                styles.dayButton,
+                diasRepeticao.includes(dia) && { backgroundColor: colors.primary },
               ]}
-              onPress={() => toggleDia(i)}
+              onPress={() => toggleDia(dia)}
             >
               <Text
-                style={[
-                  styles.diaTexto,
-                  diasSelecionados.includes(i.toString()) &&
-                    styles.diaTextoSelecionado,
-                ]}
+                style={{
+                  color: diasRepeticao.includes(dia) ? "#fff" : "#333",
+                  fontWeight: "600",
+                }}
               >
-                {dia}
+                {dia.slice(0, 3)}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleSalvar}>
-          <Text style={styles.buttonText}>Salvar</Text>
+        <TouchableOpacity
+          disabled={salvando}
+          style={[
+            styles.button,
+            { backgroundColor: salvando ? "#999" : colors.primary },
+          ]}
+          onPress={handleSalvar}
+        >
+          {salvando ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Salvar Tarefa</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -151,46 +184,37 @@ export default function NovaTarefa({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: cores.background },
+  safeArea: { flex: 1 },
   container: { padding: 16 },
-  title: {
-    fontSize: 24,
-    color: cores.primary,
-    fontWeight: "700",
-    marginBottom: 20,
-  },
+  title: { fontSize: 24, fontWeight: "700", marginBottom: 20, textAlign: "center" },
+  subtitle: { fontWeight: "700", marginTop: 12, marginBottom: 6 },
   input: {
     backgroundColor: "#fff",
-    padding: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#ddd",
-    marginBottom: 14,
+    borderColor: "#ccc",
+    padding: 12,
+    marginBottom: 12,
   },
-  label: { color: "#333", fontWeight: "600", marginBottom: 6 },
-  diasContainer: {
+  daysContainer: {
     flexDirection: "row",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     marginBottom: 16,
   },
-  dia: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: cores.primary,
-    justifyContent: "center",
+  dayButton: {
+    backgroundColor: "#eee",
+    borderRadius: 8,
+    padding: 8,
+    margin: 4,
+    minWidth: 45,
     alignItems: "center",
   },
-  diaSelecionado: { backgroundColor: cores.primary },
-  diaTexto: { color: cores.primary, fontWeight: "600" },
-  diaTextoSelecionado: { color: "#fff" },
   button: {
-    backgroundColor: cores.primary,
     padding: 14,
     borderRadius: 10,
     alignItems: "center",
+    marginTop: 10,
   },
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });
