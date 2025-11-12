@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { House, CalendarCheck, Pill, Notebook, User } from 'lucide-react-native';
+import { MaterialCommunityIcons, FontAwesome5, Feather } from '@expo/vector-icons';
 import { cores } from '../constantes/cores';
 
 import Home from '../screens/Home';
@@ -30,18 +30,18 @@ export default function Tabs() {
             paddingTop: 8,
           },
           tabBarIcon: ({ color, size }: { color: string; size: number }) => {
-            // lucide-react-native expects `color` and `size` props for icons
+            // @expo/vector-icons: escolha ícones equivalentes
             switch (route.name) {
               case 'Home':
-                return <House color={color} size={size} />;
+                return <Feather name="home" color={color} size={size} />;
               case 'Tarefas':
-                return <CalendarCheck color={color} size={size} />;
+                return <MaterialCommunityIcons name="calendar-check" color={color} size={size} />;
               case 'Medicamentos':
-                return <Pill color={color} size={size} />;
+                return <FontAwesome5 name="pills" color={color} size={size} />;
               case 'Diario':
-                return <Notebook color={color} size={size} />;
+                return <Feather name="book" color={color} size={size} />;
               case 'Perfil':
-                return <User color={color} size={size} />;
+                return <Feather name="user" color={color} size={size} />;
               default:
                 return null;
             }
