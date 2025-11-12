@@ -7,7 +7,6 @@ import {
   StyleSheet,
   ScrollView,
   Switch,
-  Alert,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,9 +19,18 @@ export default function EditMedicamento({ route, navigation }: any) {
   const { colors } = useTheme();
   const { medicamento } = route.params;
 
+  // 🧩 Normaliza horários (podem vir como string ou array)
+  const initialHorarios = Array.isArray(medicamento.horarios)
+    ? medicamento.horarios
+    : typeof medicamento.horarios === "string" && medicamento.horarios.length
+    ? medicamento.horarios.split(",").map((h: string) => h.trim())
+    : [];
+
   const [nome, setNome] = useState(medicamento.nome);
   const [dosagem, setDosagem] = useState(medicamento.dosagem);
-  const [horarios, setHorarios] = useState(medicamento.horarios || "");
+  const [horarios, setHorarios] = useState<string[]>(initialHorarios);
+  const [novoHorario, setNovoHorario] = useState(new Date());
+  const [showHoraPicker, setShowHoraPicker] = useState(false);
   const [inicio, setInicio] = useState(
     medicamento.inicio ? new Date(medicamento.inicio) : new Date()
   );
@@ -46,6 +54,18 @@ export default function EditMedicamento({ route, navigation }: any) {
     });
   };
 
+  const adicionarHorario = () => {
+    const horaStr = novoHorario.toTimeString().slice(0, 5);
+    if (!horarios.includes(horaStr)) {
+      setHorarios([...horarios, horaStr].sort());
+    }
+  };
+
+  const removerHorario = (h: string) => {
+    setHorarios(horarios.filter((x) => x !== h));
+  };
+
+  // 💾 Atualizar medicamento
   const handleSalvar = async () => {
     if (!nome.trim()) {
       showToast("Informe o nome do medicamento!");
@@ -57,21 +77,17 @@ export default function EditMedicamento({ route, navigation }: any) {
       const changes: any = {
         nome,
         dosagem,
-        horarios,
+        horarios, // envia array direto (o backend já trata JSON)
         inicio: inicio.toISOString().split("T")[0],
         duracao_days: duracaoDays ? Number(duracaoDays) : null,
         uso_continuo: usoContinuo ? 1 : 0,
         concluido: concluido ? 1 : 0,
       };
 
-      Object.keys(changes).forEach(
-        (k) => changes[k] === undefined && delete changes[k]
-      );
-
       await api.patch(`/medicamentos/${medicamento.medicamento_id}`, changes);
 
       showToast("Medicamento atualizado com sucesso!", true);
-      setTimeout(() => navigation.goBack(), 1000);
+      setTimeout(() => navigation.goBack(), 800);
     } catch (err) {
       console.error("Erro ao atualizar medicamento:", err);
       showToast("Erro ao atualizar medicamento. Verifique o servidor.");
@@ -97,16 +113,40 @@ export default function EditMedicamento({ route, navigation }: any) {
           value={dosagem}
           onChangeText={setDosagem}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="Horários (ex: 08:00, 14:00)"
-          value={horarios}
-          onChangeText={setHorarios}
-        />
-        <TouchableOpacity
-          style={styles.input}
-          onPress={() => setShowDate(true)}
-        >
+
+        <TouchableOpacity style={styles.btnSelect} onPress={() => setShowHoraPicker(true)}>
+          <Text style={styles.btnSelectText}>
+            Adicionar horário:{" "}
+            {novoHorario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+          </Text>
+        </TouchableOpacity>
+
+        {showHoraPicker && (
+          <DateTimePicker
+            value={novoHorario}
+            mode="time"
+            is24Hour={true}
+            onChange={(e, date) => {
+              setShowHoraPicker(false);
+              if (date) {
+                setNovoHorario(date);
+                adicionarHorario();
+              }
+            }}
+          />
+        )}
+
+        {horarios.length > 0 && (
+          <View style={styles.horariosContainer}>
+            {horarios.map((h, i) => (
+              <TouchableOpacity key={i} onPress={() => removerHorario(h)}>
+                <Text style={styles.horarioTag}>🕒 {h} ✖</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        <TouchableOpacity style={styles.input} onPress={() => setShowDate(true)}>
           <Text>📅 Início: {inicio.toLocaleDateString("pt-BR")}</Text>
         </TouchableOpacity>
 
@@ -141,10 +181,7 @@ export default function EditMedicamento({ route, navigation }: any) {
 
         <TouchableOpacity
           disabled={salvando}
-          style={[
-            styles.button,
-            { backgroundColor: salvando ? "#999" : colors.primary },
-          ]}
+          style={[styles.button, { backgroundColor: salvando ? "#999" : colors.primary }]}
           onPress={handleSalvar}
         >
           {salvando ? (
@@ -170,6 +207,24 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
   },
+  btnSelect: {
+    backgroundColor: "#f0f0f0",
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 12,
+  },
+  btnSelectText: { color: "#333", fontWeight: "600" },
+  horariosContainer: { flexDirection: "row", flexWrap: "wrap", marginBottom: 12 },
+  horarioTag: {
+    backgroundColor: "#e0e0e0",
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginRight: 6,
+    marginBottom: 6,
+    fontWeight: "600",
+    color: "#333",
+  },
   switchRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -177,11 +232,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   switchLabel: { fontWeight: "600", color: "#444" },
-  button: {
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 10,
-  },
+  button: { padding: 14, borderRadius: 10, alignItems: "center", marginTop: 10 },
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });
