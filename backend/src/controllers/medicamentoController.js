@@ -5,15 +5,48 @@ import medicamentoModel from "../models/medicamentoModel.js";
 export const getMedicamentos = (req, res) => {
   const { paciente_id } = req.query;
   const query = paciente_id
-    ? "SELECT medicamento_id, nome, dosagem, horarios, concluido, DATE_FORMAT(inicio, '%Y-%m-%d') as inicio, duracao_days, uso_continuo, paciente_id FROM medicamentos WHERE paciente_id = ?"
-    : "SELECT medicamento_id, nome, dosagem, horarios, concluido, DATE_FORMAT(inicio, '%Y-%m-%d') as inicio, duracao_days, uso_continuo, paciente_id FROM medicamentos";
+    ? "SELECT * FROM medicamentos WHERE paciente_id = ?"
+    : "SELECT * FROM medicamentos";
 
   db.query(query, paciente_id ? [paciente_id] : [], (err, results) => {
     if (err) {
       console.error("Erro ao buscar medicamentos:", err);
       return res.status(500).json({ error: "Erro ao buscar medicamentos" });
     }
-    res.status(200).json(results);
+
+    // Processar horários: converter de JSON/string para array
+    const medicamentosProcessados = results.map((med) => {
+      // Formatar data inicio para evitar problemas de timezone
+      if (med.inicio) {
+        const data = new Date(med.inicio);
+        med.inicio = data.toISOString().split("T")[0];
+      }
+
+      // Formatar data_fim se existir
+      if (med.data_fim) {
+        const data = new Date(med.data_fim);
+        med.data_fim = data.toISOString().split("T")[0];
+      }
+
+      // Processar horários
+      if (med.horarios) {
+        try {
+          // Tentar parsear como JSON
+          med.horarios = JSON.parse(med.horarios);
+        } catch (e) {
+          // Se não for JSON, tentar separar por vírgula (formato legado)
+          if (typeof med.horarios === 'string') {
+            med.horarios = med.horarios.split(',').map(h => h.trim());
+          }
+        }
+      } else {
+        med.horarios = [];
+      }
+
+      return med;
+    });
+
+    res.status(200).json(medicamentosProcessados);
   });
 };
 
