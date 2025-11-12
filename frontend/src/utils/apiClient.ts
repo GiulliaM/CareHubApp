@@ -1,8 +1,6 @@
 import axios from "axios";
 import { getToken } from "../utils/auth";
-
-// Ajuste para a URL base do seu backend:
-const API_URL = "http://SEU_IP:3000"; // substitua pelo seu backend
+import { API_URL } from "../config/api";
 
 // Cria a instância principal
 const api = axios.create({
