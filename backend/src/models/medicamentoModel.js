@@ -1,20 +1,37 @@
-import db from "../config/db.js";
-export const criarMedicamento = (m, cb) => {
-  const sql = "INSERT INTO medicamentos (nome, dosagem, horarios, inicio, duracao_days, uso_continuo, paciente_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
-  const values = [m.nome, m.dosagem || null, m.horarios || null, m.inicio || null, m.duracao_days || null, m.uso_continuo ? 1 : 0, m.paciente_id || null];
-  db.query(sql, values, cb);
-};
-export const listarMedicamentosPorUsuario = (usuarioId, cb) => {
-  db.query("SELECT m.* FROM medicamentos m JOIN pacientes p ON m.paciente_id = p.paciente_id WHERE p.fk_usuario_id = ? ORDER BY m.created_at DESC", [usuarioId], cb);
-};
-export const deletarMedicamento = (id, cb) => {
-  db.query("DELETE FROM medicamentos WHERE medicamento_id = ?", [id], cb);
+const db = require("../config/db");
+
+exports.criarMedicamento = (data, callback) => {
+  const {
+    nome,
+    dosagem,
+    horarios,
+    concluido,
+    inicio,
+    duracao_days,
+    uso_continuo,
+    paciente_id,
+  } = data;
+
+  const sql = `
+    INSERT INTO medicamentos 
+    (nome, dosagem, horarios, concluido, inicio, duracao_days, uso_continuo, paciente_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(
+    sql,
+    [nome, dosagem, horarios, concluido, inicio, duracao_days, uso_continuo, paciente_id],
+    callback
+  );
 };
 
-export const atualizarMedicamento = (id, changes, cb) => {
-  const fields = Object.keys(changes).map(k => `${k} = ?`).join(', ');
-  const values = Object.keys(changes).map(k => changes[k]);
-  values.push(id);
-  const sql = `UPDATE medicamentos SET ${fields} WHERE medicamento_id = ?`;
-  db.query(sql, values, cb);
+exports.atualizarMedicamento = (id, data, callback) => {
+  const keys = Object.keys(data);
+  if (keys.length === 0) return callback(null, { affectedRows: 0 });
+
+  const fields = keys.map((key) => `${key} = ?`).join(", ");
+  const values = keys.map((key) => data[key]);
+
+  const sql = `UPDATE medicamentos SET ${fields} WHERE medicamento_id = ? LIMIT 1`;
+  db.query(sql, [...values, id], callback);
 };

@@ -6,67 +6,94 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
+  Switch,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
-import cores from "../config/cores";
-import { useTheme } from '../context/ThemeContext';
-import { API_URL } from "../config/api";
-import { getToken } from "../utils/auth";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import Toast from "react-native-root-toast";
+import { useTheme } from "../context/ThemeContext";
+import api from "../utils/apiClient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function NovaMedicamento({ navigation }: any) {
   const { colors } = useTheme();
+
   const [nome, setNome] = useState("");
   const [dosagem, setDosagem] = useState("");
-  const [horario, setHorario] = useState(new Date());
-  const [mostraHora, setMostraHora] = useState(false);
-  const [intervalo, setIntervalo] = useState("");
+  const [horarios, setHorarios] = useState<string[]>([]);
+  const [novoHorario, setNovoHorario] = useState(new Date());
+  const [showHoraPicker, setShowHoraPicker] = useState(false);
+  const [inicio, setInicio] = useState(new Date());
+  const [showInicioPicker, setShowInicioPicker] = useState(false);
+  const [duracaoDays, setDuracaoDays] = useState("");
   const [usoContinuo, setUsoContinuo] = useState(false);
+  const [concluido, setConcluido] = useState(false);
+  const [salvando, setSalvando] = useState(false);
 
+  // --- Toast de feedback visual ---
+  const showToast = (msg: string, success = false) => {
+    Toast.show(msg, {
+      duration: Toast.durations.SHORT,
+      position: Toast.positions.BOTTOM,
+      backgroundColor: success ? "#1a73e8" : "#c62828",
+      textColor: "#fff",
+      shadow: true,
+      animation: true,
+      hideOnPress: true,
+    });
+  };
+
+  // --- Adicionar horário selecionado ---
+  const adicionarHorario = () => {
+    const horaStr = novoHorario.toTimeString().slice(0, 5);
+    if (!horarios.includes(horaStr)) {
+      setHorarios([...horarios, horaStr]);
+    }
+  };
+
+  // --- Salvar medicamento no backend ---
   async function handleSalvar() {
-    if (!nome || !dosagem) {
-      Alert.alert("Campos obrigatórios", "Preencha todos os campos necessários.");
+    if (!nome.trim() || !dosagem.trim() || horarios.length === 0) {
+      showToast("Preencha nome, dosagem e pelo menos um horário!");
       return;
     }
 
+    setSalvando(true);
     try {
-      const token = await getToken();
       const rawPaciente = await AsyncStorage.getItem("paciente");
       const paciente = rawPaciente ? JSON.parse(rawPaciente) : null;
+
       if (!paciente?.paciente_id) {
-        Alert.alert("Erro", "Paciente não encontrado. Cadastre um paciente primeiro.");
+        showToast("Nenhum paciente cadastrado.");
+        setSalvando(false);
         return;
       }
-      await fetch(`${API_URL}/medicamentos`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          nome,
-          dosagem,
-          horario: horario.toISOString().split("T")[1].substring(0, 5),
-          intervalo,
-          usoContinuo,
-          paciente_id: paciente.paciente_id,
-        }),
+
+      await api.post("/medicamentos", {
+        nome,
+        dosagem,
+        horarios: horarios.join(","), // envia como string simples
+        concluido: concluido ? 1 : 0,
+        inicio: inicio.toISOString().split("T")[0],
+        duracao_days: duracaoDays ? Number(duracaoDays) : null,
+        uso_continuo: usoContinuo ? 1 : 0,
+        paciente_id: paciente.paciente_id,
       });
-      Alert.alert("Sucesso", "Medicamento cadastrado com sucesso!");
-      navigation.goBack();
+
+      showToast("Medicamento cadastrado com sucesso!", true);
+      setTimeout(() => navigation.navigate("Tabs", { screen: "Medicamentos" }), 1000);
     } catch (err) {
-      console.error(err);
-      Alert.alert("Erro", "Não foi possível cadastrar o medicamento.");
+      console.error("Erro ao salvar medicamento:", err);
+      showToast("Erro ao salvar medicamento. Verifique o servidor.");
+    } finally {
+      setSalvando(false);
     }
   }
 
-  const onHoraChange = (e: DateTimePickerEvent, date?: Date) => {
-    setMostraHora(false);
-    if (date) setHorario(date);
+  // --- Remover horário específico ---
+  const removerHorario = (hora: string) => {
+    setHorarios(horarios.filter((h) => h !== hora));
   };
 
   return (
@@ -88,31 +115,86 @@ export default function NovaMedicamento({ navigation }: any) {
           onChangeText={setDosagem}
         />
 
-        <TouchableOpacity style={styles.input} onPress={() => setMostraHora(true)}>
-          <Text>Horário: {horario.toLocaleTimeString().slice(0, 5)}</Text>
+        <TouchableOpacity style={styles.btnSelect} onPress={() => setShowHoraPicker(true)}>
+          <Text style={styles.btnSelectText}>
+            Adicionar horário:{" "}
+            {novoHorario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+          </Text>
         </TouchableOpacity>
 
-        {mostraHora && (
+        {showHoraPicker && (
           <DateTimePicker
-            value={horario}
+            value={novoHorario}
             mode="time"
             is24Hour={true}
-            onChange={onHoraChange}
+            onChange={(e, date) => {
+              setShowHoraPicker(false);
+              if (date) {
+                setNovoHorario(date);
+                adicionarHorario();
+              }
+            }}
+          />
+        )}
+
+        {horarios.length > 0 && (
+          <View style={styles.horariosContainer}>
+            {horarios.map((h, i) => (
+              <TouchableOpacity key={i} onPress={() => removerHorario(h)}>
+                <Text style={styles.horarioTag}>🕒 {h} ✖</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        <TouchableOpacity style={styles.btnSelect} onPress={() => setShowInicioPicker(true)}>
+          <Text style={styles.btnSelectText}>
+            Início: {inicio.toLocaleDateString("pt-BR")}
+          </Text>
+        </TouchableOpacity>
+
+        {showInicioPicker && (
+          <DateTimePicker
+            value={inicio}
+            mode="date"
+            onChange={(e, date) => {
+              setShowInicioPicker(false);
+              if (date) setInicio(date);
+            }}
           />
         )}
 
         <TextInput
           style={styles.input}
-          placeholder="Intervalo (ex: a cada 8h)"
-          value={intervalo}
-          onChangeText={setIntervalo}
+          placeholder="Duração (em dias)"
+          keyboardType="numeric"
+          value={duracaoDays}
+          onChangeText={setDuracaoDays}
         />
 
+        <View style={styles.switchRow}>
+          <Text style={styles.switchLabel}>Uso contínuo:</Text>
+          <Switch value={usoContinuo} onValueChange={setUsoContinuo} />
+        </View>
+
+        <View style={styles.switchRow}>
+          <Text style={styles.switchLabel}>Já concluído:</Text>
+          <Switch value={concluido} onValueChange={setConcluido} />
+        </View>
+
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: colors.primary }]}
+          disabled={salvando}
+          style={[
+            styles.button,
+            { backgroundColor: salvando ? "#999" : colors.primary },
+          ]}
           onPress={handleSalvar}
         >
-          <Text style={styles.buttonText}>Salvar</Text>
+          {salvando ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Salvar medicamento</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -120,27 +202,53 @@ export default function NovaMedicamento({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: cores.background },
+  safeArea: { flex: 1 },
   container: { padding: 16 },
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: cores.primary,
     marginBottom: 20,
+    textAlign: "center",
   },
   input: {
     backgroundColor: "#fff",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 12,
+    marginBottom: 12,
+  },
+  btnSelect: {
+    backgroundColor: "#f0f0f0",
     padding: 12,
     borderRadius: 10,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: "#ddd",
+    marginBottom: 12,
   },
+  btnSelectText: { color: "#333", fontWeight: "600" },
+  horariosContainer: { flexDirection: "row", flexWrap: "wrap", marginBottom: 12 },
+  horarioTag: {
+    backgroundColor: "#e0e0e0",
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginRight: 6,
+    marginBottom: 6,
+    fontWeight: "600",
+    color: "#333",
+  },
+  switchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginVertical: 6,
+  },
+  switchLabel: { fontWeight: "600", color: "#444" },
   button: {
     padding: 14,
     borderRadius: 10,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 14,
   },
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });
+

@@ -1,51 +1,118 @@
-// Arquivo: src/style/homeStyle.ts (Corrigido)
-import { StyleSheet, Dimensions, ViewStyle, TextStyle, ImageStyle } from 'react-native';
-import { cores } from '../constantes/cores';
-// Assumindo que você usa commonEstilosObjeto de algum lugar, mantemos a estrutura de exportação final limpa.
+import { StyleSheet } from "react-native";
 
-const { width } = Dimensions.get('window');
+const AZUL_MARINHO = "#0A2740";
+const DOURADO = "#D4AF37";
 
-// 💡 ESTILOS CONSOLIDADOS (para evitar o ReferenceError)
-const homeStyles = StyleSheet.create({
-  // --- LAYOUTS PRINCIPAIS ---
-  container: { flex: 1, backgroundColor: '#f0f4f7' },
-  headerContainer: { padding: 20, backgroundColor: cores.branco },
-  infoRow: { marginTop: 10 },
-  summaryCardsRow: { flexDirection: 'row', paddingHorizontal: 10, marginTop: 10 },
-  sectionContent: { marginHorizontal: 16 },
-  sectionHeaderContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 20, marginBottom: 10 },
-  
-  // --- HEADER TEXTOS ---
-  welcomeText: { fontSize: 16, color: cores.cinzaClaro }, 
-  pacienteName: { fontSize: 24, fontWeight: 'bold', color: cores.preto, marginTop: 4 },
-  cuidadorText: { fontSize: 14, color: cores.cinzaClaro }, 
-  
-  // --- SUMMARY CARD ---
-  summaryCard: { flex: 1, backgroundColor: cores.branco, padding: 15, margin: 5, borderRadius: 12, elevation: 2, alignItems: 'center' },
-  summaryCardTitle: { fontSize: 13, color: '#666', marginTop: 5, textAlign: 'center' },
-  summaryCardCount: { fontSize: 20, fontWeight: 'bold', color: cores.primaria },
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+    padding: 20,
+  },
+  // Cabeçalho
+  headerArea: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  welcome: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: AZUL_MARINHO,
+  },
+  subtitle: {
+    fontSize: 15,
+    marginTop: 4,
+    color: "#555",
+  },
+  profileIcon: {
+    width: 50,
+    height: 50,
+  },
 
-  // --- SECTION HEADER ---
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: cores.preto },
-  sectionAction: { color: cores.primaria, fontWeight: 'bold' },
+  // Card do Paciente
+  profileCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: DOURADO,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  profileTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: AZUL_MARINHO,
+    marginBottom: 8,
+  },
+  profileText: {
+    fontSize: 14,
+    color: "#444",
+    marginBottom: 2,
+  },
+  editButton: {
+    backgroundColor: AZUL_MARINHO,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    alignSelf: "flex-start",
+    marginTop: 10,
+  },
+  editButtonText: {
+    color: DOURADO,
+    fontWeight: "700",
+    fontSize: 14,
+  },
 
-  // --- RESUMO ITEM (Cards de Atividades/Cuidados) ---
-  resumoItemContainer: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#eee', backgroundColor: cores.branco, borderRadius: 8, marginBottom: 8, paddingHorizontal: 10, elevation: 0.5 },
-  resumoItemIcon: { padding: 10, borderRadius: 50, backgroundColor: cores.primaria + '20', marginRight: 16 },
-  resumoItemContent: { flex: 1 },
-  resumoItemTitle: { fontSize: 15, fontWeight: 'bold', color: cores.preto },
-  resumoItemSubTitle: { fontSize: 13, color: cores.cinzaClaro },
-  resumoItemDate: { fontSize: 12, color: cores.cinzaClaro },
-  
-  // --- EMPTY STATE ---
-  emptyCard: { backgroundColor: cores.branco, margin: 20, padding: 30, borderRadius: 10, alignItems: 'center' },
-  emptyText: { color: cores.cinzaClaro, fontSize: 16 },
-
-  // Adicionando estilos existentes (para evitar perda de referências no app)
-  cardRemedio: { flex:1, flexDirection: "row", gap: 15, padding: 20, alignItems: "center", borderRadius: 10, borderWidth: 2, borderColor: cores.secundaria, margin: 15, backgroundColor: cores.fundo },
-  
-  // ... (Outros estilos antigos se necessários)
+  // Sessões (Tarefas / Medicamentos)
+  section: {
+    marginBottom: 24,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: AZUL_MARINHO,
+  },
+  link: {
+    color: AZUL_MARINHO,
+    fontWeight: "600",
+  },
+  emptyText: {
+    fontSize: 15,
+    color: "#666",
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardTitle: {
+    fontWeight: "700",
+    color: AZUL_MARINHO,
+    marginBottom: 2,
+  },
+  cardText: {
+    fontSize: 15,
+    color: "#333",
+  },
 });
 
-// 💡 EXPORTAÇÃO SIMPLIFICADA
-export const styles = homeStyles;
+export default styles; // ✅ export default para funcionar com `import styles`
