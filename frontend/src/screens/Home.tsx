@@ -75,48 +75,60 @@ export default function Home({ navigation }: any) {
         const decoded: any = jwtDecode(token);
         const userId = decoded?.usuario_id;
 
-        const [resTarefas, resMedicamentos, resUsuario, resPacientes] =
-          await Promise.all([
-            fetch(`${API_URL}/tarefas`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            fetch(`${API_URL}/medicamentos`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            fetch(`${API_URL}/usuarios/perfil/${userId}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            fetch(`${API_URL}/pacientes`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-          ]);
+        // Primeiro busca os pacientes e o usuário
+        const [resUsuario, resPacientes] = await Promise.all([
+          fetch(`${API_URL}/usuarios/perfil/${userId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${API_URL}/pacientes`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
 
-        const dataTarefas = await resTarefas.json();
-        const dataMedicamentos = await resMedicamentos.json();
         const dataUsuario = await resUsuario.json();
         const dataPacientes = await resPacientes.json();
 
-        // 🔹 Filtra tarefas do dia atual (corrigido)
-        const hoje = new Date().toLocaleDateString("en-CA"); // Ex: "2025-11-13"
-        const tarefasHoje = dataTarefas.filter((t: any) => {
-          const dataTarefa = t.data?.split("T")[0];
-          return dataTarefa === hoje;
-        });
-
-        setTarefas(tarefasHoje);
-        setMedicamentos(dataMedicamentos);
         setUsuario(dataUsuario);
 
-        if (dataPacientes.length > 0) {
+        // Se há pacientes, busca detalhes, tarefas e medicamentos
+        if (Array.isArray(dataPacientes) && dataPacientes.length > 0) {
           const primeiroPaciente = dataPacientes[0];
-          const resPacienteDetalhes = await fetch(
-            `${API_URL}/pacientes/${primeiroPaciente.paciente_id}`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
+          const pacienteId = primeiroPaciente.paciente_id;
+
+          const [resTarefas, resMedicamentos, resPacienteDetalhes] =
+            await Promise.all([
+              fetch(`${API_URL}/tarefas?paciente_id=${pacienteId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              }),
+              fetch(`${API_URL}/medicamentos?paciente_id=${pacienteId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              }),
+              fetch(`${API_URL}/pacientes/${pacienteId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              }),
+            ]);
+
+          const dataTarefas = await resTarefas.json();
+          const dataMedicamentos = await resMedicamentos.json();
           const pacienteDetalhes = await resPacienteDetalhes.json();
+
+          // 🔹 Filtra tarefas do dia atual (corrigido)
+          const hoje = new Date().toLocaleDateString("en-CA"); // Ex: "2025-11-13"
+          const tarefasHoje = Array.isArray(dataTarefas)
+            ? dataTarefas.filter((t: any) => {
+                const dataTarefa = t.data?.split("T")[0];
+                return dataTarefa === hoje;
+              })
+            : [];
+
+          setTarefas(tarefasHoje);
+          setMedicamentos(Array.isArray(dataMedicamentos) ? dataMedicamentos : []);
           setPaciente(pacienteDetalhes);
+        } else {
+          // Sem pacientes cadastrados
+          setTarefas([]);
+          setMedicamentos([]);
+          setPaciente(null);
         }
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
