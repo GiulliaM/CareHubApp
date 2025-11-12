@@ -1,6 +1,6 @@
-const db = require("../config/db");
+import db from "../config/db.js";
 
-exports.criarMedicamento = (data, callback) => {
+export const criarMedicamento = (data, callback) => {
   const {
     nome,
     dosagem,
@@ -25,7 +25,7 @@ exports.criarMedicamento = (data, callback) => {
   );
 };
 
-exports.atualizarMedicamento = (id, data, callback) => {
+export const atualizarMedicamento = (id, data, callback) => {
   const keys = Object.keys(data);
   if (keys.length === 0) return callback(null, { affectedRows: 0 });
 
@@ -34,4 +34,9 @@ exports.atualizarMedicamento = (id, data, callback) => {
 
   const sql = `UPDATE medicamentos SET ${fields} WHERE medicamento_id = ? LIMIT 1`;
   db.query(sql, [...values, id], callback);
+};
+
+export default {
+  criarMedicamento,
+  atualizarMedicamento
 };

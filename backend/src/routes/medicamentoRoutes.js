@@ -1,17 +1,18 @@
-const express = require("express");
+import express from "express";
+import { getMedicamentos, createMedicamento, patchMedicamento, deleteMedicamento } from "../controllers/medicamentoController.js";
+
 const router = express.Router();
-const medicamentoController = require("../controllers/medicamentoController");
 
 // Listar medicamentos por paciente
-router.get("/", medicamentoController.getMedicamentos);
+router.get("/", getMedicamentos);
 
 // Criar novo medicamento
-router.post("/", medicamentoController.createMedicamento);
+router.post("/", createMedicamento);
 
 // Atualizar medicamento existente (PATCH)
-router.patch("/:id", medicamentoController.patchMedicamento);
+router.patch("/:id", patchMedicamento);
 
 // Excluir medicamento
-router.delete("/:id", medicamentoController.deleteMedicamento);
+router.delete("/:id", deleteMedicamento);
 
-module.exports = router;
+export default router;

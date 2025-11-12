@@ -1,8 +1,8 @@
-const db = require("../config/db");
-const medicamentoModel = require("../models/medicamentoModel");
+import db from "../config/db.js";
+import medicamentoModel from "../models/medicamentoModel.js";
 
 // Listar medicamentos
-exports.getMedicamentos = (req, res) => {
+export const getMedicamentos = (req, res) => {
   const { paciente_id } = req.query;
   const query = paciente_id
     ? "SELECT * FROM medicamentos WHERE paciente_id = ?"
@@ -18,7 +18,7 @@ exports.getMedicamentos = (req, res) => {
 };
 
 // Criar medicamento
-exports.createMedicamento = (req, res) => {
+export const createMedicamento = (req, res) => {
   medicamentoModel.criarMedicamento(req.body, (err, result) => {
     if (err) {
       console.error("Erro ao criar medicamento:", err);
@@ -29,7 +29,7 @@ exports.createMedicamento = (req, res) => {
 };
 
 // Atualizar medicamento (PATCH)
-exports.patchMedicamento = (req, res) => {
+export const patchMedicamento = (req, res) => {
   const { id } = req.params;
   const dados = req.body;
 
@@ -46,7 +46,7 @@ exports.patchMedicamento = (req, res) => {
 };
 
 // Excluir medicamento
-exports.deleteMedicamento = (req, res) => {
+export const deleteMedicamento = (req, res) => {
   const { id } = req.params;
 
   db.query("DELETE FROM medicamentos WHERE medicamento_id = ?", [id], (err, result) => {
