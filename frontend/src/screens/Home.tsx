@@ -160,7 +160,7 @@ export default function Home({ navigation }: any) {
         <View style={styles.headerArea}>
           <View>
             <Text style={[styles.welcome, { color: colors.primary }]}>
-              Olá{usuario ? `, ${usuario.nome}` : ""}! 👋
+              Olá{usuario ? `, ${usuario.nome}` : ""}! 
             </Text>
             <Text style={[styles.subtitle, { color: colors.text }]}>
               {formatarDataHora(dataHoraAtual)}
