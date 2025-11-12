@@ -53,11 +53,35 @@ export default function Diario({ navigation }: any) {
         ) : (
           <FlatList
             data={registros}
-            keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
+            keyExtractor={(item) => item.registro_id?.toString() || Math.random().toString()}
             renderItem={({ item }) => (
               <View style={styles.card}>
-                <Text style={[styles.cardTitle, { color: colors.primary }]}>{item.data}</Text>
-                <Text style={[styles.cardText, { color: colors.text }]}>{item.texto}</Text>
+                <View style={styles.cardHeader}>
+                  <Text style={[styles.cardDate, { color: colors.primary }]}>
+                    {new Date(item.data).toLocaleDateString('pt-BR')}
+                  </Text>
+                  <Text style={styles.cardTime}>
+                    {item.hora ? item.hora.slice(0, 5) : ''}
+                  </Text>
+                </View>
+                
+                {item.atividades && (
+                  <View style={styles.cardSection}>
+                    <Text style={styles.cardLabel}>Atividades:</Text>
+                    <Text style={[styles.cardText, { color: colors.text }]}>
+                      {item.atividades}
+                    </Text>
+                  </View>
+                )}
+                
+                {item.comentario && (
+                  <View style={styles.cardSection}>
+                    <Text style={styles.cardLabel}>Comentário:</Text>
+                    <Text style={[styles.cardText, { color: colors.text }]}>
+                      {item.comentario}
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
           />
@@ -105,6 +129,33 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  cardDate: {
+    fontWeight: "700",
+    fontSize: 16,
+    color: cores.primary,
+  },
+  cardTime: {
+    fontSize: 14,
+    color: "#666",
+  },
+  cardSection: {
+    marginBottom: 8,
+  },
+  cardLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#666",
+    marginBottom: 4,
+  },
   cardTitle: {
     fontWeight: "700",
     color: cores.primary,
@@ -113,6 +164,7 @@ const styles = StyleSheet.create({
   cardText: {
     fontSize: 15,
     color: "#333",
+    lineHeight: 20,
   },
   addButton: {
     backgroundColor: cores.primary,
