@@ -1,3 +1,4 @@
+// medicamentoController.js
 import db from "../config/db.js";
 import medicamentoModel from "../models/medicamentoModel.js";
 
@@ -57,7 +58,11 @@ export const createMedicamento = (req, res) => {
       console.error("Erro ao criar medicamento:", err);
       return res.status(500).json({ error: "Erro ao criar medicamento" });
     }
-    res.status(201).json({ message: "Medicamento cadastrado com sucesso!" });
+    // Retorna o id do medicamento criado
+    res.status(201).json({
+      message: "Medicamento cadastrado com sucesso!",
+      medicamento_id: result.insertId ?? null,
+    });
   });
 };
 

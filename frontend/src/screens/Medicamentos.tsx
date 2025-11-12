@@ -20,6 +20,7 @@ export default function Medicamentos({ navigation }: any) {
   const [medicamentos, setMedicamentos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // 🧩 Buscar medicamentos do paciente
   const fetchMedicamentos = useCallback(async () => {
     setLoading(true);
     try {
@@ -32,8 +33,7 @@ export default function Medicamentos({ navigation }: any) {
         return;
       }
 
-      // ✅ Pega todos os medicamentos do paciente
-      const data = await api.get(`/medicamentos?paciente_id=${paciente.paciente_id}`);
+      const { data } = await api.get(`/medicamentos?paciente_id=${paciente.paciente_id}`);
       setMedicamentos(data || []);
     } catch (error) {
       console.error("Erro ao carregar medicamentos:", error);
@@ -45,6 +45,7 @@ export default function Medicamentos({ navigation }: any) {
 
   useFocusEffect(useCallback(() => { fetchMedicamentos(); }, [fetchMedicamentos]));
 
+  // 🗑️ Excluir medicamento
   const handleDelete = (id: number) => {
     Alert.alert("Excluir medicamento", "Deseja realmente excluir este medicamento?", [
       { text: "Cancelar", style: "cancel" },
@@ -63,24 +64,21 @@ export default function Medicamentos({ navigation }: any) {
     ]);
   };
 
+  // 🕓 Formatar data (YYYY-MM-DD → DD/MM/YYYY)
   const formatarData = (data: string) => {
     if (!data) return "—";
-    const formatada = data.includes("T") ? data.split("T")[0] : data;
-    const partes = formatada.split("-");
-    if (partes.length === 3) {
-      return `${partes[2]}/${partes[1]}/${partes[0]}`;
-    }
-    return data;
+    const partes = data.includes("T") ? data.split("T")[0].split("-") : data.split("-");
+    return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : data;
   };
 
-  const formatarHorarios = (horarios: string) => {
+  // ⏰ Formatar horários
+  const formatarHorarios = (horarios: any) => {
     if (!horarios) return "—";
+    if (Array.isArray(horarios)) return horarios.join(", ");
     try {
       const parsed = JSON.parse(horarios);
       if (Array.isArray(parsed)) return parsed.join(", ");
-    } catch {
-      // se já for string simples
-    }
+    } catch {}
     return horarios;
   };
 
@@ -124,10 +122,12 @@ export default function Medicamentos({ navigation }: any) {
                   </Text>
                 </View>
 
-                {/* Ações */}
+                {/* ✏️ Ações */}
                 <View style={styles.actions}>
                   <TouchableOpacity
-                    onPress={() => navigation.navigate("EditMedicamento", { medicamento: item })}
+                    onPress={() =>
+                      navigation.navigate("EditMedicamento", { medicamento: item })
+                    }
                   >
                     <Ionicons name="create-outline" size={22} color={colors.primary} />
                   </TouchableOpacity>
