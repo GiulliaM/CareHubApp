@@ -25,8 +25,10 @@ export default function NovaMedicamento({ navigation }: any) {
   const [horarios, setHorarios] = useState<string[]>([]);
   const [novoHorario, setNovoHorario] = useState(new Date());
   const [showHoraPicker, setShowHoraPicker] = useState(false);
+
   const [inicio, setInicio] = useState(new Date());
   const [showInicioPicker, setShowInicioPicker] = useState(false);
+
   const [duracaoDays, setDuracaoDays] = useState("");
   const [usoContinuo, setUsoContinuo] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -42,7 +44,7 @@ export default function NovaMedicamento({ navigation }: any) {
 
   const handleSalvar = async () => {
     if (!nome.trim() || !dosagem.trim() || horarios.length === 0) {
-      Alert.alert("Aviso", "Preencha todos os campos obrigatórios.");
+      Alert.alert("Aviso", "Preencha nome, dosagem e pelo menos um horário!");
       return;
     }
 
@@ -82,25 +84,31 @@ export default function NovaMedicamento({ navigation }: any) {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={[styles.title, { color: colors.primary }]}>Novo Medicamento</Text>
 
+        {/* Nome */}
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.card }]}
           placeholder="Nome do medicamento"
+          placeholderTextColor="#666"
           value={nome}
           onChangeText={setNome}
         />
 
+        {/* Dosagem */}
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.card }]}
           placeholder="Dosagem (ex: 500mg)"
+          placeholderTextColor="#666"
           value={dosagem}
           onChangeText={setDosagem}
         />
 
+        {/* Adicionar horário */}
         <TouchableOpacity
-          style={styles.btnSelect}
+          style={[styles.btnSelect, { backgroundColor: colors.card }]}
           onPress={() => setShowHoraPicker(true)}
         >
-          <Text style={styles.btnSelectText}>
+          <Ionicons name="time-outline" size={20} color={colors.text} />
+          <Text style={[styles.btnSelectText, { color: colors.text }]}>
             Adicionar horário:{" "}
             {novoHorario.toLocaleTimeString("pt-BR", {
               hour: "2-digit",
@@ -124,21 +132,24 @@ export default function NovaMedicamento({ navigation }: any) {
           />
         )}
 
+        {/* Lista de horários */}
         {horarios.length > 0 && (
           <View style={styles.horariosContainer}>
             {horarios.map((h, i) => (
               <TouchableOpacity key={i} onPress={() => removerHorario(h)}>
-                <Text style={styles.horarioTag}>🕒 {h} ✖</Text>
+                <Text style={styles.horarioTag}>⏰ {h} ✖</Text>
               </TouchableOpacity>
             ))}
           </View>
         )}
 
+        {/* Data de início */}
         <TouchableOpacity
-          style={styles.btnSelect}
+          style={[styles.btnSelect, { backgroundColor: colors.card }]}
           onPress={() => setShowInicioPicker(true)}
         >
-          <Text style={styles.btnSelectText}>
+          <Ionicons name="calendar-outline" size={20} color={colors.text} />
+          <Text style={[styles.btnSelectText, { color: colors.text }]}>
             Início: {inicio.toLocaleDateString("pt-BR")}
           </Text>
         </TouchableOpacity>
@@ -154,22 +165,29 @@ export default function NovaMedicamento({ navigation }: any) {
           />
         )}
 
+        {/* Duração */}
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.card }]}
           placeholder="Duração (em dias)"
+          placeholderTextColor="#666"
           keyboardType="numeric"
           value={duracaoDays}
           onChangeText={setDuracaoDays}
         />
 
+        {/* Uso contínuo */}
         <View style={styles.switchRow}>
-          <Text style={styles.switchLabel}>Uso contínuo:</Text>
+          <Text style={[styles.switchLabel, { color: colors.text }]}>Uso contínuo:</Text>
           <Switch value={usoContinuo} onValueChange={setUsoContinuo} />
         </View>
 
+        {/* Botão salvar */}
         <TouchableOpacity
           disabled={salvando}
-          style={[styles.button, { backgroundColor: salvando ? "#999" : colors.primary }]}
+          style={[
+            styles.button,
+            { backgroundColor: salvando ? "#999" : colors.primary },
+          ]}
           onPress={handleSalvar}
         >
           {salvando ? (
@@ -178,62 +196,111 @@ export default function NovaMedicamento({ navigation }: any) {
             <Text style={styles.buttonText}>Salvar Medicamento</Text>
           )}
         </TouchableOpacity>
+
+        {/* Botão cancelar */}
+        <TouchableOpacity
+          style={[styles.cancelButton, { backgroundColor: "#b0b0b0" }]}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.cancelButtonText}>Cancelar</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+/* 🎨 ESTILOS */
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
+
   container: { padding: 16 },
+
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "700",
-    marginBottom: 20,
     textAlign: "center",
+    marginBottom: 22,
   },
+
   input: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
+    borderRadius: 12,
+    padding: 14,
     borderWidth: 1,
     borderColor: "#ccc",
-    padding: 12,
-    marginBottom: 12,
+    marginBottom: 14,
+    fontSize: 16,
+    elevation: 2,
   },
+
   btnSelect: {
-    backgroundColor: "#f0f0f0",
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 12,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    marginBottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    elevation: 2,
   },
-  btnSelectText: { color: "#333", fontWeight: "600" },
+
+  btnSelectText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
   horariosContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     marginBottom: 12,
   },
+
   horarioTag: {
-    backgroundColor: "#e0e0e0",
-    borderRadius: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    backgroundColor: "#dbeafe",
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
     marginRight: 6,
     marginBottom: 6,
     fontWeight: "600",
-    color: "#333",
+    color: "#1e3a8a",
   },
+
   switchRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginVertical: 6,
+    marginVertical: 8,
   },
-  switchLabel: { fontWeight: "600", color: "#444" },
+
+  switchLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
   button: {
-    padding: 14,
-    borderRadius: 10,
+    padding: 16,
+    borderRadius: 12,
     alignItems: "center",
-    marginTop: 14,
+    marginTop: 16,
   },
-  buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+
+  buttonText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+
+  cancelButton: {
+    padding: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 10,
+  },
+
+  cancelButtonText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
+  },
 });
