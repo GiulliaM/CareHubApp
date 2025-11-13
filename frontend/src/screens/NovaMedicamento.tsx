@@ -8,16 +8,18 @@ import {
   ScrollView,
   Switch,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import Toast from "react-native-root-toast";
 import { useTheme } from "../context/ThemeContext";
-import api from "../utils/apiClient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import api from "../utils/apiClient";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function NovaMedicamento({ navigation }: any) {
   const { colors } = useTheme();
+
   const [nome, setNome] = useState("");
   const [dosagem, setDosagem] = useState("");
   const [horarios, setHorarios] = useState<string[]>([]);
@@ -27,20 +29,7 @@ export default function NovaMedicamento({ navigation }: any) {
   const [showInicioPicker, setShowInicioPicker] = useState(false);
   const [duracaoDays, setDuracaoDays] = useState("");
   const [usoContinuo, setUsoContinuo] = useState(false);
-  const [concluido, setConcluido] = useState(false);
   const [salvando, setSalvando] = useState(false);
-
-  const showToast = (msg: string, success = false) => {
-    Toast.show(msg, {
-      duration: Toast.durations.SHORT,
-      position: Toast.positions.BOTTOM,
-      backgroundColor: success ? "#1a73e8" : "#c62828",
-      textColor: "#fff",
-      shadow: true,
-      animation: true,
-      hideOnPress: true,
-    });
-  };
 
   const adicionarHorario = () => {
     const horaStr = novoHorario.toTimeString().slice(0, 5);
@@ -51,11 +40,9 @@ export default function NovaMedicamento({ navigation }: any) {
     setHorarios(horarios.filter((h) => h !== hora));
   };
 
-  async function handleSalvar() {
-    console.log("🔹 Botão clicado - Iniciando cadastro...");
-
+  const handleSalvar = async () => {
     if (!nome.trim() || !dosagem.trim() || horarios.length === 0) {
-      showToast("Preencha nome, dosagem e pelo menos um horário!");
+      Alert.alert("Aviso", "Preencha todos os campos obrigatórios.");
       return;
     }
 
@@ -64,42 +51,31 @@ export default function NovaMedicamento({ navigation }: any) {
       const rawPaciente = await AsyncStorage.getItem("paciente");
       const paciente = rawPaciente ? JSON.parse(rawPaciente) : null;
 
-      console.log("🔹 Paciente:", paciente);
-
       if (!paciente?.paciente_id) {
-        showToast("Nenhum paciente cadastrado.");
-        setSalvando(false);
+        Alert.alert("Erro", "Nenhum paciente vinculado encontrado.");
         return;
       }
 
-      const payload = {
+      await api.post("/medicamentos", {
         nome,
         dosagem,
         horarios,
-        concluido: concluido ? 1 : 0,
+        concluido: 0,
         inicio: inicio.toISOString().split("T")[0],
         duracao_days: duracaoDays ? Number(duracaoDays) : null,
         uso_continuo: usoContinuo ? 1 : 0,
         paciente_id: paciente.paciente_id,
-      };
+      });
 
-      console.log("🔹 Enviando para API:", payload);
-
-      const response = await api.post("/medicamentos", payload);
-      console.log("✅ Resposta do servidor:", response.data);
-
-      showToast("Medicamento cadastrado com sucesso!", true);
-      setTimeout(() => navigation.navigate("Tabs", { screen: "Medicamentos" }), 1000);
-    } catch (err: any) {
-      console.error("❌ Erro ao salvar medicamento:", err);
-      if (err.response) {
-        console.log("📩 Resposta do servidor:", err.response.data);
-      }
-      showToast("Erro ao salvar medicamento. Verifique o servidor.");
+      Alert.alert("Sucesso", "Medicamento cadastrado com sucesso!");
+      navigation.navigate("Tabs", { screen: "Medicamentos" });
+    } catch (err) {
+      console.error("Erro ao salvar medicamento:", err);
+      Alert.alert("Erro", "Não foi possível salvar o medicamento.");
     } finally {
       setSalvando(false);
     }
-  }
+  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
@@ -112,6 +88,7 @@ export default function NovaMedicamento({ navigation }: any) {
           value={nome}
           onChangeText={setNome}
         />
+
         <TextInput
           style={styles.input}
           placeholder="Dosagem (ex: 500mg)"
@@ -119,7 +96,10 @@ export default function NovaMedicamento({ navigation }: any) {
           onChangeText={setDosagem}
         />
 
-        <TouchableOpacity style={styles.btnSelect} onPress={() => setShowHoraPicker(true)}>
+        <TouchableOpacity
+          style={styles.btnSelect}
+          onPress={() => setShowHoraPicker(true)}
+        >
           <Text style={styles.btnSelectText}>
             Adicionar horário:{" "}
             {novoHorario.toLocaleTimeString("pt-BR", {
@@ -154,8 +134,13 @@ export default function NovaMedicamento({ navigation }: any) {
           </View>
         )}
 
-        <TouchableOpacity style={styles.btnSelect} onPress={() => setShowInicioPicker(true)}>
-          <Text style={styles.btnSelectText}>Início: {inicio.toLocaleDateString("pt-BR")}</Text>
+        <TouchableOpacity
+          style={styles.btnSelect}
+          onPress={() => setShowInicioPicker(true)}
+        >
+          <Text style={styles.btnSelectText}>
+            Início: {inicio.toLocaleDateString("pt-BR")}
+          </Text>
         </TouchableOpacity>
 
         {showInicioPicker && (
@@ -182,11 +167,6 @@ export default function NovaMedicamento({ navigation }: any) {
           <Switch value={usoContinuo} onValueChange={setUsoContinuo} />
         </View>
 
-        <View style={styles.switchRow}>
-          <Text style={styles.switchLabel}>Já concluído:</Text>
-          <Switch value={concluido} onValueChange={setConcluido} />
-        </View>
-
         <TouchableOpacity
           disabled={salvando}
           style={[styles.button, { backgroundColor: salvando ? "#999" : colors.primary }]}
@@ -195,7 +175,7 @@ export default function NovaMedicamento({ navigation }: any) {
           {salvando ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Salvar medicamento</Text>
+            <Text style={styles.buttonText}>Salvar Medicamento</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -206,7 +186,12 @@ export default function NovaMedicamento({ navigation }: any) {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { padding: 16 },
-  title: { fontSize: 24, fontWeight: "700", marginBottom: 20, textAlign: "center" },
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 20,
+    textAlign: "center",
+  },
   input: {
     backgroundColor: "#fff",
     borderRadius: 10,
@@ -222,7 +207,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   btnSelectText: { color: "#333", fontWeight: "600" },
-  horariosContainer: { flexDirection: "row", flexWrap: "wrap", marginBottom: 12 },
+  horariosContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 12,
+  },
   horarioTag: {
     backgroundColor: "#e0e0e0",
     borderRadius: 6,
@@ -240,6 +229,11 @@ const styles = StyleSheet.create({
     marginVertical: 6,
   },
   switchLabel: { fontWeight: "600", color: "#444" },
-  button: { padding: 14, borderRadius: 10, alignItems: "center", marginTop: 14 },
+  button: {
+    padding: 14,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 14,
+  },
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });

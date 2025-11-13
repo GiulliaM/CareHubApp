@@ -1,64 +1,60 @@
-// medicamentoController.js
 import db from "../config/db.js";
 import medicamentoModel from "../models/medicamentoModel.js";
 
-// Listar medicamentos
+// 🔹 Listar medicamentos de um paciente
 export const getMedicamentos = (req, res) => {
-  const { paciente_id } = req.query;
-  const query = paciente_id
-    ? "SELECT * FROM medicamentos WHERE paciente_id = ?"
-    : "SELECT * FROM medicamentos";
+  const { paciente_id } = req.params;
 
-  db.query(query, paciente_id ? [paciente_id] : [], (err, results) => {
+  if (!paciente_id) {
+    return res.status(400).json({ error: "ID do paciente não fornecido" });
+  }
+
+  const query = "SELECT * FROM medicamentos WHERE paciente_id = ?";
+
+  db.query(query, [paciente_id], (err, results) => {
     if (err) {
       console.error("Erro ao buscar medicamentos:", err);
       return res.status(500).json({ error: "Erro ao buscar medicamentos" });
     }
 
-    // Processar horários: converter de JSON/string para array
-    const medicamentosProcessados = results.map((med) => {
-      // Formatar data inicio para evitar problemas de timezone
+    // 🧩 Processar e formatar campos do banco
+    const medicamentos = results.map((med) => {
+      // Formatar datas
       if (med.inicio) {
-        const data = new Date(med.inicio);
-        med.inicio = data.toISOString().split("T")[0];
+        med.inicio = new Date(med.inicio).toISOString().split("T")[0];
       }
-
-      // Formatar data_fim se existir
       if (med.data_fim) {
-        const data = new Date(med.data_fim);
-        med.data_fim = data.toISOString().split("T")[0];
+        med.data_fim = new Date(med.data_fim).toISOString().split("T")[0];
       }
 
-      // Processar horários
+      // Converter horários (JSON → array)
       if (med.horarios) {
         try {
-          // Tentar parsear como JSON
           med.horarios = JSON.parse(med.horarios);
-        } catch (e) {
-          // Se não for JSON, tentar separar por vírgula (formato legado)
-          if (typeof med.horarios === 'string') {
-            med.horarios = med.horarios.split(',').map(h => h.trim());
+        } catch {
+          if (typeof med.horarios === "string") {
+            med.horarios = med.horarios.split(",").map((h) => h.trim());
+          } else {
+            med.horarios = [];
           }
         }
-      } else {
-        med.horarios = [];
       }
 
       return med;
     });
 
-    res.status(200).json(medicamentosProcessados);
+    res.status(200).json(medicamentos);
   });
 };
 
-// Criar medicamento
+// 🔹 Criar medicamento
 export const createMedicamento = (req, res) => {
   medicamentoModel.criarMedicamento(req.body, (err, result) => {
     if (err) {
       console.error("Erro ao criar medicamento:", err);
       return res.status(500).json({ error: "Erro ao criar medicamento" });
     }
-    // Retorna o id do medicamento criado
+
     res.status(201).json({
       message: "Medicamento cadastrado com sucesso!",
       medicamento_id: result.insertId ?? null,
@@ -66,7 +62,7 @@ export const createMedicamento = (req, res) => {
   });
 };
 
-// Atualizar medicamento (PATCH)
+// 🔹 Atualizar medicamento (PATCH)
 export const patchMedicamento = (req, res) => {
   const { id } = req.params;
   const dados = req.body;
@@ -76,14 +72,16 @@ export const patchMedicamento = (req, res) => {
       console.error("Erro ao atualizar medicamento:", err);
       return res.status(500).json({ error: "Erro ao atualizar medicamento" });
     }
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Medicamento não encontrado" });
     }
+
     res.status(200).json({ message: "Medicamento atualizado com sucesso!" });
   });
 };
 
-// Excluir medicamento
+// 🔹 Excluir medicamento
 export const deleteMedicamento = (req, res) => {
   const { id } = req.params;
 

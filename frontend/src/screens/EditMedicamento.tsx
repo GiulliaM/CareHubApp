@@ -8,89 +8,63 @@ import {
   ScrollView,
   Switch,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import Toast from "react-native-root-toast";
-import { useTheme } from "../context/ThemeContext";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../utils/apiClient";
+import { useTheme } from "../context/ThemeContext";
 
 export default function EditMedicamento({ route, navigation }: any) {
-  const { colors } = useTheme();
   const { medicamento } = route.params;
+  const { colors } = useTheme();
 
-  // 🧩 Normaliza horários (podem vir como string ou array)
-  const initialHorarios = Array.isArray(medicamento.horarios)
-    ? medicamento.horarios
-    : typeof medicamento.horarios === "string" && medicamento.horarios.length
-    ? medicamento.horarios.split(",").map((h: string) => h.trim())
-    : [];
-
-  const [nome, setNome] = useState(medicamento.nome);
-  const [dosagem, setDosagem] = useState(medicamento.dosagem);
-  const [horarios, setHorarios] = useState<string[]>(initialHorarios);
+  const [nome, setNome] = useState(medicamento?.nome || "");
+  const [dosagem, setDosagem] = useState(medicamento?.dosagem || "");
+  const [horarios, setHorarios] = useState<string[]>(medicamento?.horarios || []);
   const [novoHorario, setNovoHorario] = useState(new Date());
   const [showHoraPicker, setShowHoraPicker] = useState(false);
-  const [inicio, setInicio] = useState(
-    medicamento.inicio ? new Date(medicamento.inicio) : new Date()
-  );
-  const [duracaoDays, setDuracaoDays] = useState(
-    medicamento.duracao_days?.toString() || ""
-  );
-  const [usoContinuo, setUsoContinuo] = useState(!!medicamento.uso_continuo);
-  const [concluido, setConcluido] = useState(!!medicamento.concluido);
-  const [showDate, setShowDate] = useState(false);
+  const [inicio, setInicio] = useState(new Date(medicamento?.inicio || new Date()));
+  const [showInicioPicker, setShowInicioPicker] = useState(false);
+  const [duracaoDays, setDuracaoDays] = useState(String(medicamento?.duracao_days || ""));
+  const [usoContinuo, setUsoContinuo] = useState(Boolean(medicamento?.uso_continuo));
+  const [concluido, setConcluido] = useState(Boolean(medicamento?.concluido));
   const [salvando, setSalvando] = useState(false);
-
-  const showToast = (msg: string, success = false) => {
-    Toast.show(msg, {
-      duration: Toast.durations.SHORT,
-      position: Toast.positions.BOTTOM,
-      backgroundColor: success ? "#1a73e8" : "#c62828",
-      textColor: "#fff",
-      shadow: true,
-      animation: true,
-      hideOnPress: true,
-    });
-  };
 
   const adicionarHorario = () => {
     const horaStr = novoHorario.toTimeString().slice(0, 5);
-    if (!horarios.includes(horaStr)) {
-      setHorarios([...horarios, horaStr].sort());
-    }
+    if (!horarios.includes(horaStr)) setHorarios([...horarios, horaStr].sort());
   };
 
-  const removerHorario = (h: string) => {
-    setHorarios(horarios.filter((x) => x !== h));
+  const removerHorario = (hora: string) => {
+    setHorarios(horarios.filter((h) => h !== hora));
   };
 
-  // 💾 Atualizar medicamento
   const handleSalvar = async () => {
-    if (!nome.trim()) {
-      showToast("Informe o nome do medicamento!");
+    if (!nome.trim() || !dosagem.trim() || horarios.length === 0) {
+      Alert.alert("Atenção", "Preencha nome, dosagem e pelo menos um horário!");
       return;
     }
 
     setSalvando(true);
     try {
-      const changes: any = {
+      await api.patch(`/medicamentos/${medicamento.medicamento_id}`, {
         nome,
         dosagem,
-        horarios, // envia array direto (o backend já trata JSON)
+        horarios,
+        concluido: concluido ? 1 : 0,
         inicio: inicio.toISOString().split("T")[0],
         duracao_days: duracaoDays ? Number(duracaoDays) : null,
         uso_continuo: usoContinuo ? 1 : 0,
-        concluido: concluido ? 1 : 0,
-      };
+      });
 
-      await api.patch(`/medicamentos/${medicamento.medicamento_id}`, changes);
-
-      showToast("Medicamento atualizado com sucesso!", true);
-      setTimeout(() => navigation.goBack(), 800);
+      Alert.alert("Sucesso", "Medicamento atualizado com sucesso!");
+      navigation.navigate("Medicamentos");
     } catch (err) {
-      console.error("Erro ao atualizar medicamento:", err);
-      showToast("Erro ao atualizar medicamento. Verifique o servidor.");
+      console.error("Erro ao salvar medicamento:", err);
+      Alert.alert("Erro", "Não foi possível salvar as alterações.");
     } finally {
       setSalvando(false);
     }
@@ -103,21 +77,21 @@ export default function EditMedicamento({ route, navigation }: any) {
 
         <TextInput
           style={styles.input}
-          placeholder="Nome"
+          placeholder="Nome do medicamento"
           value={nome}
           onChangeText={setNome}
         />
+
         <TextInput
           style={styles.input}
-          placeholder="Dosagem"
+          placeholder="Dosagem (ex: 500mg)"
           value={dosagem}
           onChangeText={setDosagem}
         />
 
         <TouchableOpacity style={styles.btnSelect} onPress={() => setShowHoraPicker(true)}>
           <Text style={styles.btnSelectText}>
-            Adicionar horário:{" "}
-            {novoHorario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+            Adicionar horário: {novoHorario.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
           </Text>
         </TouchableOpacity>
 
@@ -146,16 +120,16 @@ export default function EditMedicamento({ route, navigation }: any) {
           </View>
         )}
 
-        <TouchableOpacity style={styles.input} onPress={() => setShowDate(true)}>
-          <Text>📅 Início: {inicio.toLocaleDateString("pt-BR")}</Text>
+        <TouchableOpacity style={styles.btnSelect} onPress={() => setShowInicioPicker(true)}>
+          <Text style={styles.btnSelectText}>Início: {inicio.toLocaleDateString("pt-BR")}</Text>
         </TouchableOpacity>
 
-        {showDate && (
+        {showInicioPicker && (
           <DateTimePicker
             value={inicio}
             mode="date"
             onChange={(e, date) => {
-              setShowDate(false);
+              setShowInicioPicker(false);
               if (date) setInicio(date);
             }}
           />
@@ -163,7 +137,7 @@ export default function EditMedicamento({ route, navigation }: any) {
 
         <TextInput
           style={styles.input}
-          placeholder="Duração (dias)"
+          placeholder="Duração (em dias)"
           keyboardType="numeric"
           value={duracaoDays}
           onChangeText={setDuracaoDays}
@@ -184,11 +158,7 @@ export default function EditMedicamento({ route, navigation }: any) {
           style={[styles.button, { backgroundColor: salvando ? "#999" : colors.primary }]}
           onPress={handleSalvar}
         >
-          {salvando ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Salvar alterações</Text>
-          )}
+          {salvando ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Salvar Alterações</Text>}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -198,40 +168,14 @@ export default function EditMedicamento({ route, navigation }: any) {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { padding: 16 },
-  title: { fontSize: 24, fontWeight: "700", marginBottom: 16 },
-  input: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 12,
-    marginBottom: 12,
-  },
-  btnSelect: {
-    backgroundColor: "#f0f0f0",
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 12,
-  },
+  title: { fontSize: 24, fontWeight: "700", marginBottom: 20, textAlign: "center" },
+  input: { backgroundColor: "#fff", borderRadius: 10, borderWidth: 1, borderColor: "#ccc", padding: 12, marginBottom: 12 },
+  btnSelect: { backgroundColor: "#f0f0f0", padding: 12, borderRadius: 10, marginBottom: 12 },
   btnSelectText: { color: "#333", fontWeight: "600" },
   horariosContainer: { flexDirection: "row", flexWrap: "wrap", marginBottom: 12 },
-  horarioTag: {
-    backgroundColor: "#e0e0e0",
-    borderRadius: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    marginRight: 6,
-    marginBottom: 6,
-    fontWeight: "600",
-    color: "#333",
-  },
-  switchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
+  horarioTag: { backgroundColor: "#e0e0e0", borderRadius: 6, paddingVertical: 4, paddingHorizontal: 8, marginRight: 6, marginBottom: 6, fontWeight: "600", color: "#333" },
+  switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginVertical: 6 },
   switchLabel: { fontWeight: "600", color: "#444" },
-  button: { padding: 14, borderRadius: 10, alignItems: "center", marginTop: 10 },
+  button: { padding: 14, borderRadius: 10, alignItems: "center", marginTop: 14 },
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });
