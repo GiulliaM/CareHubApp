@@ -1,118 +1,141 @@
 import { StyleSheet } from "react-native";
 
-const AZUL_MARINHO = "#0A2740";
-const DOURADO = "#D4AF37";
+export default StyleSheet.create({
 
-const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+
   container: {
-    flex: 1,
-    padding: 20,
-  },
-  // Cabeçalho
-  headerArea: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  welcome: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: AZUL_MARINHO,
-  },
-  subtitle: {
-    fontSize: 15,
-    marginTop: 4,
-    color: "#555",
-  },
-  profileIcon: {
-    width: 50,
-    height: 50,
-  },
-
-  // Card do Paciente
-  profileCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: DOURADO,
     padding: 16,
-    marginBottom: 24,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  profileTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: AZUL_MARINHO,
-    marginBottom: 8,
-  },
-  profileText: {
-    fontSize: 14,
-    color: "#444",
-    marginBottom: 2,
-  },
-  editButton: {
-    backgroundColor: AZUL_MARINHO,
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    alignSelf: "flex-start",
-    marginTop: 10,
-  },
-  editButtonText: {
-    color: DOURADO,
-    fontWeight: "700",
-    fontSize: 14,
+    paddingBottom: 120,
   },
 
-  // Sessões (Tarefas / Medicamentos)
-  section: {
-    marginBottom: 24,
-  },
+  /* HEADER */
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 26,
   },
-  sectionTitle: {
+
+  welcome: {
+    fontSize: 26,
+    fontWeight: "700",
+  },
+
+  welcomeSubtitle: {
+    fontSize: 14,
+    marginTop: 4,
+    opacity: 0.7,
+  },
+
+  avatar: {
+    width: 55,
+    height: 55,
+    borderRadius: 30,
+  },
+
+  /* CARD BASE */
+  card: {
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 26,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+
+  cardHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 8,
+  },
+
+  cardTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: AZUL_MARINHO,
   },
-  link: {
-    color: AZUL_MARINHO,
-    fontWeight: "600",
+
+  cardLabel: {
+    fontWeight: "700",
   },
-  emptyText: {
+
+  cardInfo: {
     fontSize: 15,
-    color: "#666",
+    marginBottom: 6,
   },
-  card: {
-    backgroundColor: "#fff",
+
+  editBtn: {
+    flexDirection: "row",
+    marginTop: 12,
     borderRadius: 10,
-    padding: 14,
-    marginBottom: 10,
+    paddingVertical: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  editText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+
+  emptyText: {
+    textAlign: "center",
+    opacity: 0.7,
+    marginTop: 8,
+  },
+
+  /* ACESSO RÁPIDO */
+
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 14,
+  },
+
+  quickGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 26,
+  },
+
+  quickCard: {
+    width: "31%",
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: "center",
+    justifyContent: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 5,
     elevation: 3,
   },
-  cardTitle: {
-    fontWeight: "700",
-    color: AZUL_MARINHO,
-    marginBottom: 2,
+
+  quickText: {
+    marginTop: 8,
+    fontWeight: "600",
   },
-  cardText: {
-    fontSize: 15,
-    color: "#333",
+
+  /* AVISO */
+  notice: {
+    flexDirection: "row",
+    padding: 16,
+    borderRadius: 14,
+    alignItems: "center",
+    gap: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+
+  noticeText: {
+    fontSize: 14,
+    flex: 1,
+    lineHeight: 20,
   },
 });
-
-export default styles; // ✅ export default para funcionar com `import styles`
