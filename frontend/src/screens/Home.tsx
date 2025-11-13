@@ -2,319 +2,177 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  FlatList,
   TouchableOpacity,
+  ScrollView,
   ActivityIndicator,
   Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons, Feather } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
-import { API_URL } from "../config/api";
-import { getToken } from "../utils/auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import styles from "../style/homeStyle";
-import { jwtDecode } from "jwt-decode";
 
 export default function Home({ navigation }: any) {
   const { colors } = useTheme();
-  const [tarefas, setTarefas] = useState<any[]>([]);
-  const [medicamentos, setMedicamentos] = useState<any[]>([]);
+  const [user, setUser] = useState<any>(null);
   const [paciente, setPaciente] = useState<any>(null);
-  const [usuario, setUsuario] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [dataHoraAtual, setDataHoraAtual] = useState(new Date());
 
-  // Atualiza o relógio a cada minuto
-  useEffect(() => {
-    const timer = setInterval(() => setDataHoraAtual(new Date()), 60000);
-    return () => clearInterval(timer);
-  }, []);
+  async function load() {
+    setLoading(true);
 
-  // Formata data e hora atual
-  const formatarDataHora = (data: Date) => {
-    const dias = [
-      "domingo",
-      "segunda-feira",
-      "terça-feira",
-      "quarta-feira",
-      "quinta-feira",
-      "sexta-feira",
-      "sábado",
-    ];
-    const meses = [
-      "janeiro",
-      "fevereiro",
-      "março",
-      "abril",
-      "maio",
-      "junho",
-      "julho",
-      "agosto",
-      "setembro",
-      "outubro",
-      "novembro",
-      "dezembro",
-    ];
+    const rawUser = await AsyncStorage.getItem("usuario");
+    const rawPac = await AsyncStorage.getItem("paciente");
 
-    const diaSemana = dias[data.getDay()];
-    const dia = data.getDate();
-    const mes = meses[data.getMonth()];
-    const ano = data.getFullYear();
+    if (rawUser) setUser(JSON.parse(rawUser));
+    if (rawPac) setPaciente(JSON.parse(rawPac));
 
-    const hora = data.getHours().toString().padStart(2, "0");
-    const minutos = data.getMinutes().toString().padStart(2, "0");
-
-    return `Hoje é ${diaSemana}, ${dia} de ${mes} de ${ano} — ${hora}:${minutos}`;
-  };
+    setLoading(false);
+  }
 
   useEffect(() => {
-    (async () => {
-      try {
-        const token = await getToken();
-        if (!token) throw new Error("Token não encontrado");
-
-        const decoded: any = jwtDecode(token);
-        const userId = decoded?.usuario_id;
-
-        // Primeiro busca os pacientes e o usuário
-        const [resUsuario, resPacientes] = await Promise.all([
-          fetch(`${API_URL}/usuarios/perfil/${userId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`${API_URL}/pacientes`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
-
-        const dataUsuario = await resUsuario.json();
-        const dataPacientes = await resPacientes.json();
-
-        setUsuario(dataUsuario);
-
-        // Se há pacientes, busca detalhes, tarefas e medicamentos
-        if (Array.isArray(dataPacientes) && dataPacientes.length > 0) {
-          const primeiroPaciente = dataPacientes[0];
-          const pacienteId = primeiroPaciente.paciente_id;
-
-          const [resTarefas, resMedicamentos, resPacienteDetalhes] =
-            await Promise.all([
-              fetch(`${API_URL}/tarefas?paciente_id=${pacienteId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              }),
-              fetch(`${API_URL}/medicamentos?paciente_id=${pacienteId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              }),
-              fetch(`${API_URL}/pacientes/${pacienteId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              }),
-            ]);
-
-          const dataTarefas = await resTarefas.json();
-          const dataMedicamentos = await resMedicamentos.json();
-          const pacienteDetalhes = await resPacienteDetalhes.json();
-
-          // 🔹 Filtra tarefas do dia atual (corrigido)
-          const hoje = new Date().toLocaleDateString("en-CA"); // Ex: "2025-11-13"
-          const tarefasHoje = Array.isArray(dataTarefas)
-            ? dataTarefas.filter((t: any) => {
-                const dataTarefa = t.data?.split("T")[0];
-                return dataTarefa === hoje;
-              })
-            : [];
-
-          setTarefas(tarefasHoje);
-          setMedicamentos(Array.isArray(dataMedicamentos) ? dataMedicamentos : []);
-          setPaciente(pacienteDetalhes);
-        } else {
-          // Sem pacientes cadastrados
-          setTarefas([]);
-          setMedicamentos([]);
-          setPaciente(null);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar dados:", error);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    load();
   }, []);
-
-  const resumoDia = () => {
-    const qtdTarefas = tarefas.length;
-    const qtdMedicamentos = medicamentos.length;
-
-    if (qtdTarefas === 0 && qtdMedicamentos === 0)
-      return "Você não tem compromissos hoje 🎉";
-    if (qtdTarefas > 0 && qtdMedicamentos === 0)
-      return `Você tem ${qtdTarefas} tarefa${qtdTarefas > 1 ? "s" : ""} hoje.`;
-    if (qtdTarefas === 0 && qtdMedicamentos > 0)
-      return `Você tem ${qtdMedicamentos} medicamento${qtdMedicamentos > 1 ? "s" : ""} para hoje.`;
-    return `Você tem ${qtdTarefas} tarefa${qtdTarefas > 1 ? "s" : ""} e ${qtdMedicamentos} medicamento${qtdMedicamentos > 1 ? "s" : ""} hoje.`;
-  };
 
   return (
-    <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: colors.background }]}
-    >
-      <View style={styles.container}>
-        {/* 👋 Boas-vindas */}
-        <View style={styles.headerArea}>
-          <View>
-            <Text style={[styles.welcome, { color: colors.primary }]}>
-              Olá{usuario ? `, ${usuario.nome}` : ""}! 
-            </Text>
-            <Text style={[styles.subtitle, { color: colors.text }]}>
-              {formatarDataHora(dataHoraAtual)}
-            </Text>
-            <Text
-              style={[
-                styles.subtitle,
-                { color: colors.primary, marginTop: 4, fontWeight: "600" },
-              ]}
-            >
-              {resumoDia()}
-            </Text>
-          </View>
-          <Image
-            source={require("../../../assets/bandaid-heart.webp")}
-            style={styles.profileIcon}
-          />
-        </View>
-
-        {/* 🧑‍⚕️ Card do Paciente */}
-        {paciente ? (
-          <View style={styles.profileCard}>
-            <Text style={styles.profileTitle}>Informações do Paciente</Text>
-            <Text style={styles.profileText}>Nome: {paciente.nome}</Text>
-            <Text style={styles.profileText}>
-              Idade: {paciente.idade || "—"}
-            </Text>
-            <Text style={styles.profileText}>
-              Gênero: {paciente.genero || "—"}
-            </Text>
-            <Text style={styles.profileText}>
-              Observações: {paciente.observacoes || "—"}
-            </Text>
-            <Text style={styles.profileText}>
-              Cadastrado em:{" "}
-              {paciente.created_at
-                ? new Date(paciente.created_at).toLocaleDateString("pt-BR")
-                : "—"}
-            </Text>
-
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={() =>
-                navigation.navigate("EditPatient", { paciente: paciente })
-              }
-            >
-              <Text style={styles.editButtonText}>Editar informações</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.profileCard}>
-            <Text style={styles.profileTitle}>
-              Nenhum paciente cadastrado.
-            </Text>
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={() => navigation.navigate("CadastroPaciente")}
-            >
-              <Text style={styles.editButtonText}>Cadastrar paciente</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* 🔄 Conteúdo principal */}
-        {loading ? (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={styles.container}>
+        
+        {/* ⏳ Loader inicial */}
+        {loading && (
           <ActivityIndicator
             size="large"
             color={colors.primary}
             style={{ marginTop: 40 }}
           />
-        ) : (
+        )}
+
+        {/* 🔵 Header */}
+        {!loading && (
           <>
-            {/* 🗂️ Tarefas do Dia */}
-            <View style={styles.section}>
-              <View style={styles.header}>
-                <Text style={[styles.sectionTitle, { color: colors.primary }]}>
-                  Tarefas de hoje
+            <View style={styles.header}>
+              <View>
+                <Text style={[styles.welcome, { color: colors.primary }]}>
+                  Olá, {user?.nome?.split(" ")[0] || "Usuário"} 👋
                 </Text>
-                <TouchableOpacity
-                  onPress={() => navigation.navigate("Tarefas")}
-                >
-                  <Text style={[styles.link, { color: colors.primary }]}>
-                    Ver todas
-                  </Text>
-                </TouchableOpacity>
+                <Text style={[styles.welcomeSubtitle, { color: colors.text }]}>
+                  Aqui está o resumo do seu cuidado de hoje
+                </Text>
               </View>
 
-              {tarefas.length === 0 ? (
-                <Text style={styles.emptyText}>Nenhuma tarefa para hoje.</Text>
-              ) : (
-                <FlatList
-                  data={tarefas.slice(0, 3)}
-                  keyExtractor={(item) =>
-                    item.tarefa_id?.toString() || Math.random().toString()
-                  }
-                  renderItem={({ item }) => (
-                    <View style={styles.card}>
-                      <Text
-                        style={[styles.cardTitle, { color: colors.primary }]}
-                      >
-                        {item.titulo}
-                      </Text>
-                      <Text style={[styles.cardText, { color: colors.text }]}>
-                        {item.detalhes}
-                      </Text>
-                    </View>
-                  )}
+              <TouchableOpacity onPress={() => navigation.navigate("Perfil")}>
+                <Image
+                  source={require("../../../assets/bandaid-heart.webp")}
+                  style={styles.avatar}
                 />
+              </TouchableOpacity>
+            </View>
+
+            {/* 🧑‍⚕️ Card do Paciente */}
+            <View style={[styles.card, { backgroundColor: colors.card }]}>
+              <View style={styles.cardHeaderRow}>
+                <Feather name="user" size={20} color={colors.primary} />
+                <Text style={[styles.cardTitle, { color: colors.text }]}>
+                  Informações do Paciente
+                </Text>
+              </View>
+
+              {paciente ? (
+                <>
+                  <Text style={[styles.cardInfo, { color: colors.text }]}>
+                    <Text style={styles.cardLabel}>Nome:</Text> {paciente.nome}
+                  </Text>
+
+                  <Text style={[styles.cardInfo, { color: colors.text }]}>
+                    <Text style={styles.cardLabel}>Idade:</Text> {paciente.idade || "—"}
+                  </Text>
+
+                  <Text style={[styles.cardInfo, { color: colors.text }]}>
+                    <Text style={styles.cardLabel}>Gênero:</Text> {paciente.genero || "—"}
+                  </Text>
+
+                  <Text style={[styles.cardInfo, { color: colors.text }]}>
+                    <Text style={styles.cardLabel}>Observações:</Text>{" "}
+                    {paciente.observacoes || "—"}
+                  </Text>
+
+                  <Text style={[styles.cardInfo, { color: colors.text }]}>
+                    <Text style={styles.cardLabel}>Cadastrado em:</Text>{" "}
+                    {paciente.created_at
+                      ? new Date(paciente.created_at).toLocaleDateString("pt-BR")
+                      : "—"}
+                  </Text>
+
+                  <TouchableOpacity
+                    style={[styles.editBtn, { backgroundColor: colors.primary }]}
+                    onPress={() => navigation.navigate("EditPatient", { paciente })}
+                  >
+                    <Feather name="edit" size={16} color="#fff" />
+                    <Text style={styles.editText}>Editar</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <Text style={[styles.emptyText, { color: colors.muted }]}>
+                  Nenhum paciente vinculado.
+                </Text>
               )}
             </View>
 
-            {/* 💊 Medicamentos */}
-            <View style={styles.section}>
-              <View style={styles.header}>
-                <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+            {/* 📌 Acesso rápido */}
+            <Text style={[styles.sectionTitle, { color: colors.primary }]}>
+              Acesso rápido
+            </Text>
+
+            <View style={styles.quickGrid}>
+              {/* Tarefas */}
+              <TouchableOpacity
+                style={[styles.quickCard, { backgroundColor: colors.card }]}
+                onPress={() => navigation.navigate("Tarefas")}
+              >
+                <Ionicons name="calendar-outline" size={28} color={colors.primary} />
+                <Text style={[styles.quickText, { color: colors.text }]}>
+                  Tarefas
+                </Text>
+              </TouchableOpacity>
+
+              {/* Medicamentos */}
+              <TouchableOpacity
+                style={[styles.quickCard, { backgroundColor: colors.card }]}
+                onPress={() => navigation.navigate("Medicamentos")}
+              >
+                <Ionicons name="medical-outline" size={28} color={colors.primary} />
+                <Text style={[styles.quickText, { color: colors.text }]}>
                   Medicamentos
                 </Text>
-                <TouchableOpacity
-                  onPress={() => navigation.navigate("Medicamentos")}
-                >
-                  <Text style={[styles.link, { color: colors.primary }]}>
-                    Ver todos
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
 
-              {medicamentos.length === 0 ? (
-                <Text style={styles.emptyText}>
-                  Nenhum medicamento agendado.
+              {/* Diário */}
+              <TouchableOpacity
+                style={[styles.quickCard, { backgroundColor: colors.card }]}
+                onPress={() => navigation.navigate("Diario")}
+              >
+                <Ionicons name="book-outline" size={28} color={colors.primary} />
+                <Text style={[styles.quickText, { color: colors.text }]}>
+                  Diário
                 </Text>
-              ) : (
-                <FlatList
-                  data={medicamentos.slice(0, 3)}
-                  keyExtractor={(item) =>
-                    item.medicamento_id?.toString() || Math.random().toString()
-                  }
-                  renderItem={({ item }) => (
-                    <View style={styles.card}>
-                      <Text
-                        style={[styles.cardTitle, { color: colors.primary }]}
-                      >
-                        {item.nome}
-                      </Text>
-                      <Text style={[styles.cardText, { color: colors.text }]}>
-                        {item.dosagem}
-                      </Text>
-                    </View>
-                  )}
-                />
-              )}
+              </TouchableOpacity>
+            </View>
+
+            {/* 🔔 Aviso */}
+            <View style={[styles.notice, { backgroundColor: colors.card }]}>
+              <Ionicons
+                name="information-circle-outline"
+                size={22}
+                color={colors.accent}
+              />
+              <Text style={[styles.noticeText, { color: colors.text }]}>
+                Mantenha os registros do paciente atualizados para um melhor cuidado 💙
+              </Text>
             </View>
           </>
         )}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
