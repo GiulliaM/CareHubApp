@@ -141,7 +141,12 @@ export default function Tarefas({ navigation }: any) {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1, padding: 16 },
-  title: { fontSize: 24, fontWeight: "700", marginBottom: 12 },
+   title: {
+    fontSize: 24,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 20,
+  },
   emptyText: { textAlign: "center", marginTop: 20, fontSize: 16 },
   card: {
     borderRadius: 12,
