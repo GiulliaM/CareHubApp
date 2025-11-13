@@ -13,6 +13,7 @@ import { useTheme } from "../context/ThemeContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import api from "../utils/apiClient";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function Tarefas({ navigation }: any) {
   const { colors } = useTheme();
@@ -22,7 +23,7 @@ export default function Tarefas({ navigation }: any) {
     new Date().toISOString().split("T")[0]
   );
 
-  // 🧠 Busca todas as tarefas do paciente
+  // 🔹 Buscar tarefas do paciente
   const fetchTarefas = useCallback(async () => {
     setLoading(true);
     try {
@@ -46,20 +47,20 @@ export default function Tarefas({ navigation }: any) {
 
   useFocusEffect(useCallback(() => { fetchTarefas(); }, [fetchTarefas]));
 
-  // 🗓️ Filtra tarefas do dia selecionado
+  // 📅 Filtrar tarefas por data
   const tarefasDoDia = tarefas.filter((t) => {
     if (!t.data) return false;
     const dataNormalizada = t.data.includes("T") ? t.data.split("T")[0] : t.data;
     return dataNormalizada === dataSelecionada;
   });
 
-  // 🔹 Marca no calendário os dias com tarefas
   const marcarDias = () => {
     const marked: any = {};
     tarefas.forEach((t) => {
       const date = t.data?.includes("T") ? t.data.split("T")[0] : t.data;
       if (date) marked[date] = { marked: true, dotColor: colors.primary };
     });
+
     marked[dataSelecionada] = { selected: true, selectedColor: colors.primary };
     return marked;
   };
@@ -67,9 +68,10 @@ export default function Tarefas({ navigation }: any) {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <View style={styles.container}>
+        
         <Text style={[styles.title, { color: colors.primary }]}>Tarefas</Text>
 
-        {/* Calendário funcional */}
+        {/* 🗓️ Calendário */}
         <Calendar
           markedDates={marcarDias()}
           onDayPress={(day) => setDataSelecionada(day.dateString)}
@@ -79,30 +81,41 @@ export default function Tarefas({ navigation }: any) {
           }}
         />
 
+        {/* Lista */}
         {loading ? (
           <ActivityIndicator size="large" color={colors.primary} />
         ) : tarefasDoDia.length === 0 ? (
-          <Text style={styles.emptyText}>Nenhuma tarefa neste dia.</Text>
+          <Text style={[styles.emptyText, { color: colors.muted }]}>
+            Nenhuma tarefa neste dia.
+          </Text>
         ) : (
           <FlatList
             data={tarefasDoDia}
             keyExtractor={(item) => item.tarefa_id.toString()}
             renderItem={({ item }) => (
-              <View style={styles.card}>
+              <View style={[styles.card, { backgroundColor: colors.card }]}>
                 <Text style={[styles.cardTitle, { color: colors.primary }]}>
                   {item.titulo}
                 </Text>
-                <Text style={styles.cardText}>🕒 {item.hora || "—"}</Text>
-                <Text style={styles.cardText}>📝 {item.detalhes || "Sem detalhes"}</Text>
+
+                <Text style={[styles.cardText, { color: colors.text }]}>
+                  🕒 {item.hora || "—"}
+                </Text>
+
+                <Text style={[styles.cardText, { color: colors.text }]}>
+                  📝 {item.detalhes || "Sem detalhes"}
+                </Text>
+
                 {item.dias_repeticao && (
-                  <Text style={styles.cardText}>
-                    🔁 Repetição: {item.dias_repeticao || "—"}
+                  <Text style={[styles.cardText, { color: colors.text }]}>
+                    🔁 Repetição: {item.dias_repeticao}
                   </Text>
                 )}
+
                 <Text
                   style={[
                     styles.status,
-                    { color: item.concluida ? "green" : colors.primary },
+                    { color: item.concluida ? "#2ecc71" : colors.primary },
                   ]}
                 >
                   {item.concluida ? "✅ Concluída" : "⏱️ Pendente"}
@@ -112,12 +125,14 @@ export default function Tarefas({ navigation }: any) {
           />
         )}
 
+        {/* ➕ Botão Flutuante */}
         <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: colors.primary }]}
+          style={[styles.addBtn, { backgroundColor: colors.primary }]}
           onPress={() => navigation.navigate("NovaTarefa")}
         >
-          <Text style={styles.addText}>+ Nova Tarefa</Text>
+          <Ionicons name="add" size={28} color="#fff" />
         </TouchableOpacity>
+
       </View>
     </SafeAreaView>
   );
@@ -127,18 +142,33 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1, padding: 16 },
   title: { fontSize: 24, fontWeight: "700", marginBottom: 12 },
-  emptyText: { textAlign: "center", color: "#666", marginTop: 20 },
+  emptyText: { textAlign: "center", marginTop: 20, fontSize: 16 },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 14,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#eee",
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
   },
   cardTitle: { fontSize: 18, fontWeight: "700" },
-  cardText: { color: "#444", marginTop: 2 },
-  status: { fontWeight: "700", marginTop: 8 },
-  addButton: { padding: 14, borderRadius: 10, alignItems: "center", marginTop: 10 },
-  addText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  cardText: { marginTop: 4, fontSize: 15 },
+  status: { marginTop: 8, fontWeight: "700" },
+
+  // 🔵 Botão flutuante
+  addBtn: {
+    position: "absolute",
+    bottom: 24,
+    right: 24,
+    width: 58,
+    height: 58,
+    borderRadius: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+  },
 });

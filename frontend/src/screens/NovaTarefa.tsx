@@ -5,13 +5,12 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   ScrollView,
-  Switch,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import Toast from "react-native-root-toast";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../utils/apiClient";
 import { useTheme } from "../context/ThemeContext";
@@ -23,43 +22,13 @@ export default function NovaTarefa({ navigation }: any) {
   const [detalhes, setDetalhes] = useState("");
   const [data, setData] = useState(new Date());
   const [hora, setHora] = useState(new Date());
-  const [showData, setShowData] = useState(false);
-  const [showHora, setShowHora] = useState(false);
-  const [diasRepeticao, setDiasRepeticao] = useState<string[]>([]);
-  const [novoDia, setNovoDia] = useState("Segunda");
+  const [showDataPicker, setShowDataPicker] = useState(false);
+  const [showHoraPicker, setShowHoraPicker] = useState(false);
   const [salvando, setSalvando] = useState(false);
-
-  const showToast = (msg: string, success = false) => {
-    Toast.show(msg, {
-      duration: Toast.durations.SHORT,
-      position: Toast.positions.BOTTOM,
-      backgroundColor: success ? "#1a73e8" : "#c62828",
-      textColor: "#fff",
-      shadow: true,
-      animation: true,
-      hideOnPress: true,
-    });
-  };
-
-  const diasSemana = [
-    "Domingo",
-    "Segunda",
-    "Terça",
-    "Quarta",
-    "Quinta",
-    "Sexta",
-    "Sábado",
-  ];
-
-  const toggleDia = (dia: string) => {
-    setDiasRepeticao((prev) =>
-      prev.includes(dia) ? prev.filter((d) => d !== dia) : [...prev, dia]
-    );
-  };
 
   const handleSalvar = async () => {
     if (!titulo.trim()) {
-      showToast("Informe o título da tarefa!");
+      Alert.alert("Atenção", "Dê um título para a tarefa.");
       return;
     }
 
@@ -69,8 +38,7 @@ export default function NovaTarefa({ navigation }: any) {
       const paciente = rawPaciente ? JSON.parse(rawPaciente) : null;
 
       if (!paciente?.paciente_id) {
-        showToast("Nenhum paciente encontrado!");
-        setSalvando(false);
+        Alert.alert("Erro", "Nenhum paciente vinculado encontrado.");
         return;
       }
 
@@ -78,16 +46,16 @@ export default function NovaTarefa({ navigation }: any) {
         titulo,
         detalhes,
         data: data.toISOString().split("T")[0],
-        hora: hora.toTimeString().slice(0, 5),
-        dias_repeticao: diasRepeticao.join(", "),
+        hora: hora.toTimeString().substring(0, 5),
+        concluida: 0,
         paciente_id: paciente.paciente_id,
       });
 
-      showToast("Tarefa cadastrada com sucesso!", true);
-      setTimeout(() => navigation.navigate("Tabs", { screen: "Tarefas" }), 1000);
+      Alert.alert("Sucesso", "Tarefa cadastrada com sucesso!");
+      navigation.navigate("Tabs", { screen: "Tarefas" });
     } catch (err) {
-      console.error("Erro ao cadastrar tarefa:", err);
-      showToast("Não foi possível cadastrar a tarefa.");
+      console.error("Erro ao salvar tarefa:", err);
+      Alert.alert("Erro", "Não foi possível salvar.");
     } finally {
       setSalvando(false);
     }
@@ -98,85 +66,82 @@ export default function NovaTarefa({ navigation }: any) {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={[styles.title, { color: colors.primary }]}>Nova Tarefa</Text>
 
+        {/* Título */}
+        <Text style={styles.label}>Título *</Text>
         <TextInput
-          style={styles.input}
-          placeholder="Título da tarefa"
+          style={[styles.input]}
+          placeholder="Ex: Trocar curativo"
           value={titulo}
           onChangeText={setTitulo}
         />
+
+        {/* Detalhes */}
+        <Text style={styles.label}>Detalhes</Text>
         <TextInput
-          style={[styles.input, { height: 90 }]}
-          placeholder="Detalhes"
+          style={[styles.input, { height: 100 }]}
+          placeholder="Detalhes da tarefa..."
           value={detalhes}
           multiline
           onChangeText={setDetalhes}
         />
 
-        <TouchableOpacity style={styles.input} onPress={() => setShowData(true)}>
-          <Text>📅 {data.toLocaleDateString("pt-BR")}</Text>
+        {/* Data */}
+        <TouchableOpacity style={styles.selectButton} onPress={() => setShowDataPicker(true)}>
+          <Text style={styles.selectButtonText}>
+            Data: {data.toLocaleDateString("pt-BR")}
+          </Text>
         </TouchableOpacity>
-        {showData && (
+
+        {showDataPicker && (
           <DateTimePicker
             value={data}
             mode="date"
-            onChange={(e, date) => {
-              setShowData(false);
-              if (date) setData(date);
+            onChange={(e, dateSel) => {
+              setShowDataPicker(false);
+              if (dateSel) setData(dateSel);
             }}
           />
         )}
 
-        <TouchableOpacity style={styles.input} onPress={() => setShowHora(true)}>
-          <Text>🕒 {hora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</Text>
+        {/* Hora */}
+        <TouchableOpacity style={styles.selectButton} onPress={() => setShowHoraPicker(true)}>
+          <Text style={styles.selectButtonText}>
+            Hora: {hora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+          </Text>
         </TouchableOpacity>
-        {showHora && (
+
+        {showHoraPicker && (
           <DateTimePicker
             value={hora}
             mode="time"
             is24Hour={true}
-            onChange={(e, time) => {
-              setShowHora(false);
-              if (time) setHora(time);
+            onChange={(e, dateSel) => {
+              setShowHoraPicker(false);
+              if (dateSel) setHora(dateSel);
             }}
           />
         )}
 
-        <Text style={styles.subtitle}>Dias de repetição:</Text>
-        <View style={styles.daysContainer}>
-          {diasSemana.map((dia) => (
-            <TouchableOpacity
-              key={dia}
-              style={[
-                styles.dayButton,
-                diasRepeticao.includes(dia) && { backgroundColor: colors.primary },
-              ]}
-              onPress={() => toggleDia(dia)}
-            >
-              <Text
-                style={{
-                  color: diasRepeticao.includes(dia) ? "#fff" : "#333",
-                  fontWeight: "600",
-                }}
-              >
-                {dia.slice(0, 3)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
+        {/* Botões */}
         <TouchableOpacity
+          style={[styles.btnSalvar, { backgroundColor: colors.primary }]}
           disabled={salvando}
-          style={[
-            styles.button,
-            { backgroundColor: salvando ? "#999" : colors.primary },
-          ]}
           onPress={handleSalvar}
         >
           {salvando ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Salvar Tarefa</Text>
+            <Text style={styles.btnText}>Salvar Tarefa</Text>
           )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.btnCancelar, { borderColor: colors.primary }]}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={[styles.btnCancelarText, { color: colors.primary }]}>
+            Cancelar
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -186,8 +151,19 @@ export default function NovaTarefa({ navigation }: any) {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { padding: 16 },
-  title: { fontSize: 24, fontWeight: "700", marginBottom: 20, textAlign: "center" },
-  subtitle: { fontWeight: "700", marginTop: 12, marginBottom: 6 },
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  label: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 6,
+    marginTop: 10,
+    color: "#333",
+  },
   input: {
     backgroundColor: "#fff",
     borderRadius: 10,
@@ -196,25 +172,38 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
   },
-  daysContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  dayButton: {
-    backgroundColor: "#eee",
-    borderRadius: 8,
-    padding: 8,
-    margin: 4,
-    minWidth: 45,
-    alignItems: "center",
-  },
-  button: {
-    padding: 14,
+  selectButton: {
+    backgroundColor: "#f0f0f0",
+    padding: 12,
     borderRadius: 10,
-    alignItems: "center",
-    marginTop: 10,
+    marginBottom: 12,
   },
-  buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  selectButtonText: {
+    fontWeight: "600",
+    color: "#333",
+  },
+
+  btnSalvar: {
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 12,
+    alignItems: "center",
+  },
+  btnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+  btnCancelar: {
+    padding: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 12,
+    borderWidth: 2,
+  },
+  btnCancelarText: {
+    fontWeight: "700",
+    fontSize: 16,
+  },
 });
