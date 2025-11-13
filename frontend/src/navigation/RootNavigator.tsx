@@ -14,7 +14,7 @@ import NovoRegistro from "../screens/NovoRegistro";
 import EditUser from "../screens/EditUser";
 import EditPatient from "../screens/EditPatient";
 import EditMedicamento from "../screens/EditMedicamento";
-import ViewMedicamento from "../screens/viewMedicamento";
+import ViewMedicamento from "../screens/ViewMedicamento";
 import { getToken } from "../utils/auth";
 
 const Stack = createNativeStackNavigator();
