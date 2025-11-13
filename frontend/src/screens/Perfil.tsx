@@ -1,37 +1,64 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Switch } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ScrollView,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import cores from "../config/cores";
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from "../context/ThemeContext";
 import { logout, getUserMeta } from "../utils/auth";
 import api from "../utils/apiClient";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect } from '@react-navigation/native';
 
 export default function Perfil({ navigation }: any) {
-  const [user, setUser] = useState<{ usuario_id?: number; nome?: string; tipo?: string } | null>(null);
+  const [user, setUser] = useState<{ usuario_id?: number; nome?: string; email?: string; tipo?: string } | null>(null);
   const [paciente, setPaciente] = useState<{ paciente_id?: number; nome?: string; idade?: string } | null>(null);
+  const { colors, themeName, setThemeName } = useTheme();
 
+  // 🔹 Buscar dados do usuário e paciente
   const fetchProfile = useCallback(async () => {
-    const meta = await getUserMeta();
-    if (meta?.usuario_id) {
-      try {
-        const res = await api.get(`/usuarios/perfil/${meta.usuario_id}`);
-        setUser(res.data);
-      } catch {
+    try {
+      const meta = await getUserMeta();
+
+      if (!meta?.usuario_id) {
+        Alert.alert("Erro", "Usuário não encontrado. Faça login novamente.");
+        return navigation.reset({ index: 0, routes: [{ name: "Welcome" }] });
+      }
+
+      // Buscar usuário
+      const res = await api.get(`/usuarios/perfil/${meta.usuario_id}`);
+      if (res && res.nome) {
+        setUser({
+          usuario_id: res.usuario_id,
+          nome: res.nome,
+          email: res.email,
+          tipo: res.tipo,
+        });
+      } else {
         setUser(meta);
       }
-    } else {
-      setUser(meta);
+
+      // Buscar paciente vinculado
+      const pacienteRes = await api.get("/pacientes");
+      if (Array.isArray(pacienteRes) && pacienteRes.length > 0) {
+        setPaciente(pacienteRes[0]);
+      } else if (pacienteRes && typeof pacienteRes === "object") {
+        setPaciente(pacienteRes);
+      } else {
+        setPaciente(null);
+      }
+    } catch (err) {
+      console.error("❌ Erro ao carregar perfil:", err);
+      Alert.alert("Erro", "Não foi possível carregar as informações do perfil.");
     }
-    // Buscar paciente vinculado
-    try {
-      const rawPaciente = await AsyncStorage.getItem("paciente");
-      setPaciente(rawPaciente ? JSON.parse(rawPaciente) : null);
-    } catch {
-      setPaciente(null);
-    }
-  }, []);
+  }, [navigation]);
 
   useFocusEffect(
     useCallback(() => {
@@ -39,93 +66,246 @@ export default function Perfil({ navigation }: any) {
     }, [fetchProfile])
   );
 
+  // 🔒 Logout
   async function handleLogout() {
     await logout();
     navigation.reset({ index: 0, routes: [{ name: "Welcome" }] });
   }
 
-  const { colors, themeName, setThemeName } = useTheme();
-
+  // 🌗 Alternar tema
   async function handleToggleTheme(value: boolean) {
     try {
-      await setThemeName(value ? 'dark' : 'light');
+      await setThemeName(value ? "dark" : "light");
     } catch (e) {
-      console.warn('Erro ao trocar tema', e);
+      console.warn("Erro ao trocar tema", e);
     }
   }
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={[styles.title, { color: colors.primary }]}>Meu Perfil</Text>
 
-        <View style={styles.card}>
-          <Text style={[styles.text, { color: colors.text }]}>Usuário: {user?.nome || "-"}</Text>
-          <Text style={[styles.text, { color: colors.text }]}>Tipo: {user?.tipo || "-"}</Text>
-          <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate("EditUser", { user })}>
-            <Text style={styles.editBtnText}>Editar Usuário</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={[styles.text, { color: colors.text }]}>Paciente: {paciente?.nome || "-"}</Text>
-          <Text style={[styles.text, { color: colors.text }]}>Idade: {paciente?.idade || "-"}</Text>
-          <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate("EditPatient", { paciente })}>
-            <Text style={styles.editBtnText}>Editar Paciente</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={[styles.card, { marginBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }] }>
-          <View>
-            <Text style={[styles.text, { color: colors.text, fontWeight: '700' }]}>Tema</Text>
-            <Text style={[styles.text, { color: colors.text }]}>{themeName === 'dark' ? 'Escuro' : 'Claro'}</Text>
+        {/* Cartão do Usuário */}
+        <View style={[styles.card, { backgroundColor: colors.card || "#fff" }]}>
+          <View style={styles.headerCard}>
+            <Ionicons name="person-circle-outline" size={36} color={colors.primary} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Informações do Usuário</Text>
           </View>
-          <Switch
-            value={themeName === 'dark'}
-            onValueChange={handleToggleTheme}
-            trackColor={{ false: '#767577', true: colors.primary }}
-            thumbColor={themeName === 'dark' ? '#fff' : '#fff'}
-          />
+
+          <Text style={styles.text}>
+            <Text style={styles.label}>Nome: </Text>{user?.nome || "—"}
+          </Text>
+
+          <Text style={styles.text}>
+            <Text style={styles.label}>E-mail: </Text>{user?.email || "—"}
+          </Text>
+
+          <Text style={styles.text}>
+            <Text style={styles.label}>Tipo: </Text>{user?.tipo || "—"}
+          </Text>
+
+          <TouchableOpacity
+            style={[styles.btnEdit, { backgroundColor: colors.primary }]}
+            onPress={() => navigation.navigate("EditUser", { user })}
+          >
+            <Ionicons name="create-outline" size={18} color="#fff" />
+            <Text style={styles.btnEditText}>Editar Usuário</Text>
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleLogout}>
-          <Text style={styles.buttonText}>Sair</Text>
+        {/* Cartão do Paciente */}
+        <View style={[styles.card, { backgroundColor: colors.card || "#fff" }]}>
+          <View style={styles.headerCard}>
+            <Ionicons name="medkit-outline" size={32} color={colors.primary} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Paciente Vinculado</Text>
+          </View>
+
+          <Text style={styles.text}>
+            <Text style={styles.label}>Nome: </Text>{paciente?.nome || "—"}
+          </Text>
+
+          <Text style={styles.text}>
+            <Text style={styles.label}>Idade: </Text>{paciente?.idade || "—"}
+          </Text>
+
+          <TouchableOpacity
+            style={[styles.btnEdit, { backgroundColor: colors.primary }]}
+            onPress={() => navigation.navigate("EditPatient", { paciente })}
+          >
+            <Ionicons name="create-outline" size={18} color="#fff" />
+            <Text style={styles.btnEditText}>Editar Paciente</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Tema */}
+        <View style={[styles.themeCard, { backgroundColor: colors.card || "#fff" }]}>
+          <View style={styles.themeLeft}>
+            <Ionicons
+              name={themeName === "dark" ? "moon" : "sunny"}
+              size={28}
+              color={themeName === "dark" ? "#FFD36E" : "#F4B400"}
+            />
+            <View>
+              <Text style={[styles.themeTitle, { color: colors.text }]}>
+                {themeName === "dark" ? "Modo Escuro" : "Modo Claro"}
+              </Text>
+              <Text style={[styles.themeDesc, { color: colors.muted }]}>
+                {themeName === "dark"
+                  ? "Interface confortável para ambientes escuros"
+                  : "Visual mais nítido em ambientes iluminados"}
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            onPress={() => handleToggleTheme(themeName !== "dark")}
+            style={[
+              styles.themeToggle,
+              {
+                backgroundColor: themeName === "dark" ? "#0B3B5A" : "#D4AF37",
+                shadowColor: themeName === "dark" ? "#000" : "#FFD36E",
+              },
+            ]}
+          >
+            <Ionicons
+              name={themeName === "dark" ? "sunny-outline" : "moon-outline"}
+              size={20}
+              color="#fff"
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* Logout */}
+        <TouchableOpacity
+          style={[styles.logoutBtn, { backgroundColor: "#c62828" }]}
+          onPress={handleLogout}
+        >
+          <Ionicons name="log-out-outline" size={20} color="#fff" />
+          <Text style={styles.logoutText}>Sair da Conta</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
+// 🎨 Estilos refinados
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: cores.background },
-  container: { flex: 1, padding: 16 },
+  safeArea: { flex: 1 },
+  scroll: { padding: 16 },
+
   title: {
-    fontSize: 24,
-    color: cores.primary,
+    fontSize: 26,
     fontWeight: "700",
-    marginBottom: 16,
+    textAlign: "center",
+    marginBottom: 20,
   },
+
   card: {
-    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+
+  headerCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    gap: 8,
+  },
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+
+  text: {
+    fontSize: 16,
+    color: "#333",
+    marginBottom: 6,
+  },
+
+  label: {
+    fontWeight: "700",
+    color: "#0B3B5A",
+  },
+
+  btnEdit: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 10,
     borderRadius: 10,
+    marginTop: 12,
+    gap: 6,
+  },
+
+  btnEditText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+
+  themeCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderRadius: 14,
     padding: 16,
     marginBottom: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  text: { color: "#333", fontSize: 16, marginBottom: 4 },
-  button: {
-    backgroundColor: cores.primary,
+
+  themeLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+  },
+
+  themeTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+  },
+
+  themeDesc: {
+    fontSize: 13,
+    color: "#666",
+    marginTop: 2,
+  },
+
+  themeToggle: {
+    width: 46,
+    height: 46,
+    borderRadius: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+  },
+
+  logoutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 10,
+    borderRadius: 12,
+    marginTop: 8,
+    gap: 8,
   },
-  buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
-  editBtn: {
-    backgroundColor: cores.primary,
-    padding: 8,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 10,
+
+  logoutText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
   },
-  editBtnText: { color: "#fff", fontWeight: "600" },
 });
