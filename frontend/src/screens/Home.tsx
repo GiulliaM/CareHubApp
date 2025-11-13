@@ -97,13 +97,6 @@ export default function Home({ navigation }: any) {
                     {paciente.observacoes || "—"}
                   </Text>
 
-                  <Text style={[styles.cardInfo, { color: colors.text }]}>
-                    <Text style={styles.cardLabel}>Cadastrado em:</Text>{" "}
-                    {paciente.created_at
-                      ? new Date(paciente.created_at).toLocaleDateString("pt-BR")
-                      : "—"}
-                  </Text>
-
                   <TouchableOpacity
                     style={[styles.editBtn, { backgroundColor: colors.primary }]}
                     onPress={() => navigation.navigate("EditPatient", { paciente })}
