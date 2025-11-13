@@ -1,53 +1,109 @@
-import React, { useCallback, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
-  FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   StyleSheet,
+  FlatList,
+  ActivityIndicator,
   Alert,
+  LayoutAnimation,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
 import api from "../utils/apiClient";
+import { useFocusEffect } from "@react-navigation/native";
+
+// 📅 Imports do dayjs com plugin de locale
+import dayjs from "dayjs";
+import updateLocale from "dayjs/plugin/updateLocale";
+import "dayjs/locale/pt-br";
+
+// 🔧 Configuração de idioma e início da semana
+dayjs.extend(updateLocale);
+dayjs.locale("pt-br");
+dayjs.updateLocale("pt-br", { weekStart: 1 });
 
 export default function Medicamentos({ navigation }: any) {
   const { colors } = useTheme();
   const [medicamentos, setMedicamentos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [weekDays, setWeekDays] = useState<dayjs.Dayjs[]>([]);
 
-  // 🧩 Buscar medicamentos do paciente
-  const fetchMedicamentos = useCallback(async () => {
-    setLoading(true);
-    try {
-      const rawPaciente = await AsyncStorage.getItem("paciente");
-      const paciente = rawPaciente ? JSON.parse(rawPaciente) : null;
-
-      if (!paciente?.paciente_id) {
-        setMedicamentos([]);
-        setLoading(false);
-        return;
-      }
-
-      const { data } = await api.get(`/medicamentos?paciente_id=${paciente.paciente_id}`);
-      setMedicamentos(data || []);
-    } catch (error) {
-      console.error("Erro ao carregar medicamentos:", error);
-      setMedicamentos([]);
-    } finally {
-      setLoading(false);
-    }
+  // 🗓️ Gera dias da semana (segunda a domingo)
+  const generateWeekDays = useCallback((baseDate: dayjs.Dayjs) => {
+    const startOfWeek = baseDate.startOf("week");
+    const days = Array.from({ length: 7 }).map((_, i) =>
+      startOfWeek.add(i, "day")
+    );
+    setWeekDays(days);
   }, []);
 
-  useFocusEffect(useCallback(() => { fetchMedicamentos(); }, [fetchMedicamentos]));
+  useEffect(() => {
+    generateWeekDays(selectedDate);
+  }, [selectedDate]);
+
+  // 🔹 Buscar medicamentos do paciente logado
+// 🔹 Buscar medicamentos do paciente logado
+const fetchMedicamentos = useCallback(async () => {
+  try {
+    setLoading(true);
+
+    const rawPaciente = await AsyncStorage.getItem("paciente");
+    const paciente = rawPaciente ? JSON.parse(rawPaciente) : null;
+
+    if (!paciente?.paciente_id) {
+      Alert.alert("Aviso", "Nenhum paciente vinculado encontrado.");
+      setMedicamentos([]);
+      return;
+    }
+
+    console.log("🧠 Buscando medicamentos do paciente ID:", paciente.paciente_id);
+
+    // ✅ Chamada correta com query param, conforme o backend
+    const data = await api.get(`/medicamentos?paciente_id=${paciente.paciente_id}`);
+
+    console.log("📦 Dados recebidos do backend:", data);
+
+    // Garante que é um array
+    if (Array.isArray(data)) {
+      setMedicamentos(data);
+    } else if (data && typeof data === "object") {
+      setMedicamentos([data]);
+    } else {
+      setMedicamentos([]);
+    }
+  } catch (err: any) {
+    console.error("❌ Erro ao buscar medicamentos:", err.response?.data || err.message);
+    Alert.alert("Erro", "Não foi possível carregar os medicamentos. Tente novamente mais tarde.");
+  } finally {
+    setLoading(false);
+  }
+}, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchMedicamentos();
+    }, [fetchMedicamentos])
+  );
+
+  // 🔍 Filtra medicamentos pelo dia selecionado
+  const medicamentosDoDia = medicamentos.filter((m) => {
+    const dataInicio = dayjs(m.inicio);
+    const duracao = m.duracao_days ? m.duracao_days - 1 : 0;
+    const dataFim = dataInicio.add(duracao, "day");
+    return (
+      selectedDate.isAfter(dataInicio.subtract(1, "day")) &&
+      selectedDate.isBefore(dataFim.add(1, "day"))
+    );
+  });
 
   // 🗑️ Excluir medicamento
-  const handleDelete = (id: number) => {
-    Alert.alert("Excluir medicamento", "Deseja realmente excluir este medicamento?", [
+  const handleExcluir = async (id: number) => {
+    Alert.alert("Confirmar exclusão", "Deseja realmente excluir este medicamento?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Excluir",
@@ -56,30 +112,25 @@ export default function Medicamentos({ navigation }: any) {
           try {
             await api.delete(`/medicamentos/${id}`);
             fetchMedicamentos();
-          } catch (err) {
-            console.error("Erro ao excluir medicamento:", err);
+            Alert.alert("Sucesso", "Medicamento excluído com sucesso!");
+          } catch (error) {
+            console.error("Erro ao excluir medicamento:", error);
+            Alert.alert("Erro", "Não foi possível excluir o medicamento.");
           }
         },
       },
     ]);
   };
 
-  // 🕓 Formatar data (YYYY-MM-DD → DD/MM/YYYY)
-  const formatarData = (data: string) => {
-    if (!data) return "—";
-    const partes = data.includes("T") ? data.split("T")[0].split("-") : data.split("-");
-    return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : data;
+  // 📅 Navegação semanal
+  const handleNextWeek = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSelectedDate(selectedDate.add(7, "day"));
   };
 
-  // ⏰ Formatar horários
-  const formatarHorarios = (horarios: any) => {
-    if (!horarios) return "—";
-    if (Array.isArray(horarios)) return horarios.join(", ");
-    try {
-      const parsed = JSON.parse(horarios);
-      if (Array.isArray(parsed)) return parsed.join(", ");
-    } catch {}
-    return horarios;
+  const handlePrevWeek = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSelectedDate(selectedDate.subtract(7, "day"));
   };
 
   return (
@@ -87,53 +138,95 @@ export default function Medicamentos({ navigation }: any) {
       <View style={styles.container}>
         <Text style={[styles.title, { color: colors.primary }]}>Medicamentos</Text>
 
+        {/* 🗓️ Calendário semanal */}
+        <View style={styles.calendarContainer}>
+          <TouchableOpacity onPress={handlePrevWeek}>
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
+          </TouchableOpacity>
+
+          {weekDays.map((day, index) => {
+            const isSelected = day.isSame(selectedDate, "day");
+            return (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.dayItem,
+                  isSelected && { backgroundColor: colors.primary },
+                ]}
+                onPress={() => setSelectedDate(day)}
+              >
+                <Text
+                  style={[
+                    styles.dayText,
+                    { color: isSelected ? "#fff" : colors.text },
+                  ]}
+                >
+                  {day.format("dd").toUpperCase()}
+                </Text>
+                <Text
+                  style={[
+                    styles.dayNumber,
+                    { color: isSelected ? "#fff" : colors.text },
+                  ]}
+                >
+                  {day.format("D")}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+
+          <TouchableOpacity onPress={handleNextWeek}>
+            <Ionicons name="chevron-forward" size={22} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+
+        {/* 🕓 Lista de medicamentos */}
         {loading ? (
-          <ActivityIndicator size="large" color={colors.primary} />
-        ) : medicamentos.length === 0 ? (
-          <Text style={styles.emptyText}>Nenhum medicamento cadastrado.</Text>
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
+        ) : medicamentosDoDia.length === 0 ? (
+          <Text style={[styles.emptyText, { color: colors.muted }]}>
+            Nenhum medicamento para este dia.
+          </Text>
         ) : (
           <FlatList
-            data={medicamentos}
+            data={medicamentosDoDia}
             keyExtractor={(item) => item.medicamento_id.toString()}
             renderItem={({ item }) => (
-              <View style={styles.card}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.cardTitle, { color: colors.primary }]}>{item.nome}</Text>
-                  <Text style={styles.cardText}>💊 Dosagem: {item.dosagem || "—"}</Text>
-                  <Text style={styles.cardText}>
-                    🕒 Horários: {formatarHorarios(item.horarios)}
-                  </Text>
-                  <Text style={styles.cardText}>
-                    📅 Início: {formatarData(item.inicio)}
-                  </Text>
-                  <Text style={styles.cardText}>
-                    ⏳ Duração: {item.duracao_days ? `${item.duracao_days} dias` : "—"}
-                  </Text>
-                  <Text style={styles.cardText}>
-                    🔁 Uso contínuo: {item.uso_continuo ? "Sim" : "Não"}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.status,
-                      { color: item.concluido ? "green" : colors.primary },
-                    ]}
-                  >
-                    {item.concluido ? "✅ Concluído" : "⏱️ Em uso"}
+              <View style={[styles.card, { backgroundColor: colors.card || "#fff" }]}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name="medkit-outline" size={20} color={colors.primary} />
+                  <Text style={[styles.cardTitle, { color: colors.text }]}>
+                    {item.nome}
                   </Text>
                 </View>
 
-                {/* ✏️ Ações */}
-                <View style={styles.actions}>
+                <Text style={[styles.cardInfo, { color: colors.text }]}>
+                  💊 {item.dosagem}
+                </Text>
+                <Text style={[styles.cardInfo, { color: colors.text }]}>
+                  ⏰ {item.horarios?.join(", ")}
+                </Text>
+
+                <View style={styles.cardActions}>
                   <TouchableOpacity
-                    onPress={() =>
-                      navigation.navigate("EditMedicamento", { medicamento: item })
-                    }
+                    style={[styles.actionBtn, { backgroundColor: "#1976D2" }]}
+                    onPress={() => navigation.navigate("ViewMedicamento", { medicamento: item })}
                   >
-                    <Ionicons name="create-outline" size={22} color={colors.primary} />
+                    <Ionicons name="eye-outline" size={18} color="#fff" />
                   </TouchableOpacity>
 
-                  <TouchableOpacity onPress={() => handleDelete(item.medicamento_id)}>
-                    <Ionicons name="trash-outline" size={22} color="red" />
+                  <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: "#2196F3" }]}
+                    onPress={() => navigation.navigate("EditMedicamento", { medicamento: item })}
+                  >
+                    <Ionicons name="create-outline" size={18} color="#fff" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: "#E53935" }]}
+                    onPress={() => handleExcluir(item.medicamento_id)}
+                  >
+                    <Ionicons name="trash-outline" size={18} color="#fff" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -141,36 +234,81 @@ export default function Medicamentos({ navigation }: any) {
           />
         )}
 
+        {/* ➕ Botão novo medicamento */}
         <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: colors.primary }]}
+          style={[styles.addBtn, { backgroundColor: colors.primary }]}
           onPress={() => navigation.navigate("NovaMedicamento")}
         >
-          <Text style={styles.addText}>+ Novo Medicamento</Text>
+          <Ionicons name="add" size={26} color="#fff" />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
 
+// 🎨 Estilos
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1, padding: 16 },
-  title: { fontSize: 24, fontWeight: "700", marginBottom: 16 },
-  emptyText: { textAlign: "center", color: "#666", marginTop: 30 },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#eee",
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  calendarContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
   },
-  cardTitle: { fontSize: 18, fontWeight: "700" },
-  cardText: { color: "#444", marginTop: 2 },
-  status: { fontWeight: "700", marginTop: 8 },
-  actions: { justifyContent: "space-around", alignItems: "center", marginLeft: 10 },
-  addButton: { padding: 14, borderRadius: 10, alignItems: "center", marginTop: 10 },
-  addText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  dayItem: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+  },
+  dayText: { fontSize: 12, fontWeight: "600" },
+  dayNumber: { fontSize: 14, fontWeight: "700" },
+  emptyText: { textAlign: "center", fontSize: 16, marginTop: 40 },
+  card: {
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 6 },
+  cardTitle: { fontSize: 17, fontWeight: "700" },
+  cardInfo: { fontSize: 15, marginBottom: 4 },
+  cardActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 8,
+    gap: 10,
+  },
+  actionBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addBtn: {
+    position: "absolute",
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+  },
 });
