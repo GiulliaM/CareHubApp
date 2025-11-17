@@ -70,7 +70,7 @@ export default function NovaMedicamento({ navigation }: any) {
       });
 
       Alert.alert("Sucesso", "Medicamento cadastrado com sucesso!");
-      navigation.navigate("Tabs", { screen: "Medicamentos" });
+      navigation.goBack();
     } catch (err) {
       console.error("Erro ao salvar medicamento:", err);
       Alert.alert("Erro", "Não foi possível salvar o medicamento.");

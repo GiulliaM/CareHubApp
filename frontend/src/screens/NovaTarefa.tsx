@@ -140,7 +140,7 @@ export default function NovaTarefa({ navigation, route }: any) {
         await api.post("/tarefas", payload);
         Alert.alert("Sucesso", "Tarefa cadastrada com sucesso!");
       }
-      navigation.navigate("Tabs", { screen: "Tarefas" });
+      navigation.goBack();
     } catch (err: any) {
       console.error("Erro ao salvar tarefa:", err?.response?.data || err?.message || err);
       Alert.alert("Erro", "Não foi possível salvar a tarefa. Tente novamente.");
