@@ -4,9 +4,6 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 dotenv.config();
 
-/* ===========================
-    📌 CADASTRO
-=========================== */
 export const cadastro = (req, res) => {
   const { nome, email, senha, tipo } = req.body;
 
@@ -48,9 +45,6 @@ export const cadastro = (req, res) => {
   });
 };
 
-/* ===========================
-    📌 LOGIN — ARRUMADO!
-=========================== */
 export const login = (req, res) => {
   const { email, senha } = req.body;
 
@@ -69,7 +63,6 @@ export const login = (req, res) => {
 
     if (!valid) return res.status(401).json({ message: "Credenciais inválidas" });
 
-    // 🔥 Agora o login retorna TODOS os dados que o app precisa
     const usuarioCompleto = {
       usuario_id: user.usuario_id,
       nome: user.nome,
@@ -86,9 +79,6 @@ export const login = (req, res) => {
   });
 };
 
-/* ===========================
-    📌 PERFIL
-=========================== */
 export const perfil = (req, res) => {
   const id = req.params.id;
 
@@ -102,9 +92,6 @@ export const perfil = (req, res) => {
   });
 };
 
-/* ===========================
-    📌 ATUALIZAR USUÁRIO
-=========================== */
 export const patchUsuario = (req, res) => {
   const id = req.params.id;
   const changes = req.body;
