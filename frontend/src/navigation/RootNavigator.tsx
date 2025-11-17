@@ -15,6 +15,8 @@ import EditUser from "../screens/EditUser";
 import EditPatient from "../screens/EditPatient";
 import EditMedicamento from "../screens/EditMedicamento";
 import ViewMedicamento from "../screens/ViewMedicamento";
+import EditTarefa from "../screens/EditTarefa";
+import ViewTarefa from "../screens/ViewTarefa";
 import { getToken } from "../utils/auth";
 
 const Stack = createNativeStackNavigator();
@@ -57,9 +59,9 @@ export default function RootNavigator() {
         <Stack.Screen name="EditUser" component={EditUser} options={{ headerShown: false }} />
         <Stack.Screen name="EditPatient" component={EditPatient} options={{ headerShown: false }} />
         <Stack.Screen name="EditMedicamento" component={EditMedicamento} options={{ headerShown: false }} />
-
-        {/* ✅ Adicionado corretamente DENTRO do Stack.Navigator */}
         <Stack.Screen name="ViewMedicamento" component={ViewMedicamento} options={{ headerShown: false }} />
+        <Stack.Screen name="EditTarefa" component={EditTarefa} options={{ headerShown: false }} />
+        <Stack.Screen name="ViewTarefa" component={ViewTarefa} options={{ headerShown: false }} />
       </Stack.Navigator>
 
       {checking && (

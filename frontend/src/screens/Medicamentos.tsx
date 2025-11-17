@@ -64,7 +64,7 @@ const fetchMedicamentos = useCallback(async () => {
     console.log("🧠 Buscando medicamentos do paciente ID:", paciente.paciente_id);
 
     // ✅ Chamada correta com query param, conforme o backend
-    const data = await api.get(`/medicamentos?paciente_id=${paciente.paciente_id}`);
+    const  data  = await api.get(`/medicamentos/${paciente.paciente_id}`);
 
     console.log("📦 Dados recebidos do backend:", data);
 

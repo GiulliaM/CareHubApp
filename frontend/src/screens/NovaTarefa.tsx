@@ -26,13 +26,42 @@ export default function NovaTarefa({ navigation }: any) {
   const [showHoraPicker, setShowHoraPicker] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
+  // 🔵 Repetição
+  const [diasRepeticao, setDiasRepeticao] = useState("");
+  const [customDias, setCustomDias] = useState<string[]>([]);
+
+  const diasSemana = [
+    { label: "Dom", value: "dom" },
+    { label: "Seg", value: "seg" },
+    { label: "Ter", value: "ter" },
+    { label: "Qua", value: "qua" },
+    { label: "Qui", value: "qui" },
+    { label: "Sex", value: "sex" },
+    { label: "Sáb", value: "sab" },
+  ];
+
+  const toggleCustomDia = (dia: string) => {
+    if (customDias.includes(dia)) {
+      setCustomDias(customDias.filter((d) => d !== dia));
+    } else {
+      setCustomDias([...customDias, dia]);
+    }
+  };
+
   const handleSalvar = async () => {
     if (!titulo.trim()) {
       Alert.alert("Atenção", "Dê um título para a tarefa.");
       return;
     }
 
+    let repeticaoFinal = diasRepeticao;
+
+    if (diasRepeticao === "custom") {
+      repeticaoFinal = customDias.join(",");
+    }
+
     setSalvando(true);
+
     try {
       const rawPaciente = await AsyncStorage.getItem("paciente");
       const paciente = rawPaciente ? JSON.parse(rawPaciente) : null;
@@ -47,6 +76,7 @@ export default function NovaTarefa({ navigation }: any) {
         detalhes,
         data: data.toISOString().split("T")[0],
         hora: hora.toTimeString().substring(0, 5),
+        dias_repeticao: repeticaoFinal,
         concluida: 0,
         paciente_id: paciente.paciente_id,
       });
@@ -87,9 +117,7 @@ export default function NovaTarefa({ navigation }: any) {
 
         {/* Data */}
         <TouchableOpacity style={styles.selectButton} onPress={() => setShowDataPicker(true)}>
-          <Text style={styles.selectButtonText}>
-            Data: {data.toLocaleDateString("pt-BR")}
-          </Text>
+          <Text style={styles.selectButtonText}>Data: {data.toLocaleDateString("pt-BR")}</Text>
         </TouchableOpacity>
 
         {showDataPicker && (
@@ -122,6 +150,67 @@ export default function NovaTarefa({ navigation }: any) {
           />
         )}
 
+        {/* Repetição */}
+        <Text style={styles.label}>Repetição</Text>
+
+        <View style={styles.repeticaoContainer}>
+          {[
+            { label: "Nenhuma", value: "" },
+            { label: "Todos os dias", value: "todos" },
+            { label: "Seg / Qua / Sex", value: "seg,qua,sex" },
+            { label: "Ter / Qui", value: "ter,qui" },
+            { label: "Personalizar", value: "custom" },
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.value}
+              style={[
+                styles.repeticaoBtn,
+                diasRepeticao === item.value && { backgroundColor: colors.primary },
+              ]}
+              onPress={() => setDiasRepeticao(item.value)}
+            >
+              <Text
+                style={[
+                  styles.repeticaoBtnText,
+                  diasRepeticao === item.value && { color: "#fff" },
+                ]}
+              >
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Personalizar dias */}
+        {diasRepeticao === "custom" && (
+          <View style={styles.customContainer}>
+            <Text style={styles.label}>Escolha os dias:</Text>
+            <View style={styles.customDiasRow}>
+              {diasSemana.map((d) => (
+                <TouchableOpacity
+                  key={d.value}
+                  style={[
+                    styles.customDia,
+                    customDias.includes(d.value) && {
+                      backgroundColor: colors.primary,
+                    },
+                  ]}
+                  onPress={() => toggleCustomDia(d.value)}
+                >
+                  <Text
+                    style={[
+                      styles.customDiaText,
+                      customDias.includes(d.value) && { color: "#fff" },
+                    ]}
+                  >
+                    {d.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Botões */}
         <TouchableOpacity
           style={[styles.btnSalvar, { backgroundColor: colors.primary }]}
@@ -139,9 +228,7 @@ export default function NovaTarefa({ navigation }: any) {
           style={[styles.btnCancelar, { borderColor: colors.primary }]}
           onPress={() => navigation.goBack()}
         >
-          <Text style={[styles.btnCancelarText, { color: colors.primary }]}>
-            Cancelar
-          </Text>
+          <Text style={[styles.btnCancelarText, { color: colors.primary }]}>Cancelar</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -183,10 +270,45 @@ const styles = StyleSheet.create({
     color: "#333",
   },
 
+  // Repetição
+  repeticaoContainer: {
+    flexDirection: "column",
+    gap: 8,
+    marginBottom: 12,
+  },
+  repeticaoBtn: {
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: "#eee",
+  },
+  repeticaoBtnText: {
+    fontWeight: "600",
+    textAlign: "center",
+  },
+
+  // Custom
+  customContainer: { marginTop: 10, marginBottom: 12 },
+  customDiasRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 8,
+  },
+  customDia: {
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: "#eee",
+    minWidth: 50,
+    alignItems: "center",
+  },
+  customDiaText: {
+    fontWeight: "600",
+  },
+
   btnSalvar: {
     padding: 16,
     borderRadius: 12,
-    marginTop: 12,
+    marginTop: 8,
     alignItems: "center",
   },
   btnText: {
