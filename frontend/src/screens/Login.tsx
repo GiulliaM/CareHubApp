@@ -39,49 +39,27 @@ export default function Login({ navigation }: any) {
         senha,
       });
 
-      if (res.status === 200 && res.data.token) {
+      // 🔥 Agora o backend SEMPRE retorna: { usuario: {...}, token }
+      if (res.status === 200 && res.data.usuario && res.data.token) {
         const token = res.data.token;
-        const id = res.data.usuario_id;
+        const userData = res.data.usuario;
 
-        // Salva o token no AsyncStorage
+        // Salva token
         await saveToken(token);
 
-        // 🔹 Buscar o perfil completo do usuário
-        try {
-          const profileRes = await fetch(`${API_URL}/usuarios/perfil/${id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          if (profileRes.ok) {
-            const profileJson = await profileRes.json();
-            const userData = {
-              usuario_id: profileJson.usuario_id,
-              nome: profileJson.nome,
-              email: profileJson.email,
-              tipo: profileJson.tipo,
-            };
-
-            // ✅ Salva usuário no AsyncStorage
-            await AsyncStorage.setItem("usuario", JSON.stringify(userData));
-            await saveUserMeta(userData);
-          } else {
-            // Caso a rota /perfil falhe, salva o mínimo necessário
-            await AsyncStorage.setItem(
-              "usuario",
-              JSON.stringify({ usuario_id: id })
-            );
-          }
-        } catch (e) {
-          console.warn("Não foi possível obter perfil após login", e);
-        }
+        // 💾 Salvar dados do usuário (nome, email, id, tipo)
+        await AsyncStorage.setItem("usuario", JSON.stringify(userData));
+        await saveUserMeta(userData);
 
         Alert.alert("Bem-vindo!", "Login realizado com sucesso.");
+
+        // Resetar navegação para Tabs
         navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
       } else {
-        Alert.alert("Erro", "Credenciais inválidas. Verifique e tente novamente.");
+        Alert.alert("Erro", "Credenciais inválidas.");
       }
-    } catch (err: any) {
-      console.error(err);
+    } catch (error) {
+      console.log(error);
       Alert.alert("Erro", "Não foi possível realizar o login. Verifique sua conexão.");
     } finally {
       setLoading(false);
@@ -106,6 +84,7 @@ export default function Login({ navigation }: any) {
           autoCapitalize="none"
         />
 
+        {/* Senha */}
         <View style={styles.passwordContainer}>
           <TextInput
             style={[styles.input, { flex: 1, marginBottom: 0 }]}
@@ -115,6 +94,7 @@ export default function Login({ navigation }: any) {
             value={senha}
             onChangeText={setSenha}
           />
+
           <TouchableOpacity
             style={styles.eyeIcon}
             onPress={() => setShowPassword(!showPassword)}
@@ -127,6 +107,7 @@ export default function Login({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
+        {/* Botão */}
         <TouchableOpacity
           style={[styles.button, { backgroundColor: colors.primary }]}
           onPress={handleLogin}
