@@ -94,19 +94,20 @@ const fetchMedicamentos = useCallback(async () => {
   const medicamentosDoDia = medicamentos.filter((m) => {
     if (!m.inicio) return false;
 
-    const dataInicio = dayjs(m.inicio);
+    // 📅 Parse da data de início (apenas a parte da data, sem hora)
+    const dataInicio = dayjs(m.inicio.split('T')[0]);
     
-    // Se for uso contínuo, mostra sempre após a data de início
+    // Se for uso contínuo, mostra sempre a partir da data de início (inclusive)
     if (m.uso_continuo === 1 || m.uso_continuo === true) {
-      return selectedDate.isAfter(dataInicio, "day") || selectedDate.isSame(dataInicio, "day");
+      return selectedDate.isSame(dataInicio, "day") || selectedDate.isAfter(dataInicio, "day");
     }
 
     // Se tem duração definida, calcula data fim
     if (m.duracao_days && m.duracao_days > 0) {
       const dataFim = dataInicio.add(m.duracao_days - 1, "day");
       return (
-        (selectedDate.isAfter(dataInicio, "day") || selectedDate.isSame(dataInicio, "day")) &&
-        (selectedDate.isBefore(dataFim, "day") || selectedDate.isSame(dataFim, "day"))
+        (selectedDate.isSame(dataInicio, "day") || selectedDate.isAfter(dataInicio, "day")) &&
+        (selectedDate.isSame(dataFim, "day") || selectedDate.isBefore(dataFim, "day"))
       );
     }
 

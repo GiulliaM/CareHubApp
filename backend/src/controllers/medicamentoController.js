@@ -19,12 +19,14 @@ export const getMedicamentos = (req, res) => {
 
     // 🧩 Processar e formatar campos do banco
     const medicamentos = results.map((med) => {
-      // Formatar datas
+      // Formatar datas - extrai apenas a parte da data sem conversão de timezone
       if (med.inicio) {
-        med.inicio = new Date(med.inicio).toISOString().split("T")[0];
+        const dataInicio = new Date(med.inicio);
+        med.inicio = `${dataInicio.getFullYear()}-${String(dataInicio.getMonth() + 1).padStart(2, '0')}-${String(dataInicio.getDate()).padStart(2, '0')}`;
       }
       if (med.data_fim) {
-        med.data_fim = new Date(med.data_fim).toISOString().split("T")[0];
+        const dataFim = new Date(med.data_fim);
+        med.data_fim = `${dataFim.getFullYear()}-${String(dataFim.getMonth() + 1).padStart(2, '0')}-${String(dataFim.getDate()).padStart(2, '0')}`;
       }
 
       // Converter horários (JSON → array)
