@@ -14,6 +14,7 @@ import cores from "../config/cores";
 import { useTheme } from "../context/ThemeContext";
 import { API_URL } from "../config/api";
 import { getToken } from "../utils/auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function EditPatient({ route, navigation }: any) {
   const { colors } = useTheme();
@@ -47,6 +48,7 @@ export default function EditPatient({ route, navigation }: any) {
       const res = await fetch(`${API_URL}/pacientes`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       const json = await res.json();
       if (res.ok && json.length > 0) {
         const p = json[0];
@@ -90,6 +92,18 @@ export default function EditPatient({ route, navigation }: any) {
         console.error(json);
         return Alert.alert("Erro", json.message || "Erro ao atualizar paciente.");
       }
+
+      // 🌟 Atualizar AsyncStorage com paciente atualizado
+      await AsyncStorage.setItem(
+        "paciente",
+        JSON.stringify({
+          ...paciente,
+          nome,
+          idade,
+          genero,
+          observacoes,
+        })
+      );
 
       Alert.alert("Sucesso", "Informações atualizadas com sucesso!");
       navigation.goBack();
