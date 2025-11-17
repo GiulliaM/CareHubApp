@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
 import styles from "../style/homeStyle";
 
 export default function Home({ navigation }: any) {
@@ -31,15 +32,22 @@ export default function Home({ navigation }: any) {
     setLoading(false);
   }
 
+  // Carrega apenas na primeira vez
   useEffect(() => {
     load();
   }, []);
 
+  // 🔄 Recarrega sempre que voltar para a Home
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [])
+  );
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.container}>
-        
-        {/* ⏳ Loader inicial */}
+        {/* Loader */}
         {loading && (
           <ActivityIndicator
             size="large"
@@ -48,13 +56,13 @@ export default function Home({ navigation }: any) {
           />
         )}
 
-        {/* 🔵 Header */}
         {!loading && (
           <>
+            {/* Header */}
             <View style={styles.header}>
               <View>
                 <Text style={[styles.welcome, { color: colors.primary }]}>
-                  Olá, {user?.nome?.split(" ")[0] || "Usuário"} 👋
+                  Olá, {user?.nome?.split(" ")[0] || "usuário"} 
                 </Text>
                 <Text style={[styles.welcomeSubtitle, { color: colors.text }]}>
                   Aqui está o resumo do seu cuidado de hoje
@@ -69,7 +77,7 @@ export default function Home({ navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            {/* 🧑‍⚕️ Card do Paciente */}
+            {/* Card do Paciente */}
             <View style={[styles.card, { backgroundColor: colors.card }]}>
               <View style={styles.cardHeaderRow}>
                 <Feather name="user" size={20} color={colors.primary} />
@@ -112,7 +120,7 @@ export default function Home({ navigation }: any) {
               )}
             </View>
 
-            {/* 📌 Acesso rápido */}
+            {/* Acesso rápido */}
             <Text style={[styles.sectionTitle, { color: colors.primary }]}>
               Acesso rápido
             </Text>
@@ -152,7 +160,7 @@ export default function Home({ navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            {/* 🔔 Aviso */}
+            {/* Aviso */}
             <View style={[styles.notice, { backgroundColor: colors.card }]}>
               <Ionicons
                 name="information-circle-outline"
