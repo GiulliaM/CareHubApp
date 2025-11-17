@@ -4,7 +4,6 @@ import { cores } from '../constantes/cores';
 
 export const comumEstilosObjeto = {
 
-  // --- Layouts Globais ---
   screenContainer: {
     flex: 1,
     backgroundColor: cores.branco,
@@ -14,7 +13,6 @@ export const comumEstilosObjeto = {
     flex: 1, 
   } as ViewStyle,
 
-  // --- Cabeçalhos ---
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -46,7 +44,6 @@ export const comumEstilosObjeto = {
     color: cores.preto,
   } as TextStyle,
 
-  // --- Formulários ---
   input: {
     backgroundColor: '#f0f0f0',
     borderWidth: 1,
@@ -72,7 +69,6 @@ export const comumEstilosObjeto = {
     marginBottom: 24,
   } as TextStyle,
 
-  // <<< MUDANÇA: ESTILOS DE SENHA ADICIONADOS AQUI ---
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -93,9 +89,7 @@ export const comumEstilosObjeto = {
   passwordEyeIcon: {
     padding: 16,
   } as ViewStyle,
-  // --- FIM DA MUDANÇA ---
 
-  // --- Botões ---
   primaryButton: {
     backgroundColor: cores.primaria,
     padding: 18,
@@ -122,7 +116,6 @@ export const comumEstilosObjeto = {
     fontWeight: 'bold',
   } as TextStyle,
 
-  // --- Cards Comuns ---
   emptyCard: {
     backgroundColor: cores.branco,
     borderRadius: 12,
@@ -157,13 +150,11 @@ export const comumEstilosObjeto = {
     fontSize: 14,
   } as TextStyle,
 
-  // --- Texto ---
   textoNormal:{
     color: cores.preto,
     fontWeight: 'bold',
     fontSize: 18,
   } as TextStyle,
-
 
   inputLabel: {
     fontSize: 16,

@@ -5,7 +5,6 @@ import { comumEstilosObjeto } from './comumEstilos';
 const { width, height } = Dimensions.get('window');
 
 const boasVindasEstilosUnicos = {
-  // === Layout de Tela Inicial (WelcomeStep) ===
   pageContainer: {
     flex: 1,
     flexDirection: 'column',
@@ -14,10 +13,10 @@ const boasVindasEstilosUnicos = {
     paddingHorizontal: 20, 
   } as ViewStyle,
   
-  logoSmall: { // Logo no topo do WelcomeStep
+  logoSmall: {
     width: width * 1.0,
     height: height * 0.60,
-    contentFit: 'cover', // <-- Funciona com 'expo-image'
+    contentFit: 'cover',
     position: 'absolute',
     top: 0,
     left: 0,
@@ -39,12 +38,10 @@ const boasVindasEstilosUnicos = {
     textAlign: 'center', 
   } as TextStyle,
 
-  // === Layout de Formulários (Cabeçalho Simples Azul) ===
   headerContainer: {
     width: '100%',
-    height: height * 0.25, // Altura do cabeçalho
-    backgroundColor: cores.azulClaro, // Use uma cor escura do tema
-    // MUDANÇA: Não precisamos de justify-content: 'flex-end' aqui, pois vamos colocar o título na área branca.
+    height: height * 0.25,
+    backgroundColor: cores.azulClaro,
   } as ViewStyle,
   
   formContentContainer: {
@@ -52,12 +49,11 @@ const boasVindasEstilosUnicos = {
     backgroundColor: cores.branco,
     borderTopLeftRadius: 40,
     borderTopRightRadius: 40,
-    marginTop: -40, // Puxa para cima para cobrir o container
-    paddingTop: 40, // Espaço dentro do container branco
+    marginTop: -40,
+    paddingTop: 40,
     paddingHorizontal: 20,
   } as ViewStyle,
 
-  // Novo estilo para o título dentro do formulário branco
   formTitleHeader: {
     fontSize: 26,
     fontWeight: 'bold',
@@ -66,7 +62,6 @@ const boasVindasEstilosUnicos = {
     textAlign: 'left',
   } as TextStyle,
   
-  // Novo estilo para o subtítulo dentro do formulário branco
   formSubtitleHeader: {
     fontSize: 15,
     color: '#555',
@@ -74,7 +69,6 @@ const boasVindasEstilosUnicos = {
     textAlign: 'left',
   } as TextStyle,
 
-  // Estilos de formulário (mantidos)
   formTitle: { 
     fontSize: 26,
     fontWeight: 'bold',

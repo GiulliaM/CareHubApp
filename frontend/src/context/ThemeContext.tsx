@@ -9,7 +9,7 @@ const LIGHT = {
   background: '#FFFFFF',
   text: '#111827',
   muted: '#6B7280',
-  card: '#F3F4F6', // 👈 cor do fundo dos cards no tema claro
+  card: '#F3F4F6', 
 
 };
 
@@ -18,7 +18,7 @@ const DARK = {
   accent: '#FFD36E',
   background: '#0B1220',
   text: '#E6EEF6',
-  card: '#1E2633', // 👈 cor do fundo dos cards no tema escuro
+  card: '#1E2633', 
   muted: '#9AA6B2',
 };
 
