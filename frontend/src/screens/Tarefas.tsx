@@ -15,59 +15,98 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import api from "../utils/apiClient";
 import { Ionicons } from "@expo/vector-icons";
+import dayjs from "dayjs";
+import "dayjs/locale/pt-br";
+
+dayjs.locale("pt-br");
 
 export default function Tarefas({ navigation }: any) {
   const { colors } = useTheme();
-
   const [tarefas, setTarefas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const hoje = new Date().toISOString().split("T")[0];
+  // dia selecionado
+  const hoje = dayjs().format("YYYY-MM-DD");
   const [dataSelecionada, setDataSelecionada] = useState(hoje);
 
-  // 🔹 Buscar tarefas do paciente
+  // 🔹 Normalizar datas → evita pular para dia seguinte
+  const normalizar = (data: string) => {
+    return dayjs(data).format("YYYY-MM-DD");
+  };
+
+  // 🔹 Buscar tarefas
   const fetchTarefas = useCallback(async () => {
     setLoading(true);
     try {
-      const rawPaciente = await AsyncStorage.getItem("paciente");
-      const paciente = rawPaciente ? JSON.parse(rawPaciente) : null;
+      const raw = await AsyncStorage.getItem("paciente");
+      const paciente = raw ? JSON.parse(raw) : null;
 
       if (!paciente?.paciente_id) {
         setTarefas([]);
-        setLoading(false);
         return;
       }
 
       const data = await api.get(`/tarefas?paciente_id=${paciente.paciente_id}`);
-      setTarefas(data || []);
-    } catch (error) {
-      console.error("Erro ao carregar tarefas:", error);
+      console.log("🔍 Tarefas recebidas:", data);
+
+      // normalizar datas agora
+      const tarefasCorrigidas = (data || []).map((t: any) => ({
+        ...t,
+        data: normalizar(t.data),
+      }));
+
+      setTarefas(tarefasCorrigidas);
+    } catch (e) {
+      console.log("Erro ao carregar tarefas:", e);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useFocusEffect(useCallback(() => { fetchTarefas(); }, [fetchTarefas]));
+  useFocusEffect(
+    useCallback(() => {
+      fetchTarefas();
+    }, [fetchTarefas])
+  );
 
-  // 📅 Filtrar tarefas por data
+  // 🔍 Filtrar tarefas do dia + repetição
   const tarefasDoDia = tarefas.filter((t) => {
     if (!t.data) return false;
-    const normalizada = t.data.includes("T") ? t.data.split("T")[0] : t.data;
-    return normalizada === dataSelecionada;
+
+    const dataTarefa = t.data;
+    const diaSelecionado = dayjs(dataSelecionada);
+
+    // 🔁 repetição (ex: seg,qua,sex)
+    if (t.dias_repeticao && t.dias_repeticao.trim() !== "") {
+      const rep = t.dias_repeticao.split(",");
+      const diaSemana = diaSelecionado.day(); // 0 = dom
+
+      const map: any = {
+        dom: 0, seg: 1, ter: 2, qua: 3, qui: 4, sex: 5, sab: 6,
+      };
+
+      return rep.some((d: string) => map[d.trim()] === diaSemana);
+    }
+
+    return dataTarefa === dataSelecionada;
   });
 
-  // 🔵 Marcação no calendário
+  // 🔵 marcar datas no calendário
   const marcarDias = () => {
     const marked: any = {};
 
     tarefas.forEach((t) => {
-      const date = t.data.includes("T") ? t.data.split("T")[0] : t.data;
-      if (date) {
-        marked[date] = { marked: true, dotColor: colors.primary };
-      }
+      const d = t.data;
+      if (!d) return;
+
+      marked[d] = {
+        marked: true,
+        dotColor: colors.primary,
+      };
     });
 
     marked[dataSelecionada] = {
+      ...(marked[dataSelecionada] || {}),
       selected: true,
       selectedColor: colors.primary,
     };
@@ -75,48 +114,44 @@ export default function Tarefas({ navigation }: any) {
     return marked;
   };
 
-  // 🟢 Alternar concluída
-  const toggleConcluida = async (tarefa: any) => {
-    try {
-      await api.patch(`/tarefas/${tarefa.tarefa_id}`, {
-        concluida: tarefa.concluida ? 0 : 1,
-        titulo: tarefa.titulo,
-        detalhes: tarefa.detalhes,
-        data: tarefa.data,
-        hora: tarefa.hora,
-        dias_repeticao: tarefa.dias_repeticao || "",
-      });
-
-      fetchTarefas();
-    } catch (err) {
-      console.error("Erro ao atualizar conclusão:", err);
-      Alert.alert("Erro", "Não foi possível atualizar o status.");
-    }
+  // ✔ concluir
+  const concluirTarefa = async (tarefa: any) => {
+    Alert.alert("Confirmar", "Marcar esta tarefa como concluída?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Concluir",
+        onPress: async () => {
+          try {
+            await api.patch(`/tarefas/${tarefa.tarefa_id}`, {
+              ...tarefa,
+              concluida: 1,
+            });
+            fetchTarefas();
+          } catch {
+            Alert.alert("Erro", "Não foi possível concluir a tarefa.");
+          }
+        },
+      },
+    ]);
   };
 
-  // 🗑️ Excluir com confirmação
+  // ❌ excluir
   const excluirTarefa = (id: number) => {
-    Alert.alert(
-      "Confirmar exclusão",
-      "Deseja realmente excluir esta tarefa?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await api.delete(`/tarefas/${id}`);
-              fetchTarefas();
-              Alert.alert("Sucesso", "Tarefa excluída!");
-            } catch (error) {
-              console.error("Erro ao excluir:", error);
-              Alert.alert("Erro", "Não foi possível excluir.");
-            }
-          },
+    Alert.alert("Excluir", "Deseja realmente excluir esta tarefa?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await api.delete(`/tarefas/${id}`);
+            fetchTarefas();
+          } catch {
+            Alert.alert("Erro", "Não foi possível excluir.");
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
@@ -124,79 +159,87 @@ export default function Tarefas({ navigation }: any) {
       <View style={styles.container}>
         <Text style={[styles.title, { color: colors.primary }]}>Tarefas</Text>
 
-        {/* 🗓️ Calendário */}
         <Calendar
           markedDates={marcarDias()}
-          onDayPress={(day) => setDataSelecionada(day.dateString)}
+          onDayPress={(d) => setDataSelecionada(d.dateString)}
           theme={{
             todayTextColor: colors.primary,
             selectedDayBackgroundColor: colors.primary,
           }}
         />
 
-        {/* 📋 Lista de tarefas */}
         {loading ? (
           <ActivityIndicator size="large" color={colors.primary} />
-
         ) : tarefasDoDia.length === 0 ? (
           <Text style={[styles.emptyText, { color: colors.muted }]}>
             Nenhuma tarefa neste dia.
           </Text>
-
         ) : (
           <FlatList
             data={tarefasDoDia}
-            keyExtractor={(item) => item.tarefa_id.toString()}
+            keyExtractor={(i) => i.tarefa_id.toString()}
             renderItem={({ item }) => (
               <View style={[styles.card, { backgroundColor: colors.card }]}>
-
                 <View style={styles.cardHeader}>
-                  <TouchableOpacity onPress={() => toggleConcluida(item)}>
-                    <Ionicons
-                      name={item.concluida ? "checkbox" : "square-outline"}
-                      size={26}
-                      color={item.concluida ? "#2ecc71" : colors.primary}
-                    />
-                  </TouchableOpacity>
-
-                  <View style={{ marginLeft: 10, flex: 1 }}>
-                    <Text style={[styles.cardTitle, { color: colors.primary }]}>
-                      {item.titulo}
-                    </Text>
-                    <Text style={[styles.cardText, { color: colors.text }]}>
-                      🕒 {item.hora}
-                    </Text>
-                  </View>
-
-                  {/* Botões */}
-                  <TouchableOpacity
-                    onPress={() => navigation.navigate("EditTarefa", { tarefa: item })}
+                  <Text style={[styles.cardTitle, { color: colors.primary }]}>
+                    {item.titulo}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.status,
+                      { color: item.concluida ? "#2ecc71" : "#e74c3c" },
+                    ]}
                   >
-                    <Ionicons name="create-outline" size={22} color={colors.primary} />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity onPress={() => excluirTarefa(item.tarefa_id)}>
-                    <Ionicons name="trash-outline" size={22} color="#e74c3c" style={{ marginLeft: 12 }} />
-                  </TouchableOpacity>
+                    {item.concluida ? "Concluída" : "Pendente"}
+                  </Text>
                 </View>
 
+                <Text style={[styles.cardText, { color: colors.text }]}>
+                  🕒 {item.hora || "—"}
+                </Text>
+
                 {item.detalhes ? (
-                  <Text style={[styles.cardText, { marginTop: 4, color: colors.text }]}>
+                  <Text style={[styles.cardText, { color: colors.text }]}>
                     📝 {item.detalhes}
                   </Text>
                 ) : null}
 
                 {item.dias_repeticao ? (
-                  <Text style={[styles.cardText, { marginTop: 4, color: colors.text }]}>
+                  <Text style={[styles.cardText, { color: colors.text }]}>
                     🔁 Repetição: {item.dias_repeticao}
                   </Text>
                 ) : null}
+
+                <View style={styles.actions}>
+                  {!item.concluida && (
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: "#2ecc71" }]}
+                      onPress={() => concluirTarefa(item)}
+                    >
+                      <Ionicons name="checkmark" size={20} color="#fff" />
+                    </TouchableOpacity>
+                  )}
+
+                  <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: "#3498db" }]}
+                    onPress={() => navigation.navigate("EditTarefa", { tarefa: item })}
+                  >
+                    <Ionicons name="create-outline" size={20} color="#fff" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: "#e74c3c" }]}
+                    onPress={() => excluirTarefa(item.tarefa_id)}
+                  >
+                    <Ionicons name="trash-outline" size={20} color="#fff" />
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
           />
         )}
 
-        {/* ➕ Botão de adicionar */}
+        {/* Botão adicionar */}
         <TouchableOpacity
           style={[styles.addBtn, { backgroundColor: colors.primary }]}
           onPress={() => navigation.navigate("NovaTarefa")}
@@ -211,20 +254,13 @@ export default function Tarefas({ navigation }: any) {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1, padding: 16 },
-
   title: {
     fontSize: 24,
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 20,
   },
-
-  emptyText: {
-    textAlign: "center",
-    marginTop: 20,
-    fontSize: 16,
-  },
-
+  emptyText: { textAlign: "center", marginTop: 20, fontSize: 16 },
   card: {
     borderRadius: 12,
     padding: 14,
@@ -234,16 +270,27 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-
   cardHeader: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
+    marginBottom: 8,
   },
-
   cardTitle: { fontSize: 18, fontWeight: "700" },
-  cardText: { fontSize: 15 },
-
+  cardText: { marginTop: 4, fontSize: 15 },
+  status: { fontSize: 15, fontWeight: "700" },
+  actions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+    marginTop: 10,
+  },
+  actionBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   addBtn: {
     position: "absolute",
     bottom: 24,
