@@ -71,96 +71,24 @@ export default function Tarefas({ navigation }: any) {
     }, [fetchTarefas])
   );
 
-  // 🔍 Filtrar tarefas do dia + repetição
+  // 🔍 Filtrar tarefas do dia
   const tarefasDoDia = tarefas.filter((t) => {
     if (!t.data) return false;
-
-    const dataTarefa = t.data;
-    const diaSelecionado = dayjs(dataSelecionada);
-
-    // 🔁 repetição (ex: "1,3,5" ou "seg,qua,sex" ou "todos")
-    if (t.dias_repeticao && t.dias_repeticao.trim() !== "") {
-      const repeticao = t.dias_repeticao.trim();
-      
-      // Se for "todos", mostra em qualquer dia
-      if (repeticao === "todos") {
-        return true;
-      }
-
-      const rep = repeticao.split(",").map((d: string) => d.trim());
-      const diaSemana = diaSelecionado.day(); // 0 = dom, 1 = seg, ...
-
-      // Mapeia tanto nomes quanto números
-      const map: any = {
-        dom: 0, seg: 1, ter: 2, qua: 3, qui: 4, sex: 5, sab: 6,
-        "0": 0, "1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6,
-      };
-
-      // Verifica se algum dia da repetição corresponde ao dia selecionado
-      return rep.some((d: string) => {
-        const diaNumerico = map[d.toLowerCase()];
-        return diaNumerico !== undefined && diaNumerico === diaSemana;
-      });
-    }
-
-    // Se não tem repetição, compara a data exata
-    return dataTarefa === dataSelecionada;
+    // Agora cada tarefa tem data específica, sem repetição
+    return t.data === dataSelecionada;
   });
 
   // 🔵 marcar datas no calendário
   const marcarDias = () => {
     const marked: any = {};
 
+    // Agora todas as tarefas têm data específica, sem repetição
     tarefas.forEach((t) => {
-      // Para tarefas sem repetição, marca apenas a data específica
-      if (!t.dias_repeticao || t.dias_repeticao.trim() === "") {
-        const d = t.data;
-        if (d) {
-          marked[d] = {
-            marked: true,
-            dotColor: colors.primary,
-          };
-        }
-      } else {
-        // Para tarefas com repetição, marca todos os dias visíveis no calendário
-        const repeticao = t.dias_repeticao.trim();
-        
-        // Se for "todos", marca próximos 60 dias
-        if (repeticao === "todos") {
-          for (let i = 0; i < 60; i++) {
-            const dia = dayjs().add(i, "day").format("YYYY-MM-DD");
-            marked[dia] = {
-              marked: true,
-              dotColor: colors.primary,
-            };
-          }
-        } else {
-          // Para repetições específicas (ex: 1,3,5), marca próximos 60 dias nos dias corretos
-          const rep = repeticao.split(",").map((d: string) => d.trim());
-          const map: any = {
-            dom: 0, seg: 1, ter: 2, qua: 3, qui: 4, sex: 5, sab: 6,
-            "0": 0, "1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6,
-          };
-
-          for (let i = 0; i < 60; i++) {
-            const diaAtual = dayjs().add(i, "day");
-            const diaSemana = diaAtual.day();
-            
-            // Verifica se esse dia da semana está na repetição
-            const temRepeticao = rep.some((d: string) => {
-              const diaNumerico = map[d.toLowerCase()];
-              return diaNumerico !== undefined && diaNumerico === diaSemana;
-            });
-
-            if (temRepeticao) {
-              const diaFormatado = diaAtual.format("YYYY-MM-DD");
-              marked[diaFormatado] = {
-                marked: true,
-                dotColor: colors.primary,
-              };
-            }
-          }
-        }
+      if (t.data) {
+        marked[t.data] = {
+          marked: true,
+          dotColor: colors.primary,
+        };
       }
     });
 
@@ -261,12 +189,6 @@ export default function Tarefas({ navigation }: any) {
                 {item.detalhes ? (
                   <Text style={[styles.cardText, { color: colors.text }]}>
                     📝 {item.detalhes}
-                  </Text>
-                ) : null}
-
-                {item.dias_repeticao ? (
-                  <Text style={[styles.cardText, { color: colors.text }]}>
-                    🔁 Repetição: {item.dias_repeticao}
                   </Text>
                 ) : null}
 

@@ -121,26 +121,78 @@ export default function NovaTarefa({ navigation, route }: any) {
         return;
       }
 
-      const payload: any = {
-        titulo: titulo.trim(),
-        detalhes: detalhes.trim(),
-        data: dayjs(data).format("YYYY-MM-DD"),
-        hora: formatTimeForDB(hora),
-        concluida: editingTarefa ? (editingTarefa.concluida ? 1 : 0) : 0,
-        dias_repeticao: diasRepeticaoArr.length ? diasRepeticaoArr.join(",") : "",
-        paciente_id: paciente.paciente_id,
-      };
-
       if (editingTarefa && editingTarefa.tarefa_id) {
-        // atualizar
+        // ✅ EDIÇÃO: Atualiza apenas a tarefa específica (sem criar repetições)
+        const payload: any = {
+          titulo: titulo.trim(),
+          detalhes: detalhes.trim(),
+          data: dayjs(data).format("YYYY-MM-DD"),
+          hora: formatTimeForDB(hora),
+          concluida: editingTarefa.concluida ? 1 : 0,
+          dias_repeticao: "", // Remove repetição ao editar
+          paciente_id: paciente.paciente_id,
+        };
+        
         await api.patch(`/tarefas/${editingTarefa.tarefa_id}`, payload);
         Alert.alert("Sucesso", "Tarefa atualizada com sucesso!");
+        navigation.goBack();
       } else {
-        // criar
-        await api.post("/tarefas", payload);
-        Alert.alert("Sucesso", "Tarefa cadastrada com sucesso!");
+        // ✅ CRIAÇÃO: Cria tarefas individuais para cada dia
+        
+        if (diasRepeticaoArr.length === 0) {
+          // Sem repetição: cria apenas uma tarefa
+          const payload: any = {
+            titulo: titulo.trim(),
+            detalhes: detalhes.trim(),
+            data: dayjs(data).format("YYYY-MM-DD"),
+            hora: formatTimeForDB(hora),
+            concluida: 0,
+            dias_repeticao: "",
+            paciente_id: paciente.paciente_id,
+          };
+          
+          await api.post("/tarefas", payload);
+          Alert.alert("Sucesso", "Tarefa cadastrada com sucesso!");
+        } else {
+          // Com repetição: cria múltiplas tarefas individuais
+          const tarefasCriadas: string[] = [];
+          const dataInicio = dayjs(data);
+          const quantidadeSemanas = 12; // Cria para 12 semanas (3 meses)
+          
+          // Para cada semana
+          for (let semana = 0; semana < quantidadeSemanas; semana++) {
+            // Para cada dia da repetição
+            for (const diaIdx of diasRepeticaoArr) {
+              // Encontra a próxima ocorrência desse dia da semana
+              const diasAteProximoDia = (diaIdx - dataInicio.day() + 7) % 7;
+              const proximaData = dataInicio
+                .add(semana * 7, "day")
+                .add(diasAteProximoDia, "day");
+              
+              const payload: any = {
+                titulo: titulo.trim(),
+                detalhes: detalhes.trim(),
+                data: proximaData.format("YYYY-MM-DD"),
+                hora: formatTimeForDB(hora),
+                concluida: 0,
+                dias_repeticao: "", // Cada tarefa é individual, sem repetição
+                paciente_id: paciente.paciente_id,
+              };
+              
+              await api.post("/tarefas", payload);
+              tarefasCriadas.push(proximaData.format("DD/MM"));
+            }
+          }
+          
+          const totalCriadas = tarefasCriadas.length;
+          Alert.alert(
+            "Sucesso!",
+            `${totalCriadas} tarefas foram criadas para os próximos 3 meses.\n\nPrimeiras datas: ${tarefasCriadas.slice(0, 5).join(", ")}...`
+          );
+        }
+        
+        navigation.goBack();
       }
-      navigation.goBack();
     } catch (err: any) {
       console.error("Erro ao salvar tarefa:", err?.response?.data || err?.message || err);
       Alert.alert("Erro", "Não foi possível salvar a tarefa. Tente novamente.");
