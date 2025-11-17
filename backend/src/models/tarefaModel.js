@@ -19,8 +19,8 @@ const Tarefa = {
 
   create: (tarefa, callback) => {
     const query = `
-      INSERT INTO tarefas (titulo, detalhes, data, hora, dias_repeticao, responsavel_id, paciente_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO tarefas (titulo, detalhes, data, hora, dias_repeticao, concluida, responsavel_id, paciente_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const values = [
       tarefa.titulo,
@@ -28,6 +28,7 @@ const Tarefa = {
       tarefa.data,
       tarefa.hora,
       tarefa.dias_repeticao || "",
+      tarefa.concluida !== undefined ? tarefa.concluida : 0, // ✅ Define como 0 por padrão
       tarefa.responsavel_id || null,
       tarefa.paciente_id,
     ];

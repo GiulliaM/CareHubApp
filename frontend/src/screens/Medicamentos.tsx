@@ -92,13 +92,26 @@ const fetchMedicamentos = useCallback(async () => {
 
   // 🔍 Filtra medicamentos pelo dia selecionado
   const medicamentosDoDia = medicamentos.filter((m) => {
+    if (!m.inicio) return false;
+
     const dataInicio = dayjs(m.inicio);
-    const duracao = m.duracao_days ? m.duracao_days - 1 : 0;
-    const dataFim = dataInicio.add(duracao, "day");
-    return (
-      selectedDate.isAfter(dataInicio.subtract(1, "day")) &&
-      selectedDate.isBefore(dataFim.add(1, "day"))
-    );
+    
+    // Se for uso contínuo, mostra sempre após a data de início
+    if (m.uso_continuo === 1 || m.uso_continuo === true) {
+      return selectedDate.isAfter(dataInicio, "day") || selectedDate.isSame(dataInicio, "day");
+    }
+
+    // Se tem duração definida, calcula data fim
+    if (m.duracao_days && m.duracao_days > 0) {
+      const dataFim = dataInicio.add(m.duracao_days - 1, "day");
+      return (
+        (selectedDate.isAfter(dataInicio, "day") || selectedDate.isSame(dataInicio, "day")) &&
+        (selectedDate.isBefore(dataFim, "day") || selectedDate.isSame(dataFim, "day"))
+      );
+    }
+
+    // Se não tem duração nem é contínuo, mostra apenas no dia de início
+    return selectedDate.isSame(dataInicio, "day");
   });
 
   // 🗑️ Excluir medicamento

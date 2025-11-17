@@ -53,8 +53,10 @@ export default function Tarefas({ navigation }: any) {
       const tarefasCorrigidas = (data || []).map((t: any) => ({
         ...t,
         data: normalizar(t.data),
+        concluida: t.concluida === 1 || t.concluida === true ? 1 : 0, // ✅ Normaliza para 0 ou 1
       }));
 
+      console.log("✅ Tarefas após normalização:", tarefasCorrigidas);
       setTarefas(tarefasCorrigidas);
     } catch (e) {
       console.log("Erro ao carregar tarefas:", e);
@@ -76,18 +78,32 @@ export default function Tarefas({ navigation }: any) {
     const dataTarefa = t.data;
     const diaSelecionado = dayjs(dataSelecionada);
 
-    // 🔁 repetição (ex: seg,qua,sex)
+    // 🔁 repetição (ex: "1,3,5" ou "seg,qua,sex" ou "todos")
     if (t.dias_repeticao && t.dias_repeticao.trim() !== "") {
-      const rep = t.dias_repeticao.split(",");
-      const diaSemana = diaSelecionado.day(); // 0 = dom
+      const repeticao = t.dias_repeticao.trim();
+      
+      // Se for "todos", mostra em qualquer dia
+      if (repeticao === "todos") {
+        return true;
+      }
 
+      const rep = repeticao.split(",").map((d: string) => d.trim());
+      const diaSemana = diaSelecionado.day(); // 0 = dom, 1 = seg, ...
+
+      // Mapeia tanto nomes quanto números
       const map: any = {
         dom: 0, seg: 1, ter: 2, qua: 3, qui: 4, sex: 5, sab: 6,
+        "0": 0, "1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6,
       };
 
-      return rep.some((d: string) => map[d.trim()] === diaSemana);
+      // Verifica se algum dia da repetição corresponde ao dia selecionado
+      return rep.some((d: string) => {
+        const diaNumerico = map[d.toLowerCase()];
+        return diaNumerico !== undefined && diaNumerico === diaSemana;
+      });
     }
 
+    // Se não tem repetição, compara a data exata
     return dataTarefa === dataSelecionada;
   });
 
@@ -96,15 +112,59 @@ export default function Tarefas({ navigation }: any) {
     const marked: any = {};
 
     tarefas.forEach((t) => {
-      const d = t.data;
-      if (!d) return;
+      // Para tarefas sem repetição, marca apenas a data específica
+      if (!t.dias_repeticao || t.dias_repeticao.trim() === "") {
+        const d = t.data;
+        if (d) {
+          marked[d] = {
+            marked: true,
+            dotColor: colors.primary,
+          };
+        }
+      } else {
+        // Para tarefas com repetição, marca todos os dias visíveis no calendário
+        const repeticao = t.dias_repeticao.trim();
+        
+        // Se for "todos", marca próximos 60 dias
+        if (repeticao === "todos") {
+          for (let i = 0; i < 60; i++) {
+            const dia = dayjs().add(i, "day").format("YYYY-MM-DD");
+            marked[dia] = {
+              marked: true,
+              dotColor: colors.primary,
+            };
+          }
+        } else {
+          // Para repetições específicas (ex: 1,3,5), marca próximos 60 dias nos dias corretos
+          const rep = repeticao.split(",").map((d: string) => d.trim());
+          const map: any = {
+            dom: 0, seg: 1, ter: 2, qua: 3, qui: 4, sex: 5, sab: 6,
+            "0": 0, "1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6,
+          };
 
-      marked[d] = {
-        marked: true,
-        dotColor: colors.primary,
-      };
+          for (let i = 0; i < 60; i++) {
+            const diaAtual = dayjs().add(i, "day");
+            const diaSemana = diaAtual.day();
+            
+            // Verifica se esse dia da semana está na repetição
+            const temRepeticao = rep.some((d: string) => {
+              const diaNumerico = map[d.toLowerCase()];
+              return diaNumerico !== undefined && diaNumerico === diaSemana;
+            });
+
+            if (temRepeticao) {
+              const diaFormatado = diaAtual.format("YYYY-MM-DD");
+              marked[diaFormatado] = {
+                marked: true,
+                dotColor: colors.primary,
+              };
+            }
+          }
+        }
+      }
     });
 
+    // Marca o dia selecionado
     marked[dataSelecionada] = {
       ...(marked[dataSelecionada] || {}),
       selected: true,
@@ -187,10 +247,10 @@ export default function Tarefas({ navigation }: any) {
                   <Text
                     style={[
                       styles.status,
-                      { color: item.concluida ? "#2ecc71" : "#e74c3c" },
+                      { color: item.concluida === 1 ? "#2ecc71" : "#e74c3c" },
                     ]}
                   >
-                    {item.concluida ? "Concluída" : "Pendente"}
+                    {item.concluida === 1 ? "Concluída" : "Pendente"}
                   </Text>
                 </View>
 
@@ -211,7 +271,7 @@ export default function Tarefas({ navigation }: any) {
                 ) : null}
 
                 <View style={styles.actions}>
-                  {!item.concluida && (
+                  {item.concluida !== 1 && (
                     <TouchableOpacity
                       style={[styles.actionBtn, { backgroundColor: "#2ecc71" }]}
                       onPress={() => concluirTarefa(item)}
