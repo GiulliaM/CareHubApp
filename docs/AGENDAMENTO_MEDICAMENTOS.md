@@ -1,12 +1,12 @@
-# 📋 Sistema de Agendamento Inteligente de Medicamentos
+# Sistema de Agendamento Inteligente de Medicamentos
 
-## 🎯 Visão Geral
+## Visão Geral
 
 Este sistema permite que os usuários criem agendamentos de medicamentos de forma inteligente, usando intervalos regulares (4/4h, 6/6h, 8/8h, 12/12h) ou definindo horários manualmente.
 
-## ✅ O que foi implementado
+## O que foi implementado
 
-### 1. **Migrations do Banco de Dados** ✅
+### 1. Migrations do Banco de Dados*
 
 Foram criados dois arquivos de migration:
 
@@ -20,9 +20,9 @@ Foram criados dois arquivos de migration:
 #### `001_update_medicamentos_schema_legacy.sql` (MySQL < 5.7)
 - Mesmos campos, mas mantém `horarios` como TEXT
 
-**Status:** ✅ Executado com sucesso no banco de dados
+Status:  Executado com sucesso no banco de dados
 
-### 2. **Utilitários Frontend** ✅
+### 2. Utilitários Frontend
 
 Arquivo: `frontend/src/utils/medicamentoSchedule.ts`
 
@@ -38,7 +38,7 @@ Constantes:
 - `INTERVAL_OPTIONS` - Opções de intervalo (4/4h, 6/6h, 8/8h, 12/12h)
 - `DIAS_SEMANA` - Dias da semana para seleção
 
-### 3. **Componentes React Native** ✅
+### 3. Componentes React Native
 
 #### `IntervalModal.tsx`
 Modal para selecionar intervalo de medicação:
@@ -53,7 +53,7 @@ Lista de horários com funcionalidades:
 - Remover horários
 - Adicionar novos horários manualmente
 
-## 🚀 Como Usar na Tela "Novo Medicamento"
+## Como Usar na Tela "Novo Medicamento"
 
 ### Passo 1: Importar os componentes e utils
 
@@ -172,7 +172,7 @@ const handleSalvar = async () => {
 };
 ```
 
-## 📊 Estrutura de Dados no Banco
+## Estrutura de Dados no Banco
 
 ```json
 {
@@ -190,7 +190,7 @@ const handleSalvar = async () => {
 }
 ```
 
-## 🔄 Como Exibir na Tela Principal
+## Como Exibir na Tela Principal
 
 ```tsx
 import { 
@@ -212,24 +212,24 @@ medicamentosAtivos.forEach(med => {
 });
 ```
 
-## ✨ Vantagens desta Abordagem
+##  Vantagens desta Abordagem
 
-### ✅ Performance
+###  Performance
 - Não cria milhares de registros no banco
 - Salva apenas o **padrão recorrente**
 - Calcula doses dinamicamente no frontend
 
-### ✅ Flexibilidade
+###  Flexibilidade
 - Usuário pode editar horários individuais
 - Pode mudar de intervalo para manual
 - Pode adicionar/remover horários à vontade
 
-### ✅ Escalabilidade
+###  Escalabilidade
 - Funciona com uso contínuo (infinito)
 - Funciona com data de término definida
 - Suporta dias da semana específicos
 
-## 🎯 Próximos Passos (Pendentes)
+##  Próximos Passos (Pendentes)
 
 ### 1. Backend - Atualizar Model e Controller
 - [ ] Adicionar suporte aos novos campos no `medicamentoModel.js`
@@ -248,7 +248,7 @@ medicamentosAtivos.forEach(med => {
 - [ ] Filtrar por dia da semana
 - [ ] Marcar doses como tomadas
 
-## 📝 Exemplo Completo de Uso
+## Exemplo Completo de Uso
 
 ```tsx
 // 1. Usuário seleciona "8/8 horas"
@@ -259,7 +259,7 @@ medicamentosAtivos.forEach(med => {
 // 6. Na tela principal: calcula dinamicamente se deve exibir hoje
 ```
 
-## 🐛 Troubleshooting
+##  Troubleshooting
 
 ### Horários não aparecem
 - Verifique se `getMedicamentoHorarios()` está sendo usado
@@ -273,7 +273,7 @@ medicamentosAtivos.forEach(med => {
 - Verifique se `horarioInicio` está no formato "HH:mm"
 - Verifique se `intervalHoras` é 4, 6, 8 ou 12
 
-## 📚 Referências
+## Referências
 
 - Migration: `backend/migrations/001_update_medicamentos_schema.sql`
 - Utils: `frontend/src/utils/medicamentoSchedule.ts`
@@ -281,4 +281,4 @@ medicamentosAtivos.forEach(med => {
 
 ---
 
-**Status Atual:** ✅ Migrations OK | ✅ Utils OK | ✅ Componentes OK | ⏳ Integração Pendente
+**Status Atual:**  Migrations OK |  Utils OK |  Componentes OK |  Integração Pendente

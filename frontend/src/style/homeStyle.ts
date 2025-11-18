@@ -10,8 +10,6 @@ export default StyleSheet.create({
     padding: 16,
     paddingBottom: 120,
   },
-
-  /* HEADER */
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -88,9 +86,6 @@ export default StyleSheet.create({
     opacity: 0.7,
     marginTop: 8,
   },
-
-  /* ACESSO RÁPIDO */
-
   sectionTitle: {
     fontSize: 20,
     fontWeight: "700",
@@ -119,8 +114,6 @@ export default StyleSheet.create({
     marginTop: 8,
     fontWeight: "600",
   },
-
-  /* AVISO */
   notice: {
     flexDirection: "row",
     padding: 16,
