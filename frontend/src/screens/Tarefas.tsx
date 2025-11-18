@@ -29,12 +29,12 @@ export default function Tarefas({ navigation }: any) {
   const hoje = dayjs().format("YYYY-MM-DD");
   const [dataSelecionada, setDataSelecionada] = useState(hoje);
 
-  // 🔹 Normalizar datas → evita pular para dia seguinte
+  // Normalizar datas → evita pular para dia seguinte
   const normalizar = (data: string) => {
     return dayjs(data).format("YYYY-MM-DD");
   };
 
-  // 🔹 Buscar tarefas
+  // Buscar tarefas
   const fetchTarefas = useCallback(async () => {
     setLoading(true);
     try {
@@ -47,16 +47,16 @@ export default function Tarefas({ navigation }: any) {
       }
 
       const data = await api.get(`/tarefas?paciente_id=${paciente.paciente_id}`);
-      console.log("🔍 Tarefas recebidas:", data);
+      console.log(" Tarefas recebidas:", data);
 
       // normalizar datas agora
       const tarefasCorrigidas = (data || []).map((t: any) => ({
         ...t,
         data: normalizar(t.data),
-        concluida: t.concluida === 1 || t.concluida === true ? 1 : 0, // ✅ Normaliza para 0 ou 1
+        concluida: t.concluida === 1 || t.concluida === true ? 1 : 0, //  Normaliza para 0 ou 1
       }));
 
-      console.log("✅ Tarefas após normalização:", tarefasCorrigidas);
+      console.log(" Tarefas após normalização:", tarefasCorrigidas);
       setTarefas(tarefasCorrigidas);
     } catch (e) {
       console.log("Erro ao carregar tarefas:", e);
@@ -71,14 +71,14 @@ export default function Tarefas({ navigation }: any) {
     }, [fetchTarefas])
   );
 
-  // 🔍 Filtrar tarefas do dia
+  // Filtrar tarefas do dia
   const tarefasDoDia = tarefas.filter((t) => {
     if (!t.data) return false;
     // Agora cada tarefa tem data específica, sem repetição
     return t.data === dataSelecionada;
   });
 
-  // 🔵 marcar datas no calendário
+  // marcar datas no calendário
   const marcarDias = () => {
     const marked: any = {};
 
@@ -102,7 +102,7 @@ export default function Tarefas({ navigation }: any) {
     return marked;
   };
 
-  // ✔ concluir
+  // concluir
   const concluirTarefa = async (tarefa: any) => {
     Alert.alert("Confirmar", "Marcar esta tarefa como concluída?", [
       { text: "Cancelar", style: "cancel" },
@@ -123,7 +123,7 @@ export default function Tarefas({ navigation }: any) {
     ]);
   };
 
-  // ❌ excluir
+  // excluir
   const excluirTarefa = (id: number) => {
     Alert.alert("Excluir", "Deseja realmente excluir esta tarefa?", [
       { text: "Cancelar", style: "cancel" },

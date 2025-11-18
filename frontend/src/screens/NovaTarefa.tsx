@@ -122,7 +122,7 @@ export default function NovaTarefa({ navigation, route }: any) {
       }
 
       if (editingTarefa && editingTarefa.tarefa_id) {
-        // ✅ EDIÇÃO: Atualiza apenas a tarefa específica (sem criar repetições)
+        //  EDIÇÃO: Atualiza apenas a tarefa específica (sem criar repetições)
         const payload: any = {
           titulo: titulo.trim(),
           detalhes: detalhes.trim(),
@@ -137,7 +137,7 @@ export default function NovaTarefa({ navigation, route }: any) {
         Alert.alert("Sucesso", "Tarefa atualizada com sucesso!");
         navigation.goBack();
       } else {
-        // ✅ CRIAÇÃO: Cria tarefas individuais para cada dia
+        //  CRIAÇÃO: Cria tarefas individuais para cada dia
         
         if (diasRepeticaoArr.length === 0) {
           // Sem repetição: cria apenas uma tarefa

@@ -16,12 +16,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../utils/apiClient";
 import { useFocusEffect } from "@react-navigation/native";
 
-// 📅 Imports do dayjs com plugin de locale
+//  Imports do dayjs com plugin de locale
 import dayjs from "dayjs";
 import updateLocale from "dayjs/plugin/updateLocale";
 import "dayjs/locale/pt-br";
 
-// 🔧 Configuração de idioma e início da semana
+//  Configuração de idioma e início da semana
 dayjs.extend(updateLocale);
 dayjs.locale("pt-br");
 dayjs.updateLocale("pt-br", { weekStart: 1 });
@@ -33,7 +33,7 @@ export default function Medicamentos({ navigation }: any) {
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [weekDays, setWeekDays] = useState<dayjs.Dayjs[]>([]);
 
-  // 🗓️ Gera dias da semana (segunda a domingo)
+  //  Gera dias da semana (segunda a domingo)
   const generateWeekDays = useCallback((baseDate: dayjs.Dayjs) => {
     const startOfWeek = baseDate.startOf("week");
     const days = Array.from({ length: 7 }).map((_, i) =>
@@ -46,8 +46,8 @@ export default function Medicamentos({ navigation }: any) {
     generateWeekDays(selectedDate);
   }, [selectedDate]);
 
-  // 🔹 Buscar medicamentos do paciente logado
-// 🔹 Buscar medicamentos do paciente logado
+  //  Buscar medicamentos do paciente logado
+//  Buscar medicamentos do paciente logado
 const fetchMedicamentos = useCallback(async () => {
   try {
     setLoading(true);
@@ -61,12 +61,12 @@ const fetchMedicamentos = useCallback(async () => {
       return;
     }
 
-    console.log("🧠 Buscando medicamentos do paciente ID:", paciente.paciente_id);
+    console.log(" Buscando medicamentos do paciente ID:", paciente.paciente_id);
 
-    // ✅ Chamada correta com query param, conforme o backend
+    // Chamada correta com query param, conforme o backend
     const  data  = await api.get(`/medicamentos/${paciente.paciente_id}`);
 
-    console.log("📦 Dados recebidos do backend:", data);
+    console.log(" Dados recebidos do backend:", data);
 
     // Garante que é um array
     if (Array.isArray(data)) {
@@ -77,7 +77,7 @@ const fetchMedicamentos = useCallback(async () => {
       setMedicamentos([]);
     }
   } catch (err: any) {
-    console.error("❌ Erro ao buscar medicamentos:", err.response?.data || err.message);
+    console.error(" Erro ao buscar medicamentos:", err.response?.data || err.message);
     Alert.alert("Erro", "Não foi possível carregar os medicamentos. Tente novamente mais tarde.");
   } finally {
     setLoading(false);
@@ -90,11 +90,11 @@ const fetchMedicamentos = useCallback(async () => {
     }, [fetchMedicamentos])
   );
 
-  // 🔍 Filtra medicamentos pelo dia selecionado
+  //  Filtra medicamentos pelo dia selecionado
   const medicamentosDoDia = medicamentos.filter((m) => {
     if (!m.inicio) return false;
 
-    // 📅 Parse da data de início (apenas a parte da data, sem hora)
+    //  Parse da data de início (apenas a parte da data, sem hora)
     const dataInicio = dayjs(m.inicio.split('T')[0]);
     
     // Se for uso contínuo, mostra sempre a partir da data de início (inclusive)
@@ -136,7 +136,7 @@ const fetchMedicamentos = useCallback(async () => {
     ]);
   };
 
-  // 📅 Navegação semanal
+  //  Navegação semanal
   const handleNextWeek = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setSelectedDate(selectedDate.add(7, "day"));
@@ -152,7 +152,7 @@ const fetchMedicamentos = useCallback(async () => {
       <View style={styles.container}>
         <Text style={[styles.title, { color: colors.primary }]}>Medicamentos</Text>
 
-        {/* 🗓️ Calendário semanal */}
+        {/*  Calendário semanal */}
         <View style={styles.calendarContainer}>
           <TouchableOpacity onPress={handlePrevWeek}>
             <Ionicons name="chevron-back" size={22} color={colors.text} />
@@ -194,7 +194,7 @@ const fetchMedicamentos = useCallback(async () => {
           </TouchableOpacity>
         </View>
 
-        {/* 🕓 Lista de medicamentos */}
+        {/*  Lista de medicamentos */}
         {loading ? (
           <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
         ) : medicamentosDoDia.length === 0 ? (
@@ -260,7 +260,7 @@ const fetchMedicamentos = useCallback(async () => {
   );
 }
 
-// 🎨 Estilos
+// Estilos
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1, padding: 16 },

@@ -209,7 +209,7 @@ export default function NovaMedicamento({ navigation }: any) {
   );
 }
 
-/* 🎨 ESTILOS */
+/* ESTILOS */
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
 

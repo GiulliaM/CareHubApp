@@ -93,7 +93,7 @@ export default function EditPatient({ route, navigation }: any) {
         return Alert.alert("Erro", json.message || "Erro ao atualizar paciente.");
       }
 
-      // 🌟 Atualizar AsyncStorage com paciente atualizado
+      // Atualizar AsyncStorage com paciente atualizado
       await AsyncStorage.setItem(
         "paciente",
         JSON.stringify({

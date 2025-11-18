@@ -39,7 +39,7 @@ export default function Login({ navigation }: any) {
         senha,
       });
 
-      // 🔥 Agora o backend SEMPRE retorna: { usuario: {...}, token }
+      // Agora o backend SEMPRE retorna: { usuario: {...}, token }
       if (res.status === 200 && res.data.usuario && res.data.token) {
         const token = res.data.token;
         const userData = res.data.usuario;
@@ -47,7 +47,7 @@ export default function Login({ navigation }: any) {
         // Salva token
         await saveToken(token);
 
-        // 💾 Salvar dados do usuário (nome, email, id, tipo)
+        // Salvar dados do usuário (nome, email, id, tipo)
         await AsyncStorage.setItem("usuario", JSON.stringify(userData));
         await saveUserMeta(userData);
 

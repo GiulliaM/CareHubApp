@@ -216,7 +216,7 @@ export default function EditMedicamento({ route, navigation }: any) {
   );
 }
 
-/* 🎨 ESTILOS */
+/* ESTILOS */
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { padding: 16 },
