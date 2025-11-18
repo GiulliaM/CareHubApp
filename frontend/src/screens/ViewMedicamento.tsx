@@ -138,7 +138,7 @@ export default function ViewMedicamento({ route, navigation }: any) {
           )}
         </View>
 
-        {/* 🔙 Botão de voltar */}
+        {/* Botão de voltar */}
         <TouchableOpacity
           style={[styles.btnBack, { backgroundColor: colors.primary }]}
           onPress={() => navigation.goBack()}
@@ -151,7 +151,7 @@ export default function ViewMedicamento({ route, navigation }: any) {
   );
 }
 
-// 🎨 Estilos
+// Estilos
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   scroll: { padding: 16 },

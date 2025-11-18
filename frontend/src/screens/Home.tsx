@@ -37,7 +37,7 @@ export default function Home({ navigation }: any) {
     load();
   }, []);
 
-  // 🔄 Recarrega sempre que voltar para a Home
+  // Recarrega sempre que voltar para a Home
   useFocusEffect(
     useCallback(() => {
       load();

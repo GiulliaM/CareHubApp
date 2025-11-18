@@ -26,7 +26,7 @@ export default function EditUser({ route, navigation }: any) {
 
   const userParam = route.params?.user;
 
-  // 🧩 Carregar dados do usuário
+  // Carregar dados do usuário
   useEffect(() => {
     if (userParam) {
       setUsuario(userParam);
@@ -62,7 +62,7 @@ export default function EditUser({ route, navigation }: any) {
     }
   };
 
-  // 💾 Salvar alterações
+  // Salvar alterações
   const salvarAlteracoes = async () => {
     if (!usuario || !usuario.usuario_id)
       return Alert.alert("Erro", "Usuário inválido.");
@@ -98,7 +98,7 @@ export default function EditUser({ route, navigation }: any) {
     }
   };
 
-  // 🌀 Tela de loading
+  // Tela de loading
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -154,7 +154,7 @@ export default function EditUser({ route, navigation }: any) {
   );
 }
 
-// 🎨 Estilos no padrão CareHub
+// Estilos 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: cores.background },
   container: { flexGrow: 1, padding: 16, justifyContent: "center" },

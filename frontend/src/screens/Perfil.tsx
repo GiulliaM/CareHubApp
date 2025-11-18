@@ -55,7 +55,7 @@ export default function Perfil({ navigation }: any) {
         setPaciente(null);
       }
     } catch (err) {
-      console.error("❌ Erro ao carregar perfil:", err);
+      console.error(" Erro ao carregar perfil:", err);
       Alert.alert("Erro", "Não foi possível carregar as informações do perfil.");
     }
   }, [navigation]);
@@ -66,13 +66,13 @@ export default function Perfil({ navigation }: any) {
     }, [fetchProfile])
   );
 
-  // 🔒 Logout
+  //  Logout
   async function handleLogout() {
     await logout();
     navigation.reset({ index: 0, routes: [{ name: "Welcome" }] });
   }
 
-  // 🌗 Alternar tema
+  //  Alternar tema
   async function handleToggleTheme(value: boolean) {
     try {
       await setThemeName(value ? "dark" : "light");
@@ -189,7 +189,7 @@ export default function Perfil({ navigation }: any) {
   );
 }
 
-// 🎨 Estilos refinados
+//  Estilos 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   scroll: { padding: 16 },
