@@ -1,14 +1,12 @@
-// frontend/src/style/tarefaStyle.ts
 
 import { Platform, StyleSheet } from 'react-native';
-// Assumindo que '../constantes/cores' está definido
 const cores = {
     branco: '#ffffff',
     preto: '#1c1c1c',
     cinzaClaro: '#a0a0a0',
-    primaria: '#007bff', // Azul primário
-    secundaria: '#28a745', // Verde para 'Concluída'
-    alerta: '#dc3545', // Vermelho para 'Atrasada'
+    primaria: '#007bff', 
+    secundaria: '#28a745', 
+    alerta: '#dc3545', 
 };
 
 const styles = StyleSheet.create({
@@ -158,17 +156,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Estilo ajustado para o card de tarefa
   taskCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between', // Adicionado para separar o texto das ações
+    justifyContent: 'space-between', 
     backgroundColor: '#fff',
     marginHorizontal: 16,
     marginVertical: 8,
     padding: 12,
     borderRadius: 10,
-    borderLeftWidth: 5, // Indicador de status
+    borderLeftWidth: 5, 
     ...Platform.select({
       android: { elevation: 1 },
       ios: { shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } },
@@ -185,7 +182,6 @@ const styles = StyleSheet.create({
     color: cores.cinzaClaro,
   },
 
-  // Novo estilo para o botão de conclusão
   completeButton: {
     marginLeft: 10,
     padding: 8,
