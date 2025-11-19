@@ -47,41 +47,38 @@ export default function Medicamentos({ navigation }: any) {
   }, [selectedDate]);
 
   // Buscar medicamentos do paciente logado
-  const fetchMedicamentos = useCallback(async () => {
-    try {
-      setLoading(true);
+    const fetchMedicamentos = useCallback(async () => {
+      try {
+        setLoading(true);
 
-      const rawPaciente = await AsyncStorage.getItem("paciente");
-      const paciente = rawPaciente ? JSON.parse(rawPaciente) : null;
+        const rawPaciente = await AsyncStorage.getItem("paciente");
+        const paciente = rawPaciente ? JSON.parse(rawPaciente) : null;
 
-      if (!paciente?.paciente_id) {
-        Alert.alert("Aviso", "Nenhum paciente vinculado encontrado.");
-        setMedicamentos([]);
-        return;
+        if (!paciente?.paciente_id) {
+          Alert.alert("Aviso", "Nenhum paciente vinculado encontrado.");
+          setMedicamentos([]);
+          return;
+        }
+
+        console.log("Buscando medicamentos do paciente ID:", paciente.paciente_id);
+
+        // ⭐ AQUI ESTÁ A CORREÇÃO ⭐
+        const response = await api.get(`/medicamentos/${paciente.paciente_id}`);
+
+        console.log("Response bruto:", response);
+
+        // Como response JÁ é o array:
+        setMedicamentos(Array.isArray(response) ? response : []);
+
+      } catch (err: any) {
+        console.error("Erro ao buscar medicamentos:", err.response?.data || err.message);
+        Alert.alert("Erro", "Não foi possível carregar os medicamentos.");
+      } finally {
+        setLoading(false);
       }
+    }, []);
 
-      console.log(" Buscando medicamentos do paciente ID:", paciente.paciente_id);
 
-      // ✅ CORREÇÃO AQUI — extrai só o data
-      const { data } = await api.get(`/medicamentos/${paciente.paciente_id}`);
-
-      console.log(" Dados recebidos do backend:", data);
-
-      // Garante que é um array
-      setMedicamentos(Array.isArray(data) ? data : []);
-    } catch (err: any) {
-      console.error(
-        " Erro ao buscar medicamentos:",
-        err.response?.data || err.message
-      );
-      Alert.alert(
-        "Erro",
-        "Não foi possível carregar os medicamentos. Tente novamente mais tarde."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   useFocusEffect(
     useCallback(() => {
