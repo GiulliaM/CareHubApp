@@ -149,7 +149,7 @@ export default function NovaTarefa({ navigation, route }: any) {
       // CRIAÇÃO - com repetição (gera tarefas individuais)
       const tarefasCriadas: string[] = [];
       const dataInicio = dayjs(data);
-      const quantidadeSemanas = 12;
+      const quantidadeSemanas = 4;
       for (let semana = 0; semana < quantidadeSemanas; semana++) {
         for (const diaIdx of diasRepeticaoArr) {
           const diasAteProximoDia = (diaIdx - dataInicio.day() + 7) % 7;
