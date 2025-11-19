@@ -34,40 +34,36 @@ export default function NovaTarefa({ navigation, route }: any) {
   const { colors } = useTheme();
   const editingTarefa = route?.params?.tarefa ?? null;
 
+  // Use dayjs to avoid timezone shifts
   const [titulo, setTitulo] = useState(editingTarefa?.titulo ?? "");
   const [detalhes, setDetalhes] = useState(editingTarefa?.detalhes ?? "");
-  const [data, setData] = useState(
-    editingTarefa?.data ? new Date(editingTarefa.data) : new Date()
+  const [data, setData] = useState<Date>(
+    editingTarefa?.data ? dayjs(editingTarefa.data).startOf("day").toDate() : dayjs().startOf("day").toDate()
   );
-  const [hora, setHora] = useState(
-    editingTarefa?.hora ? new Date(`1970-01-01T${editingTarefa.hora}`) : new Date()
+  const [hora, setHora] = useState<Date>(
+    editingTarefa?.hora ? dayjs(`1970-01-01 ${editingTarefa.hora}`).toDate() : dayjs().toDate()
   );
   const [showDataPicker, setShowDataPicker] = useState(false);
   const [showHoraPicker, setShowHoraPicker] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
-  // diasRepeticao: array de índices (0..6). No banco, salvamos string "0,1,2"
   const initialDias =
     editingTarefa?.dias_repeticao && typeof editingTarefa.dias_repeticao === "string"
       ? editingTarefa.dias_repeticao.split(",").map((s: string) => s.trim()).filter(Boolean).map(Number)
       : [];
 
   const [diasRepeticaoArr, setDiasRepeticaoArr] = useState<number[]>(initialDias);
-  const [preset, setPreset] = useState<string>(
-    () => {
-      if (!initialDias || initialDias.length === 0) return "";
-      if (initialDias.length === 7) return "todos";
-      // custom detection for seg/qua/sex or ter/qui, otherwise custom
-      const segQuaSex = [1,3,5].every(i => initialDias.includes(i)) && initialDias.length === 3;
-      const terQui = [2,4].every(i => initialDias.includes(i)) && initialDias.length === 2;
-      if (segQuaSex) return "segqua";
-      if (terQui) return "terqui";
-      return "custom";
-    }
-  );
+  const [preset, setPreset] = useState<string>(() => {
+    if (!initialDias || initialDias.length === 0) return "";
+    if (initialDias.length === 7) return "todos";
+    const segQuaSex = [1,3,5].every(i => initialDias.includes(i)) && initialDias.length === 3;
+    const terQui = [2,4].every(i => initialDias.includes(i)) && initialDias.length === 2;
+    if (segQuaSex) return "segqua";
+    if (terQui) return "terqui";
+    return "custom";
+  });
 
   useEffect(() => {
-    // keep preset in sync with manual toggles
     if (diasRepeticaoArr.length === 0) setPreset("");
     else if (diasRepeticaoArr.length === 7) setPreset("todos");
     else {
@@ -77,7 +73,6 @@ export default function NovaTarefa({ navigation, route }: any) {
       else if (terQui) setPreset("terqui");
       else setPreset("custom");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [diasRepeticaoArr.length]);
 
   const toggleWeekday = (idx: number) => {
@@ -93,13 +88,9 @@ export default function NovaTarefa({ navigation, route }: any) {
     else if (value === "todos") setDiasRepeticaoArr(WEEKDAYS.map(d => d.idx));
     else if (value === "segqua") setDiasRepeticaoArr([1,3,5]);
     else if (value === "terqui") setDiasRepeticaoArr([2,4]);
-    else if (value === "custom") {
-      // keep current arr (no-op) — user can pick manually
-    }
   };
 
   const formatTimeForDB = (d: Date) => {
-    // HH:MM:SS
     const hh = String(d.getHours()).padStart(2, "0");
     const mm = String(d.getMinutes()).padStart(2, "0");
     const ss = String(d.getSeconds()).padStart(2, "0");
@@ -121,80 +112,65 @@ export default function NovaTarefa({ navigation, route }: any) {
         return;
       }
 
+      // EDIÇÃO
       if (editingTarefa && editingTarefa.tarefa_id) {
-        //  EDIÇÃO: Atualiza apenas a tarefa específica (sem criar repetições)
         const payload: any = {
           titulo: titulo.trim(),
           detalhes: detalhes.trim(),
           data: dayjs(data).format("YYYY-MM-DD"),
           hora: formatTimeForDB(hora),
           concluida: editingTarefa.concluida ? 1 : 0,
-          dias_repeticao: "", // Remove repetição ao editar
+          dias_repeticao: "",
           paciente_id: paciente.paciente_id,
         };
-        
         await api.patch(`/tarefas/${editingTarefa.tarefa_id}`, payload);
         Alert.alert("Sucesso", "Tarefa atualizada com sucesso!");
         navigation.goBack();
-      } else {
-        //  CRIAÇÃO: Cria tarefas individuais para cada dia
-        
-        if (diasRepeticaoArr.length === 0) {
-          // Sem repetição: cria apenas uma tarefa
+        return;
+      }
+
+      // CRIAÇÃO - sem repetição
+      if (diasRepeticaoArr.length === 0) {
+        const payload: any = {
+          titulo: titulo.trim(),
+          detalhes: detalhes.trim(),
+          data: dayjs(data).format("YYYY-MM-DD"),
+          hora: formatTimeForDB(hora),
+          concluida: 0,
+          dias_repeticao: "",
+          paciente_id: paciente.paciente_id,
+        };
+        await api.post("/tarefas", payload);
+        Alert.alert("Sucesso", "Tarefa cadastrada com sucesso!");
+        navigation.goBack();
+        return;
+      }
+
+      // CRIAÇÃO - com repetição (gera tarefas individuais)
+      const tarefasCriadas: string[] = [];
+      const dataInicio = dayjs(data);
+      const quantidadeSemanas = 12;
+      for (let semana = 0; semana < quantidadeSemanas; semana++) {
+        for (const diaIdx of diasRepeticaoArr) {
+          const diasAteProximoDia = (diaIdx - dataInicio.day() + 7) % 7;
+          const proximaData = dataInicio.add(semana * 7, "day").add(diasAteProximoDia, "day");
           const payload: any = {
             titulo: titulo.trim(),
             detalhes: detalhes.trim(),
-            data: dayjs(data).format("YYYY-MM-DD"),
+            data: proximaData.format("YYYY-MM-DD"),
             hora: formatTimeForDB(hora),
             concluida: 0,
             dias_repeticao: "",
             paciente_id: paciente.paciente_id,
           };
-          
           await api.post("/tarefas", payload);
-          Alert.alert("Sucesso", "Tarefa cadastrada com sucesso!");
-        } else {
-          // Com repetição: cria múltiplas tarefas individuais
-          const tarefasCriadas: string[] = [];
-          const dataInicio = dayjs(data);
-          const quantidadeSemanas = 12; // Cria para 12 semanas (3 meses)
-          
-          // Para cada semana
-          for (let semana = 0; semana < quantidadeSemanas; semana++) {
-            // Para cada dia da repetição
-            for (const diaIdx of diasRepeticaoArr) {
-              // Encontra a próxima ocorrência desse dia da semana
-              const diasAteProximoDia = (diaIdx - dataInicio.day() + 7) % 7;
-              const proximaData = dataInicio
-                .add(semana * 7, "day")
-                .add(diasAteProximoDia, "day");
-              
-              const payload: any = {
-                titulo: titulo.trim(),
-                detalhes: detalhes.trim(),
-                data: proximaData.format("YYYY-MM-DD"),
-                hora: formatTimeForDB(hora),
-                concluida: 0,
-                dias_repeticao: "", // Cada tarefa é individual, sem repetição
-                paciente_id: paciente.paciente_id,
-              };
-              
-              await api.post("/tarefas", payload);
-              tarefasCriadas.push(proximaData.format("DD/MM"));
-            }
-          }
-          
-          const totalCriadas = tarefasCriadas.length;
-          Alert.alert(
-            "Sucesso!",
-            `${totalCriadas} tarefas foram criadas para os próximos 3 meses.\n\nPrimeiras datas: ${tarefasCriadas.slice(0, 5).join(", ")}...`
-          );
+          tarefasCriadas.push(proximaData.format("DD/MM"));
         }
-        
-        navigation.goBack();
       }
+      Alert.alert("Sucesso!", `${tarefasCriadas.length} tarefas criadas para os próximos 3 meses.\nPrimeiras: ${tarefasCriadas.slice(0,5).join(", ")}...`);
+      navigation.goBack();
     } catch (err: any) {
-      console.error("Erro ao salvar tarefa:", err?.response?.data || err?.message || err);
+      console.error("Erro ao salvar tarefa:", err?.response || err);
       Alert.alert("Erro", "Não foi possível salvar a tarefa. Tente novamente.");
     } finally {
       setSalvando(false);
@@ -208,7 +184,6 @@ export default function NovaTarefa({ navigation, route }: any) {
           {editingTarefa ? "Editar Tarefa" : "Nova Tarefa"}
         </Text>
 
-        {/* Título */}
         <Text style={styles.label}>Título *</Text>
         <TextInput
           style={[styles.input]}
@@ -217,7 +192,6 @@ export default function NovaTarefa({ navigation, route }: any) {
           onChangeText={setTitulo}
         />
 
-        {/* Detalhes */}
         <Text style={styles.label}>Detalhes</Text>
         <TextInput
           style={[styles.input, { height: 100 }]}
@@ -227,13 +201,9 @@ export default function NovaTarefa({ navigation, route }: any) {
           onChangeText={setDetalhes}
         />
 
-        {/* Data */}
         <TouchableOpacity style={styles.selectButton} onPress={() => setShowDataPicker(true)}>
-          <Text style={styles.selectButtonText}>
-            Data: {dayjs(data).format("DD/MM/YYYY")}
-          </Text>
+          <Text style={styles.selectButtonText}>Data: {dayjs(data).format("DD/MM/YYYY")}</Text>
         </TouchableOpacity>
-
         {showDataPicker && (
           <DateTimePicker
             value={data}
@@ -246,18 +216,14 @@ export default function NovaTarefa({ navigation, route }: any) {
           />
         )}
 
-        {/* Hora */}
         <TouchableOpacity style={styles.selectButton} onPress={() => setShowHoraPicker(true)}>
-          <Text style={styles.selectButtonText}>
-            Hora: {dayjs(hora).format("HH:mm")}
-          </Text>
+          <Text style={styles.selectButtonText}>Hora: {dayjs(hora).format("HH:mm")}</Text>
         </TouchableOpacity>
-
         {showHoraPicker && (
           <DateTimePicker
             value={hora}
             mode="time"
-            is24Hour={true}
+            is24Hour
             display="default"
             onChange={(e, dateSel) => {
               setShowHoraPicker(false);
@@ -266,9 +232,7 @@ export default function NovaTarefa({ navigation, route }: any) {
           />
         )}
 
-        {/* Repetição */}
         <Text style={styles.label}>Repetição</Text>
-
         <View style={styles.repeticaoContainer}>
           {[
             { label: "Nenhuma", value: "" },
@@ -285,60 +249,34 @@ export default function NovaTarefa({ navigation, route }: any) {
               ]}
               onPress={() => applyPreset(item.value)}
             >
-              <Text
-                style={[
-                  styles.repeticaoBtnText,
-                  preset === item.value && { color: "#fff" },
-                ]}
-              >
+              <Text style={[styles.repeticaoBtnText, preset === item.value && { color: "#fff" }]}>
                 {item.label}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Custom weekday toggles (visible when custom or when preset active but user wants change) */}
         <View style={styles.weekdaysRow}>
           {WEEKDAYS.map((d) => {
             const active = diasRepeticaoArr.includes(d.idx);
             return (
               <TouchableOpacity
                 key={d.idx}
-                style={[
-                  styles.weekdayBtn,
-                  { borderColor: colors.primary },
-                  active && { backgroundColor: colors.primary },
-                ]}
+                style={[styles.weekdayBtn, { borderColor: colors.primary }, active && { backgroundColor: colors.primary }]}
                 onPress={() => toggleWeekday(d.idx)}
               >
-                <Text style={[styles.weekdayText, active && { color: "#fff" }]}>
-                  {d.label}
-                </Text>
+                <Text style={[styles.weekdayText, active && { color: "#fff" }]}>{d.label}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
 
-        {/* Botões */}
-        <TouchableOpacity
-          style={[styles.btnSalvar, { backgroundColor: colors.primary }]}
-          disabled={salvando}
-          onPress={handleSalvar}
-        >
-          {salvando ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.btnText}>{editingTarefa ? "Salvar alterações" : "Salvar Tarefa"}</Text>
-          )}
+        <TouchableOpacity style={[styles.btnSalvar, { backgroundColor: colors.primary }]} disabled={salvando} onPress={handleSalvar}>
+          {salvando ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>{editingTarefa ? "Salvar alterações" : "Salvar Tarefa"}</Text>}
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.btnCancelar, { borderColor: colors.primary }]}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={[styles.btnCancelarText, { color: colors.primary }]}>
-            Cancelar
-          </Text>
+        <TouchableOpacity style={[styles.btnCancelar, { borderColor: colors.primary }]} onPress={() => navigation.goBack()}>
+          <Text style={[styles.btnCancelarText, { color: colors.primary }]}>Cancelar</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -379,7 +317,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333",
   },
-
   repeticaoContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -398,7 +335,6 @@ const styles = StyleSheet.create({
   repeticaoBtnText: {
     fontWeight: "600",
   },
-
   weekdaysRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -415,7 +351,6 @@ const styles = StyleSheet.create({
   weekdayText: {
     fontWeight: "700",
   },
-
   btnSalvar: {
     padding: 16,
     borderRadius: 12,
@@ -427,7 +362,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-
   btnCancelar: {
     padding: 14,
     borderRadius: 12,
