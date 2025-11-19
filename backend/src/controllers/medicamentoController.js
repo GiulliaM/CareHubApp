@@ -1,7 +1,7 @@
 import db from "../config/db.js";
 import medicamentoModel from "../models/medicamentoModel.js";
 
-// 🔹 Listar medicamentos de um paciente
+// Listar medicamentos de um paciente
 export const getMedicamentos = (req, res) => {
   const { paciente_id } = req.params;
 
@@ -17,16 +17,19 @@ export const getMedicamentos = (req, res) => {
       return res.status(500).json({ error: "Erro ao buscar medicamentos" });
     }
 
-    // 🧩 Processar e formatar campos do banco
+    // Processar e formatar campos do banco SEM new Date()
     const medicamentos = results.map((med) => {
-      // Formatar datas - extrai apenas a parte da data sem conversão de timezone
+      // Tratar datas como strings puras
       if (med.inicio) {
-        const dataInicio = new Date(med.inicio);
-        med.inicio = `${dataInicio.getFullYear()}-${String(dataInicio.getMonth() + 1).padStart(2, '0')}-${String(dataInicio.getDate()).padStart(2, '0')}`;
+        med.inicio = med.inicio instanceof Date
+          ? med.inicio.toISOString().substring(0, 10)
+          : String(med.inicio).substring(0, 10);
       }
+
       if (med.data_fim) {
-        const dataFim = new Date(med.data_fim);
-        med.data_fim = `${dataFim.getFullYear()}-${String(dataFim.getMonth() + 1).padStart(2, '0')}-${String(dataFim.getDate()).padStart(2, '0')}`;
+        med.data_fim = med.data_fim instanceof Date
+          ? med.data_fim.toISOString().substring(0, 10)
+          : String(med.data_fim).substring(0, 10);
       }
 
       // Converter horários (JSON → array)
@@ -64,7 +67,7 @@ export const createMedicamento = (req, res) => {
   });
 };
 
-// 🔹 Atualizar medicamento (PATCH)
+// Atualizar medicamento (PATCH)
 export const patchMedicamento = (req, res) => {
   const { id } = req.params;
   const dados = req.body;
@@ -83,7 +86,7 @@ export const patchMedicamento = (req, res) => {
   });
 };
 
-// 🔹 Excluir medicamento
+// Excluir medicamento
 export const deleteMedicamento = (req, res) => {
   const { id } = req.params;
 

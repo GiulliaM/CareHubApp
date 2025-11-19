@@ -16,12 +16,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../utils/apiClient";
 import { useFocusEffect } from "@react-navigation/native";
 
-//  Imports do dayjs com plugin de locale
+// Imports do dayjs com plugin de locale
 import dayjs from "dayjs";
 import updateLocale from "dayjs/plugin/updateLocale";
 import "dayjs/locale/pt-br";
 
-//  Configuração de idioma e início da semana
+// Configuração de idioma e início da semana
 dayjs.extend(updateLocale);
 dayjs.locale("pt-br");
 dayjs.updateLocale("pt-br", { weekStart: 1 });
@@ -33,7 +33,7 @@ export default function Medicamentos({ navigation }: any) {
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [weekDays, setWeekDays] = useState<dayjs.Dayjs[]>([]);
 
-  //  Gera dias da semana (segunda a domingo)
+  // Gera dias da semana (segunda a domingo)
   const generateWeekDays = useCallback((baseDate: dayjs.Dayjs) => {
     const startOfWeek = baseDate.startOf("week");
     const days = Array.from({ length: 7 }).map((_, i) =>
@@ -46,43 +46,42 @@ export default function Medicamentos({ navigation }: any) {
     generateWeekDays(selectedDate);
   }, [selectedDate]);
 
-  //  Buscar medicamentos do paciente logado
-//  Buscar medicamentos do paciente logado
-const fetchMedicamentos = useCallback(async () => {
-  try {
-    setLoading(true);
+  // Buscar medicamentos do paciente logado
+  const fetchMedicamentos = useCallback(async () => {
+    try {
+      setLoading(true);
 
-    const rawPaciente = await AsyncStorage.getItem("paciente");
-    const paciente = rawPaciente ? JSON.parse(rawPaciente) : null;
+      const rawPaciente = await AsyncStorage.getItem("paciente");
+      const paciente = rawPaciente ? JSON.parse(rawPaciente) : null;
 
-    if (!paciente?.paciente_id) {
-      Alert.alert("Aviso", "Nenhum paciente vinculado encontrado.");
-      setMedicamentos([]);
-      return;
+      if (!paciente?.paciente_id) {
+        Alert.alert("Aviso", "Nenhum paciente vinculado encontrado.");
+        setMedicamentos([]);
+        return;
+      }
+
+      console.log(" Buscando medicamentos do paciente ID:", paciente.paciente_id);
+
+      // ✅ CORREÇÃO AQUI — extrai só o data
+      const { data } = await api.get(`/medicamentos/${paciente.paciente_id}`);
+
+      console.log(" Dados recebidos do backend:", data);
+
+      // Garante que é um array
+      setMedicamentos(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      console.error(
+        " Erro ao buscar medicamentos:",
+        err.response?.data || err.message
+      );
+      Alert.alert(
+        "Erro",
+        "Não foi possível carregar os medicamentos. Tente novamente mais tarde."
+      );
+    } finally {
+      setLoading(false);
     }
-
-    console.log(" Buscando medicamentos do paciente ID:", paciente.paciente_id);
-
-    // Chamada correta com query param, conforme o backend
-    const  data  = await api.get(`/medicamentos/${paciente.paciente_id}`);
-
-    console.log(" Dados recebidos do backend:", data);
-
-    // Garante que é um array
-    if (Array.isArray(data)) {
-      setMedicamentos(data);
-    } else if (data && typeof data === "object") {
-      setMedicamentos([data]);
-    } else {
-      setMedicamentos([]);
-    }
-  } catch (err: any) {
-    console.error(" Erro ao buscar medicamentos:", err.response?.data || err.message);
-    Alert.alert("Erro", "Não foi possível carregar os medicamentos. Tente novamente mais tarde.");
-  } finally {
-    setLoading(false);
-  }
-}, []);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -90,53 +89,58 @@ const fetchMedicamentos = useCallback(async () => {
     }, [fetchMedicamentos])
   );
 
-  //  Filtra medicamentos pelo dia selecionado
+  // Filtra medicamentos pelo dia selecionado
   const medicamentosDoDia = medicamentos.filter((m) => {
     if (!m.inicio) return false;
 
-    //  Parse da data de início (apenas a parte da data, sem hora)
-    const dataInicio = dayjs(m.inicio.split('T')[0]);
-    
-    // Se for uso contínuo, mostra sempre a partir da data de início (inclusive)
-    if (m.uso_continuo === 1 || m.uso_continuo === true) {
-      return selectedDate.isSame(dataInicio, "day") || selectedDate.isAfter(dataInicio, "day");
-    }
+    const dataInicio = dayjs(m.inicio.split("T")[0]);
 
-    // Se tem duração definida, calcula data fim
-    if (m.duracao_days && m.duracao_days > 0) {
-      const dataFim = dataInicio.add(m.duracao_days - 1, "day");
+    if (m.uso_continuo === 1 || m.uso_continuo === true) {
       return (
-        (selectedDate.isSame(dataInicio, "day") || selectedDate.isAfter(dataInicio, "day")) &&
-        (selectedDate.isSame(dataFim, "day") || selectedDate.isBefore(dataFim, "day"))
+        selectedDate.isSame(dataInicio, "day") ||
+        selectedDate.isAfter(dataInicio, "day")
       );
     }
 
-    // Se não tem duração nem é contínuo, mostra apenas no dia de início
+    if (m.duracao_days && m.duracao_days > 0) {
+      const dataFim = dataInicio.add(m.duracao_days - 1, "day");
+      return (
+        (selectedDate.isSame(dataInicio, "day") ||
+          selectedDate.isAfter(dataInicio, "day")) &&
+        (selectedDate.isSame(dataFim, "day") ||
+          selectedDate.isBefore(dataFim, "day"))
+      );
+    }
+
     return selectedDate.isSame(dataInicio, "day");
   });
 
-  // 🗑️ Excluir medicamento
+  // Excluir medicamento
   const handleExcluir = async (id: number) => {
-    Alert.alert("Confirmar exclusão", "Deseja realmente excluir este medicamento?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Excluir",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await api.delete(`/medicamentos/${id}`);
-            fetchMedicamentos();
-            Alert.alert("Sucesso", "Medicamento excluído com sucesso!");
-          } catch (error) {
-            console.error("Erro ao excluir medicamento:", error);
-            Alert.alert("Erro", "Não foi possível excluir o medicamento.");
-          }
+    Alert.alert(
+      "Confirmar exclusão",
+      "Deseja realmente excluir este medicamento?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await api.delete(`/medicamentos/${id}`);
+              fetchMedicamentos();
+              Alert.alert("Sucesso", "Medicamento excluído com sucesso!");
+            } catch (error) {
+              console.error("Erro ao excluir medicamento:", error);
+              Alert.alert("Erro", "Não foi possível excluir o medicamento.");
+            }
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
-  //  Navegação semanal
+  // Navegação semanal
   const handleNextWeek = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setSelectedDate(selectedDate.add(7, "day"));
@@ -148,11 +152,13 @@ const fetchMedicamentos = useCallback(async () => {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.background }]}
+    >
       <View style={styles.container}>
         <Text style={[styles.title, { color: colors.primary }]}>Medicamentos</Text>
 
-        {/*  Calendário semanal */}
+        {/* Calendário semanal */}
         <View style={styles.calendarContainer}>
           <TouchableOpacity onPress={handlePrevWeek}>
             <Ionicons name="chevron-back" size={22} color={colors.text} />
@@ -194,9 +200,13 @@ const fetchMedicamentos = useCallback(async () => {
           </TouchableOpacity>
         </View>
 
-        {/*  Lista de medicamentos */}
+        {/* Lista de medicamentos */}
         {loading ? (
-          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
+          <ActivityIndicator
+            size="large"
+            color={colors.primary}
+            style={{ marginTop: 40 }}
+          />
         ) : medicamentosDoDia.length === 0 ? (
           <Text style={[styles.emptyText, { color: colors.muted }]}>
             Nenhum medicamento para este dia.
@@ -206,9 +216,15 @@ const fetchMedicamentos = useCallback(async () => {
             data={medicamentosDoDia}
             keyExtractor={(item) => item.medicamento_id.toString()}
             renderItem={({ item }) => (
-              <View style={[styles.card, { backgroundColor: colors.card || "#fff" }]}>
+              <View
+                style={[styles.card, { backgroundColor: colors.card || "#fff" }]}
+              >
                 <View style={styles.cardHeader}>
-                  <Ionicons name="medkit-outline" size={20} color={colors.primary} />
+                  <Ionicons
+                    name="medkit-outline"
+                    size={20}
+                    color={colors.primary}
+                  />
                   <Text style={[styles.cardTitle, { color: colors.text }]}>
                     {item.nome}
                   </Text>
@@ -224,14 +240,18 @@ const fetchMedicamentos = useCallback(async () => {
                 <View style={styles.cardActions}>
                   <TouchableOpacity
                     style={[styles.actionBtn, { backgroundColor: "#1976D2" }]}
-                    onPress={() => navigation.navigate("ViewMedicamento", { medicamento: item })}
+                    onPress={() =>
+                      navigation.navigate("ViewMedicamento", { medicamento: item })
+                    }
                   >
                     <Ionicons name="eye-outline" size={18} color="#fff" />
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     style={[styles.actionBtn, { backgroundColor: "#2196F3" }]}
-                    onPress={() => navigation.navigate("EditMedicamento", { medicamento: item })}
+                    onPress={() =>
+                      navigation.navigate("EditMedicamento", { medicamento: item })
+                    }
                   >
                     <Ionicons name="create-outline" size={18} color="#fff" />
                   </TouchableOpacity>
@@ -295,7 +315,12 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
   },
-  cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 6 },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+    gap: 6,
+  },
   cardTitle: { fontSize: 17, fontWeight: "700" },
   cardInfo: { fontSize: 15, marginBottom: 4 },
   cardActions: {
