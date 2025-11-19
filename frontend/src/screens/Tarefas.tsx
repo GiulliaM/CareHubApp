@@ -1,3 +1,4 @@
+// Tarefas.tsx
 import React, { useCallback, useState } from "react";
 import {
   View,
@@ -25,16 +26,13 @@ export default function Tarefas({ navigation }: any) {
   const [tarefas, setTarefas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // dia selecionado
   const hoje = dayjs().format("YYYY-MM-DD");
   const [dataSelecionada, setDataSelecionada] = useState(hoje);
 
-  // Normalizar datas → evita pular para dia seguinte
   const normalizar = (data: string) => {
-    return dayjs(data).format("YYYY-MM-DD");
+    return dayjs(data).startOf("day").format("YYYY-MM-DD");
   };
 
-  // Buscar tarefas
   const fetchTarefas = useCallback(async () => {
     setLoading(true);
     try {
@@ -46,17 +44,16 @@ export default function Tarefas({ navigation }: any) {
         return;
       }
 
+      // apiClient retorna res.data diretamente, por isso aqui pegamos "data"
       const data = await api.get(`/tarefas?paciente_id=${paciente.paciente_id}`);
-      console.log(" Tarefas recebidas:", data);
+      console.log("Tarefas da API:", data);
 
-      // normalizar datas agora
       const tarefasCorrigidas = (data || []).map((t: any) => ({
         ...t,
         data: normalizar(t.data),
-        concluida: t.concluida === 1 || t.concluida === true ? 1 : 0, //  Normaliza para 0 ou 1
+        concluida: t.concluida === 1 ? 1 : 0,
       }));
 
-      console.log(" Tarefas após normalização:", tarefasCorrigidas);
       setTarefas(tarefasCorrigidas);
     } catch (e) {
       console.log("Erro ao carregar tarefas:", e);
@@ -71,28 +68,18 @@ export default function Tarefas({ navigation }: any) {
     }, [fetchTarefas])
   );
 
-  // Filtrar tarefas do dia
-  const tarefasDoDia = tarefas.filter((t) => {
-    if (!t.data) return false;
-    // Agora cada tarefa tem data específica, sem repetição
-    return t.data === dataSelecionada;
-  });
+  const tarefasDoDia = tarefas.filter((t) => t.data === dataSelecionada);
 
-  // marcar datas no calendário
   const marcarDias = () => {
     const marked: any = {};
-
-    // Agora todas as tarefas têm data específica, sem repetição
     tarefas.forEach((t) => {
-      if (t.data) {
-        marked[t.data] = {
-          marked: true,
-          dotColor: colors.primary,
-        };
-      }
+      const d = normalizar(t.data);
+      marked[d] = {
+        marked: true,
+        dotColor: colors.primary,
+      };
     });
 
-    // Marca o dia selecionado
     marked[dataSelecionada] = {
       ...(marked[dataSelecionada] || {}),
       selected: true,
@@ -102,7 +89,6 @@ export default function Tarefas({ navigation }: any) {
     return marked;
   };
 
-  // concluir
   const concluirTarefa = async (tarefa: any) => {
     Alert.alert("Confirmar", "Marcar esta tarefa como concluída?", [
       { text: "Cancelar", style: "cancel" },
@@ -110,10 +96,7 @@ export default function Tarefas({ navigation }: any) {
         text: "Concluir",
         onPress: async () => {
           try {
-            await api.patch(`/tarefas/${tarefa.tarefa_id}`, {
-              ...tarefa,
-              concluida: 1,
-            });
+            await api.patch(`/tarefas/${tarefa.tarefa_id}`, { ...tarefa, concluida: 1 });
             fetchTarefas();
           } catch {
             Alert.alert("Erro", "Não foi possível concluir a tarefa.");
@@ -123,7 +106,6 @@ export default function Tarefas({ navigation }: any) {
     ]);
   };
 
-  // excluir
   const excluirTarefa = (id: number) => {
     Alert.alert("Excluir", "Deseja realmente excluir esta tarefa?", [
       { text: "Cancelar", style: "cancel" },
@@ -159,9 +141,7 @@ export default function Tarefas({ navigation }: any) {
         {loading ? (
           <ActivityIndicator size="large" color={colors.primary} />
         ) : tarefasDoDia.length === 0 ? (
-          <Text style={[styles.emptyText, { color: colors.muted }]}>
-            Nenhuma tarefa neste dia.
-          </Text>
+          <Text style={[styles.emptyText, { color: colors.muted }]}>Nenhuma tarefa neste dia.</Text>
         ) : (
           <FlatList
             data={tarefasDoDia}
@@ -169,50 +149,26 @@ export default function Tarefas({ navigation }: any) {
             renderItem={({ item }) => (
               <View style={[styles.card, { backgroundColor: colors.card }]}>
                 <View style={styles.cardHeader}>
-                  <Text style={[styles.cardTitle, { color: colors.primary }]}>
-                    {item.titulo}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.status,
-                      { color: item.concluida === 1 ? "#2ecc71" : "#e74c3c" },
-                    ]}
-                  >
-                    {item.concluida === 1 ? "Concluída" : "Pendente"}
-                  </Text>
+                  <Text style={[styles.cardTitle, { color: colors.primary }]}>{item.titulo}</Text>
+                  <Text style={[styles.status, { color: item.concluida === 1 ? "#2ecc71" : "#e74c3c" }]}>{item.concluida === 1 ? "Concluída" : "Pendente"}</Text>
                 </View>
 
-                <Text style={[styles.cardText, { color: colors.text }]}>
-                  🕒 {item.hora || "—"}
-                </Text>
+                <Text style={[styles.cardText, { color: colors.text }]}>🕒 {item.hora || "—"}</Text>
 
-                {item.detalhes ? (
-                  <Text style={[styles.cardText, { color: colors.text }]}>
-                    📝 {item.detalhes}
-                  </Text>
-                ) : null}
+                {item.detalhes ? <Text style={[styles.cardText, { color: colors.text }]}>📝 {item.detalhes}</Text> : null}
 
                 <View style={styles.actions}>
                   {item.concluida !== 1 && (
-                    <TouchableOpacity
-                      style={[styles.actionBtn, { backgroundColor: "#2ecc71" }]}
-                      onPress={() => concluirTarefa(item)}
-                    >
+                    <TouchableOpacity style={[styles.actionBtn, { backgroundColor: "#2ecc71" }]} onPress={() => concluirTarefa(item)}>
                       <Ionicons name="checkmark" size={20} color="#fff" />
                     </TouchableOpacity>
                   )}
 
-                  <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: "#3498db" }]}
-                    onPress={() => navigation.navigate("EditTarefa", { tarefa: item })}
-                  >
+                  <TouchableOpacity style={[styles.actionBtn, { backgroundColor: "#3498db" }]} onPress={() => navigation.navigate("EditTarefa", { tarefa: item })}>
                     <Ionicons name="create-outline" size={20} color="#fff" />
                   </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: "#e74c3c" }]}
-                    onPress={() => excluirTarefa(item.tarefa_id)}
-                  >
+                  <TouchableOpacity style={[styles.actionBtn, { backgroundColor: "#e74c3c" }]} onPress={() => excluirTarefa(item.tarefa_id)}>
                     <Ionicons name="trash-outline" size={20} color="#fff" />
                   </TouchableOpacity>
                 </View>
@@ -221,11 +177,7 @@ export default function Tarefas({ navigation }: any) {
           />
         )}
 
-        {/* Botão adicionar */}
-        <TouchableOpacity
-          style={[styles.addBtn, { backgroundColor: colors.primary }]}
-          onPress={() => navigation.navigate("NovaTarefa")}
-        >
+        <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={() => navigation.navigate("NovaTarefa")}>
           <Ionicons name="add" size={28} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -260,28 +212,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 18, fontWeight: "700" },
   cardText: { marginTop: 4, fontSize: 15 },
   status: { fontSize: 15, fontWeight: "700" },
-  actions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 10,
-    marginTop: 10,
-  },
-  actionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addBtn: {
-    position: "absolute",
-    bottom: 24,
-    right: 24,
-    width: 58,
-    height: 58,
-    borderRadius: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 5,
-  },
+  actions: { flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 10 },
+  actionBtn: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  addBtn: { position: "absolute", bottom: 24, right: 24, width: 58, height: 58, borderRadius: 50, alignItems: "center", justifyContent: "center", elevation: 5 },
 });
