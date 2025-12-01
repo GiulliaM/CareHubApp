@@ -15,7 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 import styles from "../style/loginStyle";
-import { saveToken, saveUserMeta } from "../utils/auth";
+import { saveToken } from "../utils/auth";
 import { API_URL } from "../config/api";
 
 export default function Login({ navigation }: any) {
@@ -47,9 +47,11 @@ export default function Login({ navigation }: any) {
         // Salva token
         await saveToken(token);
 
-        // Salvar dados do usuário (nome, email, id, tipo)
+
+        // Limpa qualquer dado antigo de usuário para evitar conflito
+        await AsyncStorage.removeItem("user");
+        // Salva dados do usuário (nome, email, id, tipo)
         await AsyncStorage.setItem("usuario", JSON.stringify(userData));
-        await saveUserMeta(userData);
 
         Alert.alert("Bem-vindo!", "Login realizado com sucesso.");
 

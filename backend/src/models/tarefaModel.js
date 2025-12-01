@@ -1,6 +1,32 @@
 import db from "../config/db.js";
 
 const Tarefa = {
+    // Buscar o próximo medicamento para um paciente
+    buscarProximoMedicamento: (paciente_id, callback) => {
+      const query = `SELECT * FROM medicamentos WHERE paciente_id = ? AND horario > NOW() ORDER BY horario ASC LIMIT 1`;
+      db.query(query, [paciente_id], (err, results) => {
+        if (err) return callback(err);
+        callback(null, results[0]);
+      });
+    },
+
+    // Buscar a próxima consulta para um paciente
+    buscarProximaConsulta: (paciente_id, callback) => {
+      const query = `SELECT * FROM consultas WHERE paciente_id = ? AND data > NOW() ORDER BY data ASC LIMIT 1`;
+      db.query(query, [paciente_id], (err, results) => {
+        if (err) return callback(err);
+        callback(null, results[0]);
+      });
+    },
+
+    // Buscar todas as tarefas de um paciente
+    buscarTodasPorPaciente: (paciente_id, callback) => {
+      const query = `SELECT * FROM tarefas WHERE paciente_id = ?`;
+      db.query(query, [paciente_id], (err, results) => {
+        if (err) return callback(err);
+        callback(null, results || []);
+      });
+    },
   getAll: (paciente_id, callback) => {
     const query = "SELECT tarefa_id, titulo, detalhes, DATE_FORMAT(data, '%Y-%m-%d') as data, hora, concluida, dias_repeticao, responsavel_id, paciente_id, created_at FROM tarefas WHERE paciente_id = ?";
     db.query(query, [paciente_id], (err, results) => {
