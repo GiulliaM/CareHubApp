@@ -34,11 +34,14 @@ export default function Home({ navigation }: any) {
   async function load() {
     setLoading(true);
 
+    // Sempre busca do AsyncStorage as chaves padronizadas
     const rawUser = await AsyncStorage.getItem("usuario");
     const rawPac = await AsyncStorage.getItem("paciente");
 
     if (rawUser) setUser(JSON.parse(rawUser));
+    else setUser(null);
     if (rawPac) setPaciente(JSON.parse(rawPac));
+    else setPaciente(null);
 
     setLoading(false);
   }
