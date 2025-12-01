@@ -25,6 +25,7 @@ export default function Perfil({ navigation }: any) {
   // 🔹 Buscar dados do usuário e paciente
   const fetchProfile = useCallback(async () => {
     try {
+      // Busca usuário logado do AsyncStorage
       const meta = await getUserMeta();
 
       if (!meta?.usuario_id) {
@@ -32,7 +33,7 @@ export default function Perfil({ navigation }: any) {
         return navigation.reset({ index: 0, routes: [{ name: "Welcome" }] });
       }
 
-      // Buscar usuário
+      // Buscar usuário atualizado do backend
       const res = await api.get(`/usuarios/perfil/${meta.usuario_id}`);
       if (res && res.nome) {
         setUser({
@@ -41,6 +42,8 @@ export default function Perfil({ navigation }: any) {
           email: res.email,
           tipo: res.tipo,
         });
+        // Atualiza também o AsyncStorage
+        await AsyncStorage.setItem("usuario", JSON.stringify(res));
       } else {
         setUser(meta);
       }
@@ -49,10 +52,13 @@ export default function Perfil({ navigation }: any) {
       const pacienteRes = await api.get("/pacientes");
       if (Array.isArray(pacienteRes) && pacienteRes.length > 0) {
         setPaciente(pacienteRes[0]);
+        await AsyncStorage.setItem("paciente", JSON.stringify(pacienteRes[0]));
       } else if (pacienteRes && typeof pacienteRes === "object") {
         setPaciente(pacienteRes);
+        await AsyncStorage.setItem("paciente", JSON.stringify(pacienteRes));
       } else {
         setPaciente(null);
+        await AsyncStorage.removeItem("paciente");
       }
     } catch (err) {
       console.error(" Erro ao carregar perfil:", err);

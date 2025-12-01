@@ -1,3 +1,4 @@
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export async function saveToken(token: string) {
@@ -21,15 +22,17 @@ export async function getToken(): Promise<string | null> {
 export async function logout() {
   try {
     await AsyncStorage.removeItem("token");
+    await AsyncStorage.removeItem("usuario");
+    await AsyncStorage.removeItem("paciente");
   } catch (e) {
-    console.error("Erro ao remover token:", e);
+    console.error("Erro ao remover dados de sessão:", e);
   }
 }
 
-// Save a small user object (id, nome) alongside the token for quick access in UI
+// Salva dados do usuário logado (id, nome, tipo)
 export async function saveUserMeta(user: { usuario_id?: number; nome?: string; tipo?: string }) {
   try {
-    await AsyncStorage.setItem("user", JSON.stringify(user));
+    await AsyncStorage.setItem("usuario", JSON.stringify(user));
   } catch (e) {
     console.error("Erro ao salvar dados do usuário:", e);
   }
@@ -37,7 +40,7 @@ export async function saveUserMeta(user: { usuario_id?: number; nome?: string; t
 
 export async function getUserMeta(): Promise<{ usuario_id?: number; nome?: string; tipo?: string } | null> {
   try {
-    const raw = await AsyncStorage.getItem("user");
+    const raw = await AsyncStorage.getItem("usuario");
     if (!raw) return null;
     return JSON.parse(raw);
   } catch (e) {

@@ -44,12 +44,12 @@ export default function Login({ navigation }: any) {
         const token = res.data.token;
         const userData = res.data.usuario;
 
+        // Limpa qualquer dado antigo de usuário/paciente para evitar conflito
+        await AsyncStorage.removeItem("usuario");
+        await AsyncStorage.removeItem("paciente");
+
         // Salva token
         await saveToken(token);
-
-
-        // Limpa qualquer dado antigo de usuário para evitar conflito
-        await AsyncStorage.removeItem("user");
         // Salva dados do usuário (nome, email, id, tipo)
         await AsyncStorage.setItem("usuario", JSON.stringify(userData));
 
