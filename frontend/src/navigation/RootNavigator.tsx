@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Welcome from "../screens/Welcome";
 import Login from "../screens/Login";
 import Cadastro from "../screens/Cadastro";
+import LoadingData from "../screens/LoadingData";
 import Tabs from "./Tabs";
 import RegisterPatient from "../screens/RegisterPatient";
 import NovaTarefa from "../screens/NovaTarefa";
@@ -28,15 +29,16 @@ export default function RootNavigator() {
     (async () => {
       const token = await getToken();
       if (token) {
+        // Se tem token, vai para LoadingData para carregar todos os dados
         setTimeout(() => {
           if ((navigationRef as any).resetRoot) {
             try {
-              (navigationRef as any).resetRoot({ index: 0, routes: [{ name: "Tabs" }] });
+              (navigationRef as any).resetRoot({ index: 0, routes: [{ name: "LoadingData" }] });
             } catch (e) {
-              (navigationRef as any).navigate?.("Tabs");
+              (navigationRef as any).navigate?.("LoadingData");
             }
           } else {
-            (navigationRef as any).navigate?.("Tabs");
+            (navigationRef as any).navigate?.("LoadingData");
           }
         }, 100);
       }
@@ -50,6 +52,7 @@ export default function RootNavigator() {
         <Stack.Screen name="Welcome" component={Welcome} options={{ headerShown: false }} />
         <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
         <Stack.Screen name="Cadastro" component={Cadastro} options={{ headerShown: false }} />
+        <Stack.Screen name="LoadingData" component={LoadingData} options={{ headerShown: false }} />
         <Stack.Screen name="RegisterPatient" component={RegisterPatient} options={{ headerShown: false }} />
         <Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
         <Stack.Screen name="NovaTarefa" component={NovaTarefa} options={{ headerShown: false }} />

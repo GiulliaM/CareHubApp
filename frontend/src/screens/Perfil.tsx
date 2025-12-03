@@ -38,57 +38,62 @@ export default function Perfil({ navigation }: any) {
         temNome: !!meta?.nome,
       });
 
-      if (!meta) {
-        console.log("❌ Meta é null - fazendo logout");
+      if (!meta || !meta.usuario_id) {
+        console.log("❌ Sessão inválida - redirecionando para login");
         Alert.alert("Sessão Expirada", "Por favor, faça login novamente.");
         await logout();
         return navigation.reset({ index: 0, routes: [{ name: "Welcome" }] });
       }
 
-      if (!meta.usuario_id) {
-        console.log("❌ usuario_id não existe no meta:", meta);
-        Alert.alert("Erro de Sessão", "Dados de usuário incompletos. Faça login novamente.");
-        await logout();
-        return navigation.reset({ index: 0, routes: [{ name: "Welcome" }] });
-      }
-
       console.log("👤 Carregando perfil de:", meta.nome, "ID:", meta.usuario_id);
+      
+      // Define usuário do AsyncStorage inicialmente
+      setUser(meta);
 
       // Buscar usuário atualizado do backend
-      const res = await api.get(`/usuarios/perfil/${meta.usuario_id}`);
-      if (res && res.nome) {
-        const userData = {
-          usuario_id: res.usuario_id,
-          nome: res.nome,
-          email: res.email,
-          tipo: res.tipo,
-        };
-        setUser(userData);
-        // Atualiza também o AsyncStorage
-        await AsyncStorage.setItem("usuario", JSON.stringify(userData));
-        console.log("✅ Perfil atualizado:", userData.nome);
-      } else {
-        setUser(meta);
+      try {
+        const res = await api.get(`/usuarios/perfil/${meta.usuario_id}`);
+        if (res && res.nome) {
+          const userData = {
+            usuario_id: res.usuario_id,
+            nome: res.nome,
+            email: res.email,
+            tipo: res.tipo,
+          };
+          setUser(userData);
+          // Atualiza também o AsyncStorage
+          await AsyncStorage.setItem("usuario", JSON.stringify(userData));
+          console.log("✅ Perfil atualizado do backend:", userData.nome);
+        }
+      } catch (errPerfil) {
+        console.log("⚠️ Erro ao buscar perfil, usando cache:", errPerfil.message);
+        // Mantém usuário do AsyncStorage se API falhar
       }
 
       // Buscar paciente vinculado
-      const pacienteRes = await api.get("/pacientes");
-      if (Array.isArray(pacienteRes) && pacienteRes.length > 0) {
-        setPaciente(pacienteRes[0]);
-        await AsyncStorage.setItem("paciente", JSON.stringify(pacienteRes[0]));
-        console.log("🏥 Paciente carregado:", pacienteRes[0].nome);
-      } else if (pacienteRes && typeof pacienteRes === "object") {
-        setPaciente(pacienteRes);
-        await AsyncStorage.setItem("paciente", JSON.stringify(pacienteRes));
-        console.log("🏥 Paciente carregado:", pacienteRes.nome);
-      } else {
+      try {
+        const pacienteRes = await api.get("/pacientes");
+        if (Array.isArray(pacienteRes) && pacienteRes.length > 0) {
+          setPaciente(pacienteRes[0]);
+          await AsyncStorage.setItem("paciente", JSON.stringify(pacienteRes[0]));
+          console.log("🏥 Paciente carregado:", pacienteRes[0].nome);
+        } else if (pacienteRes && typeof pacienteRes === "object" && pacienteRes.paciente_id) {
+          setPaciente(pacienteRes);
+          await AsyncStorage.setItem("paciente", JSON.stringify(pacienteRes));
+          console.log("🏥 Paciente carregado:", pacienteRes.nome);
+        } else {
+          setPaciente(null);
+          await AsyncStorage.removeItem("paciente");
+          console.log("ℹ️ Nenhum paciente cadastrado");
+        }
+      } catch (errPaciente) {
+        console.log("⚠️ Erro ao buscar paciente:", errPaciente.message);
         setPaciente(null);
         await AsyncStorage.removeItem("paciente");
-        console.log("⚠️ Nenhum paciente vinculado");
       }
     } catch (err) {
-      console.error("❌ Erro ao carregar perfil:", err);
-      Alert.alert("Erro", "Não foi possível carregar as informações do perfil.");
+      console.error("❌ Erro crítico ao carregar perfil:", err);
+      Alert.alert("Erro", "Não foi possível carregar as informações. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -161,21 +166,38 @@ export default function Perfil({ navigation }: any) {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Paciente Vinculado</Text>
           </View>
 
-          <Text style={styles.text}>
-            <Text style={styles.label}>Nome: </Text>{paciente?.nome || "—"}
-          </Text>
+          {paciente ? (
+            <>
+              <Text style={styles.text}>
+                <Text style={styles.label}>Nome: </Text>{paciente?.nome || "—"}
+              </Text>
 
-          <Text style={styles.text}>
-            <Text style={styles.label}>Idade: </Text>{paciente?.idade || "—"}
-          </Text>
+              <Text style={styles.text}>
+                <Text style={styles.label}>Idade: </Text>{paciente?.idade || "—"}
+              </Text>
 
-          <TouchableOpacity
-            style={[styles.btnEdit, { backgroundColor: colors.primary }]}
-            onPress={() => navigation.navigate("EditPatient", { paciente })}
-          >
-            <Ionicons name="create-outline" size={18} color="#fff" />
-            <Text style={styles.btnEditText}>Editar Paciente</Text>
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.btnEdit, { backgroundColor: colors.primary }]}
+                onPress={() => navigation.navigate("EditPatient", { paciente })}
+              >
+                <Ionicons name="create-outline" size={18} color="#fff" />
+                <Text style={styles.btnEditText}>Editar Paciente</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <Text style={[styles.infoText, { color: colors.muted }]}>
+                Você ainda não cadastrou um paciente.
+              </Text>
+              <TouchableOpacity
+                style={[styles.btnEdit, { backgroundColor: colors.primary }]}
+                onPress={() => navigation.navigate("RegisterPatient")}
+              >
+                <Ionicons name="add-circle-outline" size={18} color="#fff" />
+                <Text style={styles.btnEditText}>Cadastrar Paciente</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {/* Tema */}
@@ -275,6 +297,13 @@ const styles = StyleSheet.create({
   label: {
     fontWeight: "700",
     color: "#0B3B5A",
+  },
+
+  infoText: {
+    fontSize: 15,
+    fontStyle: "italic",
+    marginBottom: 12,
+    textAlign: "center",
   },
 
   btnEdit: {
