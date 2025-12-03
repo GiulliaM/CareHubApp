@@ -52,25 +52,18 @@ export default function Login({ navigation }: any) {
         }
 
         try {
-          // LIMPEZA SELETIVA: Remove apenas chaves de autenticação antigas
           const keysToRemove = ["usuario", "paciente", "token", "user"];
-          console.log("🗑️ Limpando chaves antigas:", keysToRemove);
+          console.log("Clearing old session keys");
           await AsyncStorage.multiRemove(keysToRemove);
         } catch (e) {
-          console.log("⚠️ Erro ao limpar AsyncStorage:", e);
+          console.log("Error clearing AsyncStorage:", e);
         }
 
         // Salva novos dados do usuário
         await saveToken(token);
         await AsyncStorage.setItem("usuario", JSON.stringify(userData));
 
-        console.log("✅ Login bem-sucedido:", userData.nome);
-        console.log("📝 Dados do usuário salvos:", {
-          usuario_id: userData.usuario_id,
-          nome: userData.nome,
-          email: userData.email,
-          tipo: userData.tipo,
-        });
+        console.log("Login successful:", userData.nome);
 
         // Redirecionar para tela de loading que carregará todos os dados
         navigation.reset({ index: 0, routes: [{ name: "LoadingData" }] });
@@ -78,15 +71,15 @@ export default function Login({ navigation }: any) {
         Alert.alert("Erro", "Credenciais inválidas.");
       }
     } catch (error: any) {
-      console.log("❌ Erro no login:", error);
+      console.log("Login error:", error);
       if (error.response) {
-        console.log("📡 Resposta do servidor:", error.response.data);
-        Alert.alert("Erro", error.response.data.message || "Credenciais inválidas.");
+        console.log("Server response:", error.response.data);
+        Alert.alert("Erro", error.response.data?.message || "Credenciais inválidas.");
       } else if (error.request) {
-        console.log("📡 Sem resposta do servidor");
+        console.log("No server response");
         Alert.alert("Erro", "Não foi possível conectar ao servidor. Verifique sua conexão.");
       } else {
-        console.log("❌ Erro:", error.message);
+        console.log("Error:", error.message);
         Alert.alert("Erro", "Ocorreu um erro inesperado.");
       }
     } finally {

@@ -56,7 +56,7 @@ export default function Medicamentos({ navigation }: any) {
 
         // Se não tem paciente no AsyncStorage, tenta buscar da API
         if (!paciente?.paciente_id) {
-          console.log("💊 Paciente não encontrado, buscando da API...");
+          console.log("Patient not found, fetching from API");
           try {
             const pacienteRes = await api.get("/pacientes");
             if (Array.isArray(pacienteRes) && pacienteRes.length > 0) {

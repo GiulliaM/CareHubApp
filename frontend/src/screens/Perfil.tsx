@@ -29,25 +29,19 @@ export default function Perfil({ navigation }: any) {
     try {
       setLoading(true);
       
-      // Busca usuário logado do AsyncStorage
       const meta = await getUserMeta();
       
-      console.log("🔍 Debug AsyncStorage:", {
-        metaCompleto: meta,
-        temUsuarioId: !!meta?.usuario_id,
-        temNome: !!meta?.nome,
-      });
+      console.log("Loading user data from storage");
 
       if (!meta || !meta.usuario_id) {
-        console.log("❌ Sessão inválida - redirecionando para login");
+        console.log("Invalid session, redirecting to login");
         Alert.alert("Sessão Expirada", "Por favor, faça login novamente.");
         await logout();
         return navigation.reset({ index: 0, routes: [{ name: "Welcome" }] });
       }
 
-      console.log("👤 Carregando perfil de:", meta.nome, "ID:", meta.usuario_id);
+      console.log("Loading profile for user:", meta.nome);
       
-      // Define usuário do AsyncStorage inicialmente
       setUser(meta);
 
       // Buscar usuário atualizado do backend
@@ -61,13 +55,11 @@ export default function Perfil({ navigation }: any) {
             tipo: res.tipo,
           };
           setUser(userData);
-          // Atualiza também o AsyncStorage
           await AsyncStorage.setItem("usuario", JSON.stringify(userData));
-          console.log("✅ Perfil atualizado do backend:", userData.nome);
+          console.log("Profile updated from backend");
         }
-      } catch (errPerfil) {
-        console.log("⚠️ Erro ao buscar perfil, usando cache:", errPerfil.message);
-        // Mantém usuário do AsyncStorage se API falhar
+        } catch (errPerfil) {
+          console.log("Error fetching profile, using cached data");
       }
 
       // Buscar paciente vinculado
@@ -76,23 +68,23 @@ export default function Perfil({ navigation }: any) {
         if (Array.isArray(pacienteRes) && pacienteRes.length > 0) {
           setPaciente(pacienteRes[0]);
           await AsyncStorage.setItem("paciente", JSON.stringify(pacienteRes[0]));
-          console.log("🏥 Paciente carregado:", pacienteRes[0].nome);
+          console.log("Patient data loaded");
         } else if (pacienteRes && typeof pacienteRes === "object" && pacienteRes.paciente_id) {
           setPaciente(pacienteRes);
           await AsyncStorage.setItem("paciente", JSON.stringify(pacienteRes));
-          console.log("🏥 Paciente carregado:", pacienteRes.nome);
+          console.log("Patient data loaded");
         } else {
           setPaciente(null);
           await AsyncStorage.removeItem("paciente");
-          console.log("ℹ️ Nenhum paciente cadastrado");
+          console.log("No patient registered");
         }
       } catch (errPaciente) {
-        console.log("⚠️ Erro ao buscar paciente:", errPaciente.message);
+        console.log("Error fetching patient data");
         setPaciente(null);
         await AsyncStorage.removeItem("paciente");
       }
     } catch (err) {
-      console.error("❌ Erro crítico ao carregar perfil:", err);
+      console.error("Critical error loading profile:", err);
       Alert.alert("Erro", "Não foi possível carregar as informações. Tente novamente.");
     } finally {
       setLoading(false);

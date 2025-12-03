@@ -48,7 +48,7 @@ export default function Cadastro({ navigation }: any) {
           // Salva TODOS os dados do usuário, incluindo email
           const userData = { usuario_id, nome, email, tipo };
           await AsyncStorage.setItem("usuario", JSON.stringify(userData));
-          console.log("✅ Cadastro realizado:", userData);
+          console.log("Registration completed:", userData);
           // go to patient registration so patient is linked to this user
           navigation.reset({ index: 0, routes: [{ name: 'RegisterPatient' }] });
           return;
