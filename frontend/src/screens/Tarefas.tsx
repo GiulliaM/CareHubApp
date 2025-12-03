@@ -36,13 +36,28 @@ export default function Tarefas({ navigation }: any) {
   const fetchTarefas = useCallback(async () => {
     setLoading(true);
     try {
-      const raw = await AsyncStorage.getItem("paciente");
-      const paciente = raw ? JSON.parse(raw) : null;
+      let raw = await AsyncStorage.getItem("paciente");
+      let paciente = raw ? JSON.parse(raw) : null;
+
+      // Se não tem paciente no AsyncStorage, tenta buscar da API
+      if (!paciente?.paciente_id) {
+        console.log("📋 Paciente não encontrado, buscando da API...");
+        try {
+          const pacienteRes = await api.get("/pacientes");
+          if (Array.isArray(pacienteRes) && pacienteRes.length > 0) {
+            paciente = pacienteRes[0];
+            await AsyncStorage.setItem("paciente", JSON.stringify(paciente));
+            console.log("✅ Paciente carregado da API:", paciente.nome);
+          }
+        } catch (errApi) {
+          console.log("⚠️ Erro ao buscar paciente da API");
+        }
+      }
 
       console.log("📋 Paciente carregado:", paciente);
 
       if (!paciente?.paciente_id) {
-        console.log("⚠️ Nenhum paciente encontrado no AsyncStorage");
+        console.log("⚠️ Nenhum paciente encontrado");
         setTarefas([]);
         setLoading(false);
         return;

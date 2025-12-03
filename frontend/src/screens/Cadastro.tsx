@@ -10,9 +10,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "../config/api";
 import cores from "../config/cores";
-import { saveToken, saveUserMeta } from '../utils/auth';
+import { saveToken } from '../utils/auth';
 import { useTheme } from '../context/ThemeContext';
 
 export default function Cadastro({ navigation }: any) {
@@ -42,9 +43,12 @@ export default function Cadastro({ navigation }: any) {
         // backend returns token and usuario_id
         const token = res.data?.token;
         const usuario_id = res.data?.usuario_id;
-        if (token) {
+        if (token && usuario_id) {
           await saveToken(token);
-          await saveUserMeta({ usuario_id, nome, tipo });
+          // Salva TODOS os dados do usuário, incluindo email
+          const userData = { usuario_id, nome, email, tipo };
+          await AsyncStorage.setItem("usuario", JSON.stringify(userData));
+          console.log("✅ Cadastro realizado:", userData);
           // go to patient registration so patient is linked to this user
           navigation.reset({ index: 0, routes: [{ name: 'RegisterPatient' }] });
           return;

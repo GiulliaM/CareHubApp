@@ -58,11 +58,33 @@ export default function Home({ navigation }: any) {
       
       if (rawPac) {
         const pacData = JSON.parse(rawPac);
-        console.log("🏥 Paciente carregado:", pacData.nome);
+        console.log("🏥 Paciente carregado do AsyncStorage:", pacData.nome);
         setPaciente(pacData);
       } else {
-        console.log("⚠️ Nenhum paciente no AsyncStorage");
-        setPaciente(null);
+        console.log("⚠️ Nenhum paciente no AsyncStorage, buscando da API...");
+        // Se não tem paciente no AsyncStorage, busca da API
+        if (rawUser) {
+          try {
+            const userData = JSON.parse(rawUser);
+            if (userData.usuario_id) {
+              const pacienteRes = await api.get("/pacientes");
+              if (Array.isArray(pacienteRes) && pacienteRes.length > 0) {
+                const pacienteData = pacienteRes[0];
+                await AsyncStorage.setItem("paciente", JSON.stringify(pacienteData));
+                setPaciente(pacienteData);
+                console.log("✅ Paciente carregado da API:", pacienteData.nome);
+              } else {
+                console.log("ℹ️ Nenhum paciente cadastrado para este usuário");
+                setPaciente(null);
+              }
+            }
+          } catch (errApi) {
+            console.log("⚠️ Erro ao buscar paciente da API:", errApi);
+            setPaciente(null);
+          }
+        } else {
+          setPaciente(null);
+        }
       }
     } catch (error) {
       console.error("❌ Erro ao carregar dados:", error);

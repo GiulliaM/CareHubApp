@@ -44,29 +44,36 @@ export default function Login({ navigation }: any) {
         const token = res.data.token;
         const userData = res.data.usuario;
 
+        // Validar que userData tem usuario_id
+        if (!userData.usuario_id) {
+          console.error("❌ Resposta do servidor sem usuario_id:", userData);
+          Alert.alert("Erro", "Dados de login inválidos. Tente novamente.");
+          return;
+        }
+
         try {
-          // LIMPEZA COMPLETA: Remove todos os dados antigos
-          await AsyncStorage.multiRemove(["usuario", "paciente", "token"]);
+          // LIMPEZA SELETIVA: Remove apenas chaves de autenticação antigas
+          const keysToRemove = ["usuario", "paciente", "token", "user"];
+          console.log("🗑️ Limpando chaves antigas:", keysToRemove);
+          await AsyncStorage.multiRemove(keysToRemove);
         } catch (e) {
           console.log("⚠️ Erro ao limpar AsyncStorage:", e);
         }
 
-        // Salva novos dados
+        // Salva novos dados do usuário
         await saveToken(token);
         await AsyncStorage.setItem("usuario", JSON.stringify(userData));
 
         console.log("✅ Login bem-sucedido:", userData.nome);
-        console.log("📝 Dados salvos no AsyncStorage:", {
+        console.log("📝 Dados do usuário salvos:", {
           usuario_id: userData.usuario_id,
           nome: userData.nome,
           email: userData.email,
           tipo: userData.tipo,
         });
 
-        Alert.alert("Bem-vindo!", "Login realizado com sucesso.");
-
-        // Resetar navegação para Tabs
-        navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
+        // Redirecionar para tela de loading que carregará todos os dados
+        navigation.reset({ index: 0, routes: [{ name: "LoadingData" }] });
       } else {
         Alert.alert("Erro", "Credenciais inválidas.");
       }

@@ -51,12 +51,28 @@ export default function Medicamentos({ navigation }: any) {
       try {
         setLoading(true);
 
-        const rawPaciente = await AsyncStorage.getItem("paciente");
-        const paciente = rawPaciente ? JSON.parse(rawPaciente) : null;
+        let rawPaciente = await AsyncStorage.getItem("paciente");
+        let paciente = rawPaciente ? JSON.parse(rawPaciente) : null;
+
+        // Se não tem paciente no AsyncStorage, tenta buscar da API
+        if (!paciente?.paciente_id) {
+          console.log("💊 Paciente não encontrado, buscando da API...");
+          try {
+            const pacienteRes = await api.get("/pacientes");
+            if (Array.isArray(pacienteRes) && pacienteRes.length > 0) {
+              paciente = pacienteRes[0];
+              await AsyncStorage.setItem("paciente", JSON.stringify(paciente));
+              console.log("✅ Paciente carregado da API:", paciente.nome);
+            }
+          } catch (errApi) {
+            console.log("⚠️ Erro ao buscar paciente da API");
+          }
+        }
 
         if (!paciente?.paciente_id) {
-          Alert.alert("Aviso", "Nenhum paciente vinculado encontrado.");
+          console.log("ℹ️ Nenhum paciente cadastrado ainda");
           setMedicamentos([]);
+          setLoading(false);
           return;
         }
 
