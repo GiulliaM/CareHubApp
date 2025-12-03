@@ -35,16 +35,15 @@ export default function Home({ navigation }: any) {
     setLoading(true);
 
     try {
-      // DEBUG: Verificar TODAS as chaves do AsyncStorage
       const allKeys = await AsyncStorage.getAllKeys();
-      console.log("🔑 Todas as chaves no AsyncStorage:", allKeys);
+      console.log("AsyncStorage keys:", allKeys);
       
       // Sempre busca do AsyncStorage as chaves padronizadas
       const rawUser = await AsyncStorage.getItem("usuario");
       const rawPac = await AsyncStorage.getItem("paciente");
 
-      console.log("📦 Raw usuario:", rawUser);
-      console.log("📦 Raw paciente:", rawPac);
+      console.log("Loading user data");
+      console.log("Loading patient data");
 
       if (rawUser) {
         const userData = JSON.parse(rawUser);
@@ -72,7 +71,7 @@ export default function Home({ navigation }: any) {
                 const pacienteData = pacienteRes[0];
                 await AsyncStorage.setItem("paciente", JSON.stringify(pacienteData));
                 setPaciente(pacienteData);
-                console.log("✅ Paciente carregado da API:", pacienteData.nome);
+                console.log("Patient loaded from API:", pacienteData.nome);
               } else {
                 console.log("ℹ️ Nenhum paciente cadastrado para este usuário");
                 setPaciente(null);
@@ -151,7 +150,7 @@ export default function Home({ navigation }: any) {
   useFocusEffect(
     useCallback(() => {
       // Força reload sempre que a tela recebe foco
-      console.log("🔄 Home recebeu foco - recarregando dados");
+      console.log("Home screen focused, reloading data");
       load();
     }, [])
   );

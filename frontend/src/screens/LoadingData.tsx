@@ -27,22 +27,20 @@ export default function LoadingData({ navigation }: any) {
 
   async function loadAllData() {
     try {
-      // Passo 1: Verificar usuário (20%)
-      setMessage("Verificando autenticação...");
+      setMessage("Verificando autenticacao...");
       setProgress(0.2);
       await new Promise(resolve => setTimeout(resolve, 300));
 
       const rawUser = await AsyncStorage.getItem("usuario");
       if (!rawUser) {
-        console.log("❌ Usuário não encontrado, voltando para login");
+        console.log("User not found, going back to login");
         navigation.reset({ index: 0, routes: [{ name: "Welcome" }] });
         return;
       }
 
       const userData = JSON.parse(rawUser);
-      console.log("✅ Usuário autenticado:", userData.nome);
+      console.log("User authenticated:", userData.nome);
 
-      // Passo 2: Buscar paciente vinculado (50%)
       setMessage("Carregando dados do paciente...");
       setProgress(0.5);
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -53,15 +51,14 @@ export default function LoadingData({ navigation }: any) {
         if (Array.isArray(pacienteRes) && pacienteRes.length > 0) {
           paciente = pacienteRes[0];
           await AsyncStorage.setItem("paciente", JSON.stringify(paciente));
-          console.log("✅ Paciente carregado:", paciente.nome);
+          console.log("Patient loaded:", paciente.nome);
         } else {
-          console.log("ℹ️ Nenhum paciente cadastrado");
+          console.log("No patient registered");
         }
       } catch (err) {
-        console.log("⚠️ Erro ao buscar paciente:", err);
+        console.log("Error fetching patient:", err);
       }
 
-      // Passo 3: Pré-carregar tarefas (75%)
       if (paciente?.paciente_id) {
         setMessage("Sincronizando tarefas...");
         setProgress(0.75);
@@ -69,13 +66,12 @@ export default function LoadingData({ navigation }: any) {
 
         try {
           await api.get(`/tarefas?paciente_id=${paciente.paciente_id}`);
-          console.log("✅ Tarefas sincronizadas");
+          console.log("Tasks synchronized");
         } catch (err) {
-          console.log("⚠️ Erro ao carregar tarefas:", err);
+          console.log("Error loading tasks:", err);
         }
       }
 
-      // Passo 4: Pré-carregar medicamentos (90%)
       if (paciente?.paciente_id) {
         setMessage("Sincronizando medicamentos...");
         setProgress(0.9);
@@ -83,18 +79,17 @@ export default function LoadingData({ navigation }: any) {
 
         try {
           await api.get(`/medicamentos/${paciente.paciente_id}`);
-          console.log("✅ Medicamentos sincronizados");
+          console.log("Medications synchronized");
         } catch (err) {
-          console.log("⚠️ Erro ao carregar medicamentos:", err);
+          console.log("Error loading medications:", err);
         }
       }
 
-      // Passo 5: Finalizar (100%)
       setMessage("Tudo pronto!");
       setProgress(1);
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      console.log("🎉 Carregamento completo!");
+      console.log("Loading complete");
 
       // Navegar para a tela principal
       navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
