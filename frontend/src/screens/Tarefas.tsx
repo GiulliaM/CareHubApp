@@ -39,24 +39,39 @@ export default function Tarefas({ navigation }: any) {
       const raw = await AsyncStorage.getItem("paciente");
       const paciente = raw ? JSON.parse(raw) : null;
 
+      console.log("📋 Paciente carregado:", paciente);
+
       if (!paciente?.paciente_id) {
+        console.log("⚠️ Nenhum paciente encontrado no AsyncStorage");
         setTarefas([]);
+        setLoading(false);
         return;
       }
 
+      console.log("📋 Buscando tarefas para paciente_id:", paciente.paciente_id);
+
       // apiClient retorna res.data diretamente, por isso aqui pegamos "data"
       const data = await api.get(`/tarefas?paciente_id=${paciente.paciente_id}`);
-      console.log("Tarefas da API:", data);
+      console.log("✅ Tarefas da API:", data);
 
-      const tarefasCorrigidas = (data || []).map((t: any) => ({
+      if (!Array.isArray(data)) {
+        console.log("⚠️ Resposta da API não é um array:", data);
+        setTarefas([]);
+        setLoading(false);
+        return;
+      }
+
+      const tarefasCorrigidas = data.map((t: any) => ({
         ...t,
         data: normalizar(t.data),
         concluida: t.concluida === 1 ? 1 : 0,
       }));
 
+      console.log("✅ Tarefas carregadas:", tarefasCorrigidas.length);
       setTarefas(tarefasCorrigidas);
     } catch (e) {
-      console.log("Erro ao carregar tarefas:", e);
+      console.log("❌ Erro ao carregar tarefas:", e);
+      setTarefas([]);
     } finally {
       setLoading(false);
     }

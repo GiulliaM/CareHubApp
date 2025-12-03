@@ -21,11 +21,11 @@ export async function getToken(): Promise<string | null> {
 
 export async function logout() {
   try {
-    await AsyncStorage.removeItem("token");
-    await AsyncStorage.removeItem("usuario");
-    await AsyncStorage.removeItem("paciente");
+    // Remove todos os dados de sessão de uma vez
+    await AsyncStorage.multiRemove(["token", "usuario", "paciente"]);
+    console.log("✅ Logout realizado - AsyncStorage limpo");
   } catch (e) {
-    console.error("Erro ao remover dados de sessão:", e);
+    console.error("❌ Erro ao remover dados de sessão:", e);
   }
 }
 

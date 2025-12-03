@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,30 +21,52 @@ import api from "../utils/apiClient";
 export default function Perfil({ navigation }: any) {
   const [user, setUser] = useState<{ usuario_id?: number; nome?: string; email?: string; tipo?: string } | null>(null);
   const [paciente, setPaciente] = useState<{ paciente_id?: number; nome?: string; idade?: string } | null>(null);
+  const [loading, setLoading] = useState(true);
   const { colors, themeName, setThemeName } = useTheme();
 
   // 🔹 Buscar dados do usuário e paciente
   const fetchProfile = useCallback(async () => {
     try {
+      setLoading(true);
+      
       // Busca usuário logado do AsyncStorage
       const meta = await getUserMeta();
+      
+      console.log("🔍 Debug AsyncStorage:", {
+        metaCompleto: meta,
+        temUsuarioId: !!meta?.usuario_id,
+        temNome: !!meta?.nome,
+      });
 
-      if (!meta?.usuario_id) {
-        Alert.alert("Erro", "Usuário não encontrado. Faça login novamente.");
+      if (!meta) {
+        console.log("❌ Meta é null - fazendo logout");
+        Alert.alert("Sessão Expirada", "Por favor, faça login novamente.");
+        await logout();
         return navigation.reset({ index: 0, routes: [{ name: "Welcome" }] });
       }
+
+      if (!meta.usuario_id) {
+        console.log("❌ usuario_id não existe no meta:", meta);
+        Alert.alert("Erro de Sessão", "Dados de usuário incompletos. Faça login novamente.");
+        await logout();
+        return navigation.reset({ index: 0, routes: [{ name: "Welcome" }] });
+      }
+
+      console.log("👤 Carregando perfil de:", meta.nome, "ID:", meta.usuario_id);
 
       // Buscar usuário atualizado do backend
       const res = await api.get(`/usuarios/perfil/${meta.usuario_id}`);
       if (res && res.nome) {
-        setUser({
+        const userData = {
           usuario_id: res.usuario_id,
           nome: res.nome,
           email: res.email,
           tipo: res.tipo,
-        });
+        };
+        setUser(userData);
         // Atualiza também o AsyncStorage
-        await AsyncStorage.setItem("usuario", JSON.stringify(res));
+        await AsyncStorage.setItem("usuario", JSON.stringify(userData));
+        console.log("✅ Perfil atualizado:", userData.nome);
       } else {
         setUser(meta);
       }
@@ -53,16 +76,21 @@ export default function Perfil({ navigation }: any) {
       if (Array.isArray(pacienteRes) && pacienteRes.length > 0) {
         setPaciente(pacienteRes[0]);
         await AsyncStorage.setItem("paciente", JSON.stringify(pacienteRes[0]));
+        console.log("🏥 Paciente carregado:", pacienteRes[0].nome);
       } else if (pacienteRes && typeof pacienteRes === "object") {
         setPaciente(pacienteRes);
         await AsyncStorage.setItem("paciente", JSON.stringify(pacienteRes));
+        console.log("🏥 Paciente carregado:", pacienteRes.nome);
       } else {
         setPaciente(null);
         await AsyncStorage.removeItem("paciente");
+        console.log("⚠️ Nenhum paciente vinculado");
       }
     } catch (err) {
-      console.error(" Erro ao carregar perfil:", err);
+      console.error("❌ Erro ao carregar perfil:", err);
       Alert.alert("Erro", "Não foi possível carregar as informações do perfil.");
+    } finally {
+      setLoading(false);
     }
   }, [navigation]);
 
@@ -89,8 +117,14 @@ export default function Perfil({ navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={[styles.title, { color: colors.primary }]}>Meu Perfil</Text>
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={{ marginTop: 10, color: colors.text }}>Carregando perfil...</Text>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <Text style={[styles.title, { color: colors.primary }]}>Meu Perfil</Text>
 
         {/* Cartão do Usuário */}
         <View style={[styles.card, { backgroundColor: colors.card || "#fff" }]}>
@@ -191,6 +225,7 @@ export default function Perfil({ navigation }: any) {
           <Text style={styles.logoutText}>Sair da Conta</Text>
         </TouchableOpacity>
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
