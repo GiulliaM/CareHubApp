@@ -34,14 +34,41 @@ export default function Home({ navigation }: any) {
   async function load() {
     setLoading(true);
 
-    // Sempre busca do AsyncStorage as chaves padronizadas
-    const rawUser = await AsyncStorage.getItem("usuario");
-    const rawPac = await AsyncStorage.getItem("paciente");
+    try {
+      // DEBUG: Verificar TODAS as chaves do AsyncStorage
+      const allKeys = await AsyncStorage.getAllKeys();
+      console.log("🔑 Todas as chaves no AsyncStorage:", allKeys);
+      
+      // Sempre busca do AsyncStorage as chaves padronizadas
+      const rawUser = await AsyncStorage.getItem("usuario");
+      const rawPac = await AsyncStorage.getItem("paciente");
 
-    if (rawUser) setUser(JSON.parse(rawUser));
-    else setUser(null);
-    if (rawPac) setPaciente(JSON.parse(rawPac));
-    else setPaciente(null);
+      console.log("📦 Raw usuario:", rawUser);
+      console.log("📦 Raw paciente:", rawPac);
+
+      if (rawUser) {
+        const userData = JSON.parse(rawUser);
+        console.log("👤 Usuário carregado:", userData.nome);
+        console.log("🆔 usuario_id:", userData.usuario_id);
+        setUser(userData);
+      } else {
+        console.log("⚠️ Nenhum usuário no AsyncStorage");
+        setUser(null);
+      }
+      
+      if (rawPac) {
+        const pacData = JSON.parse(rawPac);
+        console.log("🏥 Paciente carregado:", pacData.nome);
+        setPaciente(pacData);
+      } else {
+        console.log("⚠️ Nenhum paciente no AsyncStorage");
+        setPaciente(null);
+      }
+    } catch (error) {
+      console.error("❌ Erro ao carregar dados:", error);
+      setUser(null);
+      setPaciente(null);
+    }
 
     setLoading(false);
   }
@@ -101,6 +128,8 @@ export default function Home({ navigation }: any) {
 
   useFocusEffect(
     useCallback(() => {
+      // Força reload sempre que a tela recebe foco
+      console.log("🔄 Home recebeu foco - recarregando dados");
       load();
     }, [])
   );

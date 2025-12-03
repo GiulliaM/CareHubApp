@@ -44,14 +44,24 @@ export default function Login({ navigation }: any) {
         const token = res.data.token;
         const userData = res.data.usuario;
 
-        // Limpa qualquer dado antigo de usuário/paciente para evitar conflito
-        await AsyncStorage.removeItem("usuario");
-        await AsyncStorage.removeItem("paciente");
+        try {
+          // LIMPEZA COMPLETA: Remove todos os dados antigos
+          await AsyncStorage.multiRemove(["usuario", "paciente", "token"]);
+        } catch (e) {
+          console.log("⚠️ Erro ao limpar AsyncStorage:", e);
+        }
 
-        // Salva token
+        // Salva novos dados
         await saveToken(token);
-        // Salva dados do usuário (nome, email, id, tipo)
         await AsyncStorage.setItem("usuario", JSON.stringify(userData));
+
+        console.log("✅ Login bem-sucedido:", userData.nome);
+        console.log("📝 Dados salvos no AsyncStorage:", {
+          usuario_id: userData.usuario_id,
+          nome: userData.nome,
+          email: userData.email,
+          tipo: userData.tipo,
+        });
 
         Alert.alert("Bem-vindo!", "Login realizado com sucesso.");
 
@@ -60,9 +70,18 @@ export default function Login({ navigation }: any) {
       } else {
         Alert.alert("Erro", "Credenciais inválidas.");
       }
-    } catch (error) {
-      console.log(error);
-      Alert.alert("Erro", "Não foi possível realizar o login. Verifique sua conexão.");
+    } catch (error: any) {
+      console.log("❌ Erro no login:", error);
+      if (error.response) {
+        console.log("📡 Resposta do servidor:", error.response.data);
+        Alert.alert("Erro", error.response.data.message || "Credenciais inválidas.");
+      } else if (error.request) {
+        console.log("📡 Sem resposta do servidor");
+        Alert.alert("Erro", "Não foi possível conectar ao servidor. Verifique sua conexão.");
+      } else {
+        console.log("❌ Erro:", error.message);
+        Alert.alert("Erro", "Ocorreu um erro inesperado.");
+      }
     } finally {
       setLoading(false);
     }

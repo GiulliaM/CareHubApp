@@ -2,11 +2,11 @@
   "name": "carehub-backend",
   "version": "1.0.0",
   "description": "API do CareHub",
-  "main": "dist/index.js",
+  "main": "src/server.js",
+  "type": "module",
   "scripts": {
-    "build": "npx tsc",
-    "start": "node dist/index.js",
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts"
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
   },
   "keywords": [],
   "author": "",
