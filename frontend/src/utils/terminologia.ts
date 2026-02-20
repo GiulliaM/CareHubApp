@@ -1,6 +1,6 @@
 /**
  * Retorna o termo para "paciente" conforme o tipo de usuario.
- * familiar -> "Ente Querido"
+// familiar vira "Ente Querido" (só pra ficar mais bonitinho na tela, rs)
  * cuidador -> "Pessoa Cuidada"
  */
 export function termoPaciente(tipoUsuario?: string): string {

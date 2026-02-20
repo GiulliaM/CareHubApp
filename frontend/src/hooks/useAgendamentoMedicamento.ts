@@ -1,3 +1,5 @@
+
+// Hook pra agendar remédio, porque ninguém merece esquecer
 import { useState } from 'react';
 import { generateScheduleTimes } from '../utils/agendamentoMedicamento';
 

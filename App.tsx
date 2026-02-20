@@ -1,3 +1,5 @@
+
+// App principal do CareHub, onde tudo começa (tipo o chefão do game)
 import { LogBox } from "react-native";
 LogBox.ignoreLogs(["Require cycle:"]);
 

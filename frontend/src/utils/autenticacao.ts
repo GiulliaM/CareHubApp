@@ -1,4 +1,6 @@
 
+// Funções pra login, logout, guardar token, essas coisas de autenticação, usando AsyncStorage
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export async function salvarToken(token: string) {

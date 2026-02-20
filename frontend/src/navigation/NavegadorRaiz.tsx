@@ -1,3 +1,5 @@
+
+// Navegador raiz do app, tipo o GPS que leva pra cada tela
 import React, { useEffect, useState } from "react";
 import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { View, ActivityIndicator } from "react-native";

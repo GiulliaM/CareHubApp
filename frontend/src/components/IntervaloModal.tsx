@@ -1,3 +1,5 @@
+
+// Modal pra escolher intervalo dos horários, tipo de quanto em quanto tempo toma o remédio
 import React, { useState } from 'react';
 import {
   Modal,
