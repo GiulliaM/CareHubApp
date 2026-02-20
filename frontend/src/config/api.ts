@@ -1,3 +1,5 @@
+
+// Configuração da API base pro frontend falar com o backend (tipo telefone sem fio, rs)
 import axios from 'axios';
 
 export const API_URL = 'http://163.245.203.21:3000/api';

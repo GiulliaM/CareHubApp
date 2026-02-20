@@ -2,9 +2,7 @@
  * Serviço de notificações locais para lembretes de tarefas.
  * Som: use o arquivo em assets/sounds/notificacao.mp3 (veja README na pasta).
  */
-
-import * as Notifications from "expo-notifications";
-import { Platform } from "react-native";
+// Serviço pra mandar notificação no celular avisando das tarefas, tipo "ei, não esquece!"
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const CANAL_ID = "carehub-lembretes";

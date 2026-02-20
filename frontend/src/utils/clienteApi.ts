@@ -14,7 +14,7 @@ const comAutenticacao = async (config = {}) => {
   return { ...(config || {}), headers };
 };
 
-// Funções com async/await para evitar interceptores async
+// Funções usando async/await pra não dar ruim com interceptor async, rs
 export default {
   get: async (url: string, config?: any) => {
     const cfg = await comAutenticacao(config);

@@ -1,4 +1,4 @@
-// Arquivo: index.ts (na raiz do projeto)
+// Arquivo principal do projeto, é tipo o portão de entrada, rs
 
 import { registerRootComponent } from 'expo';
 import 'expo/AppEntry'; // Importante para o Expo funcionar

@@ -1,3 +1,5 @@
+
+// Funções pra mexer com datas, porque ninguém merece fazer isso na mão
 // frontend/src/ferramentas/logicaData.ts
 
 import { format, addDays, subDays } from 'date-fns';

@@ -34,7 +34,7 @@ export default function Abas() {
             elevation: 10,
             height: 60,
             paddingBottom: 8,
-            paddingTop: 8,
+        // Navegação por abas do app, tipo menu de restaurante, cada aba é um prato rs
           },
           tabBarIcon: ({
             color,

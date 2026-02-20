@@ -1,13 +1,7 @@
-/**
- * Utilitários para agendamento inteligente de medicamentos
- */
+// Funções pra ajudar a lidar com agendamento de remédio, tipo, pra não se perder nos horários rs
 
-/**
- * Gera uma lista de horários baseado em um horário inicial e intervalo
- * @param startTime - Horário inicial no formato "HH:mm" (ex: "08:00")
- * @param intervalHours - Intervalo em horas (4, 6, 8 ou 12)
- * @returns Array de horários no formato "HH:mm"
- */
+// Faz uma lista de horários a partir de um horário inicial e de quanto em quanto tempo tem que tomar
+// Exemplo: começa 08:00, de 6 em 6h, vai dar 08:00, 14:00, 20:00, etc
 export function generateScheduleTimes(
   startTime: string,
   intervalHours: number
@@ -15,7 +9,7 @@ export function generateScheduleTimes(
   const horarios: string[] = [];
   const [startHour, startMinute] = startTime.split(":").map(Number);
 
-  // Calcular quantas doses cabem em 24h
+  // Vê quantas vezes vai tomar no dia
   const numDoses = 24 / intervalHours;
 
   for (let i = 0; i < numDoses; i++) {
@@ -49,19 +43,19 @@ export function isActiveMedication(
 
   const dataInicio = new Date(medicamento.inicio);
 
-  // Se ainda não começou
+  // Se ainda não começou, nem adianta mostrar
   if (dataCheck < dataInicio) return false;
 
-  // Se é uso contínuo, está sempre ativo após início
+  // Se for uso continuo, depois que começa já era, tá sempre ativo
   if (medicamento.uso_continuo) return true;
 
-  // Se tem data de fim, verificar se ainda não passou
+  // Se tem data de fim, só mostra se ainda não passou da data
   if (medicamento.data_fim) {
     const dataFim = new Date(medicamento.data_fim);
     return dataCheck <= dataFim;
   }
 
-  // Se tem duração em dias
+  // Se tem duração em dias, calcula até quando vai
   if (medicamento.duracao_days) {
     const dataFim = new Date(dataInicio);
     dataFim.setDate(dataFim.getDate() + medicamento.duracao_days);
@@ -71,12 +65,7 @@ export function isActiveMedication(
   return true;
 }
 
-/**
- * Filtra medicamentos ativos para um dia específico
- * @param medicamentos - Array de medicamentos
- * @param data - Data para filtrar (formato YYYY-MM-DD ou Date)
- * @returns Array de medicamentos ativos
- */
+// Filtra só os remédios que tão ativos naquele dia
 export function getActiveMedicationsForDate(
   medicamentos: any[],
   data: string | Date = new Date()
@@ -84,17 +73,12 @@ export function getActiveMedicationsForDate(
   return medicamentos.filter((med) => isActiveMedication(med, data));
 }
 
-/**
- * Verifica se o medicamento deve aparecer em um dia da semana específico
- * @param medicamento - Objeto do medicamento
- * @param diaSemana - Número do dia (0 = domingo, 6 = sábado)
- * @returns true se o medicamento deve aparecer nesse dia
- */
+// Vê se o remédio aparece num dia da semana (tipo só segunda, quarta, sexta...)
 export function shouldShowOnWeekday(
   medicamento: any,
   diaSemana: number
 ): boolean {
-  // Se não tem dias_semana definido, mostrar todos os dias
+  // Se não tem nada definido, mostra todo dia mesmo
   if (!medicamento.dias_semana) return true;
 
   const diasArray = medicamento.dias_semana
@@ -103,26 +87,22 @@ export function shouldShowOnWeekday(
   return diasArray.includes(diaSemana);
 }
 
-/**
- * Obtém os horários do medicamento (parseia JSON ou string)
- * @param medicamento - Objeto do medicamento
- * @returns Array de horários no formato "HH:mm"
- */
+// Pega os horários do remédio, seja array, json ou string separada por vírgula
 export function getMedicamentoHorarios(medicamento: any): string[] {
   if (!medicamento.horarios) return [];
 
-  // Se já é array
+  // Se já for array, só devolve
   if (Array.isArray(medicamento.horarios)) {
     return medicamento.horarios;
   }
 
-  // Se é string JSON
+  // Se for string tipo JSON, tenta converter
   if (typeof medicamento.horarios === "string") {
     try {
       const parsed = JSON.parse(medicamento.horarios);
       return Array.isArray(parsed) ? parsed : [];
     } catch {
-      // Se não é JSON, pode ser string separada por vírgula (fallback)
+      // Se não for JSON, tenta separar por vírgula mesmo, vai que né
       return medicamento.horarios.split(",").map((h: string) => h.trim());
     }
   }
@@ -130,18 +110,12 @@ export function getMedicamentoHorarios(medicamento: any): string[] {
   return [];
 }
 
-/**
- * Formata array de horários para salvar no banco
- * @param horarios - Array de horários
- * @returns String JSON para salvar
- */
+// Transforma array de horários em string pra salvar no banco (jsonzão)
 export function formatHorariosForDB(horarios: string[]): string {
   return JSON.stringify(horarios);
 }
 
-/**
- * Opções de intervalo disponíveis
- */
+// Opções de intervalo que o povo costuma usar
 export const INTERVAL_OPTIONS = [
   { value: 4, label: "4/4 horas", doses: 6 },
   { value: 6, label: "6/6 horas", doses: 4 },
@@ -149,9 +123,7 @@ export const INTERVAL_OPTIONS = [
   { value: 12, label: "12/12 horas", doses: 2 },
 ];
 
-/**
- * Dias da semana para seleção
- */
+// Dias da semana, pra mostrar bonitinho na tela
 export const DIAS_SEMANA = [
   { value: 0, label: "Dom", fullLabel: "Domingo" },
   { value: 1, label: "Seg", fullLabel: "Segunda-feira" },

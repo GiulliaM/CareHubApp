@@ -1,3 +1,4 @@
+// Tipos de categoria que o diário pode ter, tipo humor, sono, etc. Se inventar mais, só por aqui
 export type DiarioCategoria =
   | "humor"
   | "ocorrencias"
@@ -5,6 +6,7 @@ export type DiarioCategoria =
   | "digestao"
   | "atividade_fisica";
 
+// Um item do diário, tipo uma anotação
 export interface DiarioItem {
   codigo: string;
   label: string;
@@ -14,6 +16,7 @@ export interface DiarioItem {
   contagem?: boolean;
 }
 
+// Categoria do diário, pra organizar melhor
 export interface CategoriaDiario {
   key: DiarioCategoria;
   label: string;
