@@ -12,19 +12,22 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useTheme } from "../context/ThemeContext";
+import { useTema } from "../context/ThemeContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import api from "../utils/apiClient";
+import api from "../utils/clienteApi";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function NovaMedicamento({ navigation }: any) {
-  const { colors } = useTheme();
+  const { cores, tf } = useTema();
 
   const [nome, setNome] = useState("");
   const [dosagem, setDosagem] = useState("");
+  const [mg, setMg] = useState("");
+  const [qtdComprimidos, setQtdComprimidos] = useState("");
   const [horarios, setHorarios] = useState<string[]>([]);
-  const [novoHorario, setNovoHorario] = useState(new Date());
+  const [tempHorario, setTempHorario] = useState(new Date());
   const [showHoraPicker, setShowHoraPicker] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const [inicio, setInicio] = useState(new Date());
   const [showInicioPicker, setShowInicioPicker] = useState(false);
@@ -33,9 +36,34 @@ export default function NovaMedicamento({ navigation }: any) {
   const [usoContinuo, setUsoContinuo] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
-  const adicionarHorario = () => {
-    const horaStr = novoHorario.toTimeString().slice(0, 5);
-    if (!horarios.includes(horaStr)) setHorarios([...horarios, horaStr].sort());
+  const abrirPickerNovo = () => {
+    setTempHorario(new Date(2000, 0, 1, 8, 0));
+    setEditingIndex(null);
+    setShowHoraPicker(true);
+  };
+
+  const abrirPickerEditar = (index: number) => {
+    const [hh, mm] = horarios[index].split(":").map(Number);
+    setTempHorario(new Date(2000, 0, 1, hh, mm));
+    setEditingIndex(index);
+    setShowHoraPicker(true);
+  };
+
+  const confirmarHorario = (date: Date) => {
+    const hh = String(date.getHours()).padStart(2, "0");
+    const mm = String(date.getMinutes()).padStart(2, "0");
+    const horaStr = `${hh}:${mm}`;
+
+    if (editingIndex !== null) {
+      const novos = [...horarios];
+      novos[editingIndex] = horaStr;
+      setHorarios([...new Set(novos)].sort());
+    } else {
+      if (!horarios.includes(horaStr)) {
+        setHorarios([...horarios, horaStr].sort());
+      }
+    }
+    setEditingIndex(null);
   };
 
   const removerHorario = (hora: string) => {
@@ -43,8 +71,8 @@ export default function NovaMedicamento({ navigation }: any) {
   };
 
   const handleSalvar = async () => {
-    if (!nome.trim() || !dosagem.trim() || horarios.length === 0) {
-      Alert.alert("Aviso", "Preencha nome, dosagem e pelo menos um horário!");
+    if (!nome.trim() || horarios.length === 0) {
+      Alert.alert("Aviso", "Preencha o nome e pelo menos um horario!");
       return;
     }
 
@@ -60,7 +88,9 @@ export default function NovaMedicamento({ navigation }: any) {
 
       await api.post("/medicamentos", {
         nome,
-        dosagem,
+        dosagem: dosagem || null,
+        mg: mg ? parseFloat(mg) : null,
+        qtd_comprimidos: qtdComprimidos ? parseInt(qtdComprimidos) : null,
         horarios,
         concluido: 0,
         inicio: inicio.toISOString().split("T")[0],
@@ -73,84 +103,191 @@ export default function NovaMedicamento({ navigation }: any) {
       navigation.goBack();
     } catch (err) {
       console.error("Erro ao salvar medicamento:", err);
-      Alert.alert("Erro", "Não foi possível salvar o medicamento.");
+      Alert.alert("Erro", "Nao foi possivel salvar o medicamento.");
     } finally {
       setSalvando(false);
     }
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: cores.background }]}
+    >
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={[styles.title, { color: colors.primary }]}>Novo Medicamento</Text>
+        <Text
+          style={[
+            styles.title,
+            { color: cores.primary, fontSize: tf(24) },
+          ]}
+        >
+          Novo Medicamento
+        </Text>
 
-        {/* Nome */}
         <TextInput
-          style={[styles.input, { backgroundColor: colors.card }]}
+          style={[
+            styles.input,
+            {
+              backgroundColor: cores.inputBg,
+              color: cores.inputText,
+              borderColor: cores.border,
+            },
+          ]}
           placeholder="Nome do medicamento"
-          placeholderTextColor="#666"
+          placeholderTextColor={cores.inputPlaceholder}
           value={nome}
           onChangeText={setNome}
         />
 
-        {/* Dosagem */}
+        {/* Dosagem ou mg + qtd */}
+        <View style={styles.row}>
+          <TextInput
+            style={[
+              styles.input,
+              {
+                flex: 1,
+                backgroundColor: cores.inputBg,
+                color: cores.inputText,
+                borderColor: cores.border,
+              },
+            ]}
+            placeholder="mg (ex: 500)"
+            placeholderTextColor={cores.inputPlaceholder}
+            keyboardType="numeric"
+            value={mg}
+            onChangeText={setMg}
+          />
+          <TextInput
+            style={[
+              styles.input,
+              {
+                flex: 1,
+                backgroundColor: cores.inputBg,
+                color: cores.inputText,
+                borderColor: cores.border,
+              },
+            ]}
+            placeholder="Qtd comprimidos"
+            placeholderTextColor={cores.inputPlaceholder}
+            keyboardType="numeric"
+            value={qtdComprimidos}
+            onChangeText={setQtdComprimidos}
+          />
+        </View>
+
         <TextInput
-          style={[styles.input, { backgroundColor: colors.card }]}
-          placeholder="Dosagem (ex: 500mg)"
-          placeholderTextColor="#666"
+          style={[
+            styles.input,
+            {
+              backgroundColor: cores.inputBg,
+              color: cores.inputText,
+              borderColor: cores.border,
+            },
+          ]}
+          placeholder="Dosagem (ex: 1 comprimido)"
+          placeholderTextColor={cores.inputPlaceholder}
           value={dosagem}
           onChangeText={setDosagem}
         />
 
-        {/* Adicionar horário */}
-        <TouchableOpacity
-          style={[styles.btnSelect, { backgroundColor: colors.card }]}
-          onPress={() => setShowHoraPicker(true)}
+        {/* Horarios */}
+        <Text
+          style={[
+            styles.sectionLabel,
+            { color: cores.text, fontSize: tf(15) },
+          ]}
         >
-          <Ionicons name="time-outline" size={20} color={colors.text} />
-          <Text style={[styles.btnSelectText, { color: colors.text }]}>
-            Adicionar horário:{" "}
-            {novoHorario.toLocaleTimeString("pt-BR", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+          Horarios {horarios.length > 0 ? `(${horarios.length})` : ""}
+        </Text>
+
+        {horarios.length > 0 && (
+          <View style={styles.horariosContainer}>
+            {horarios.map((h, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.horarioItem,
+                  { backgroundColor: cores.primary + "20" },
+                ]}
+              >
+                <TouchableOpacity
+                  style={styles.horarioEditArea}
+                  onPress={() => abrirPickerEditar(i)}
+                >
+                  <Ionicons
+                    name="time-outline"
+                    size={16}
+                    color={cores.primary}
+                  />
+                  <Text
+                    style={[styles.horarioText, { color: cores.primary }]}
+                  >
+                    {h}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.horarioRemoveBtn}
+                  onPress={() => removerHorario(h)}
+                >
+                  <Ionicons
+                    name="close-circle"
+                    size={20}
+                    color={cores.danger}
+                  />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
+
+        <TouchableOpacity
+          style={[styles.addHorarioBtn, { borderColor: cores.primary }]}
+          onPress={abrirPickerNovo}
+        >
+          <Ionicons
+            name="add-circle-outline"
+            size={22}
+            color={cores.primary}
+          />
+          <Text
+            style={[styles.addHorarioBtnText, { color: cores.primary }]}
+          >
+            Adicionar horario
           </Text>
         </TouchableOpacity>
 
         {showHoraPicker && (
           <DateTimePicker
-            value={novoHorario}
+            value={tempHorario}
             mode="time"
             is24Hour={true}
+            display="spinner"
             onChange={(e, date) => {
               setShowHoraPicker(false);
-              if (date) {
-                setNovoHorario(date);
-                adicionarHorario();
-              }
+              if (date) confirmarHorario(date);
             }}
           />
         )}
 
-        {/* Lista de horários */}
-        {horarios.length > 0 && (
-          <View style={styles.horariosContainer}>
-            {horarios.map((h, i) => (
-              <TouchableOpacity key={i} onPress={() => removerHorario(h)}>
-                <Text style={styles.horarioTag}>⏰ {h} ✖</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        {/* Data de início */}
+        {/* Data de inicio */}
         <TouchableOpacity
-          style={[styles.btnSelect, { backgroundColor: colors.card }]}
+          style={[
+            styles.btnSelect,
+            { backgroundColor: cores.inputBg, borderColor: cores.border },
+          ]}
           onPress={() => setShowInicioPicker(true)}
         >
-          <Ionicons name="calendar-outline" size={20} color={colors.text} />
-          <Text style={[styles.btnSelectText, { color: colors.text }]}>
-            Início: {inicio.toLocaleDateString("pt-BR")}
+          <Ionicons
+            name="calendar-outline"
+            size={20}
+            color={cores.text}
+          />
+          <Text
+            style={[
+              styles.btnSelectText,
+              { color: cores.text, fontSize: tf(15) },
+            ]}
+          >
+            Inicio: {inicio.toLocaleDateString("pt-BR")}
           </Text>
         </TouchableOpacity>
 
@@ -165,28 +302,47 @@ export default function NovaMedicamento({ navigation }: any) {
           />
         )}
 
-        {/* Duração */}
         <TextInput
-          style={[styles.input, { backgroundColor: colors.card }]}
-          placeholder="Duração (em dias)"
-          placeholderTextColor="#666"
+          style={[
+            styles.input,
+            {
+              backgroundColor: cores.inputBg,
+              color: cores.inputText,
+              borderColor: cores.border,
+            },
+          ]}
+          placeholder="Duracao (em dias)"
+          placeholderTextColor={cores.inputPlaceholder}
           keyboardType="numeric"
           value={duracaoDays}
           onChangeText={setDuracaoDays}
         />
 
-        {/* Uso contínuo */}
         <View style={styles.switchRow}>
-          <Text style={[styles.switchLabel, { color: colors.text }]}>Uso contínuo:</Text>
-          <Switch value={usoContinuo} onValueChange={setUsoContinuo} />
+          <Text
+            style={[
+              styles.switchLabel,
+              { color: cores.text, fontSize: tf(15) },
+            ]}
+          >
+            Uso continuo
+          </Text>
+          <Switch
+            value={usoContinuo}
+            onValueChange={setUsoContinuo}
+            trackColor={{
+              false: cores.border,
+              true: cores.primary + "80",
+            }}
+            thumbColor={usoContinuo ? cores.primary : "#f4f3f4"}
+          />
         </View>
 
-        {/* Botão salvar */}
         <TouchableOpacity
           disabled={salvando}
           style={[
             styles.button,
-            { backgroundColor: salvando ? "#999" : colors.primary },
+            { backgroundColor: salvando ? cores.muted : cores.primary },
           ]}
           onPress={handleSalvar}
         >
@@ -197,110 +353,93 @@ export default function NovaMedicamento({ navigation }: any) {
           )}
         </TouchableOpacity>
 
-        {/* Botão cancelar */}
         <TouchableOpacity
-          style={[styles.cancelButton, { backgroundColor: "#b0b0b0" }]}
+          style={[styles.cancelButton, { borderColor: cores.border }]}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.cancelButtonText}>Cancelar</Text>
+          <Text
+            style={[styles.cancelButtonText, { color: cores.muted }]}
+          >
+            Cancelar
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-/* ESTILOS */
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-
   container: { padding: 16 },
-
-  title: {
-    fontSize: 26,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 22,
-  },
-
+  title: { fontWeight: "700", textAlign: "center", marginBottom: 18 },
+  row: { flexDirection: "row", gap: 10 },
   input: {
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#ccc",
-    marginBottom: 14,
+    marginBottom: 12,
     fontSize: 16,
-    elevation: 2,
   },
-
   btnSelect: {
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#ccc",
-    marginBottom: 14,
+    marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    elevation: 2,
   },
-
-  btnSelectText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
+  btnSelectText: { fontWeight: "600" },
+  sectionLabel: { fontWeight: "700", marginBottom: 8, marginTop: 4 },
   horariosContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginBottom: 12,
+    marginBottom: 8,
+    gap: 8,
   },
-
-  horarioTag: {
-    backgroundColor: "#dbeafe",
+  horarioItem: {
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 10,
+    paddingLeft: 10,
+    paddingRight: 4,
     paddingVertical: 6,
-    paddingHorizontal: 10,
-    marginRight: 6,
-    marginBottom: 6,
-    fontWeight: "600",
-    color: "#1e3a8a",
   },
-
+  horarioEditArea: { flexDirection: "row", alignItems: "center", gap: 4 },
+  horarioText: { fontWeight: "700", fontSize: 15, marginRight: 4 },
+  horarioRemoveBtn: { padding: 2 },
+  addHorarioBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+    gap: 6,
+  },
+  addHorarioBtnText: { fontSize: 15, fontWeight: "600" },
   switchRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginVertical: 8,
   },
-
-  switchLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
+  switchLabel: { fontWeight: "600" },
   button: {
     padding: 16,
     borderRadius: 12,
     alignItems: "center",
     marginTop: 16,
   },
-
-  buttonText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 16,
-  },
-
+  buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
   cancelButton: {
     padding: 14,
     borderRadius: 12,
     alignItems: "center",
     marginTop: 10,
+    borderWidth: 1,
   },
-
-  cancelButtonText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 16,
-  },
+  cancelButtonText: { fontWeight: "600", fontSize: 16 },
 });

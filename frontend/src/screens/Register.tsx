@@ -9,14 +9,14 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import cores from "../config/cores";
-import { useTheme } from '../context/ThemeContext';
+import coresPadrao from "../config/cores";
+import { useTema } from '../context/ThemeContext';
 import { API_URL } from "../config/api";
-import { saveToken, saveUserMeta } from "../utils/auth";
+import { salvarToken, salvarDadosUsuario } from "../utils/autenticacao";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Register({ navigation }: any) {
-  const { colors } = useTheme();
+  const { cores } = useTema();
   const [step, setStep] = useState(1);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -38,12 +38,23 @@ export default function Register({ navigation }: any) {
         body: JSON.stringify({ nome, email, senha, tipo }),
       });
       const json = await res.json();
-      if (!res.ok) return Alert.alert(json.message || "Erro ao cadastrar usuário.");
-      await saveToken(json.token);
-      await saveUserMeta({ usuario_id: json.usuario_id, nome, tipo });
+      if (!res.ok) {
+        // Exibe a mensagem de erro exata que o backend enviou
+        return Alert.alert("Erro no cadastro", json.message || json.detail || `Erro ${res.status}`);
+      }
+
+      // backend retorna: { usuario: { usuario_id, nome, email, tipo }, token }
+      const token = json.token;
+      const usuario_id = json.usuario?.usuario_id;
+
+      if (!token || !usuario_id) {
+        return Alert.alert("Erro", "Resposta inesperada do servidor. Tente novamente.");
+      }
+
+      await salvarToken(token);
+      await salvarDadosUsuario({ usuario_id, nome: json.usuario?.nome || nome, tipo: json.usuario?.tipo || tipo });
 
       // 2. Cadastrar paciente vinculado
-      const token = json.token;
       const resPac = await fetch(`${API_URL}/pacientes`, {
         method: "POST",
         headers: {
@@ -53,19 +64,26 @@ export default function Register({ navigation }: any) {
         body: JSON.stringify({ nome: nomePaciente, idade: idadePaciente || null }),
       });
       const jsonPac = await resPac.json();
-      if (!resPac.ok) return Alert.alert(jsonPac.message || "Erro ao cadastrar paciente.");
-      await AsyncStorage.setItem("paciente", JSON.stringify({ paciente_id: jsonPac.paciente_id, nome: nomePaciente, idade: idadePaciente }));
+      if (!resPac.ok) {
+        return Alert.alert("Erro ao criar paciente", jsonPac.message || `Erro ${resPac.status}`);
+      }
+
+      await AsyncStorage.setItem(
+        "paciente",
+        JSON.stringify({ paciente_id: jsonPac.paciente_id, nome: nomePaciente, idade: idadePaciente })
+      );
 
       // 3. Ir para o app
-      navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
+      navigation.reset({ index: 0, routes: [{ name: "Abas" }] });
     } catch (err) {
-      Alert.alert("Erro", "Falha de conexão com o servidor.");
+      console.error("[Register] Erro:", err);
+      Alert.alert("Erro de conexão", "Não foi possível conectar ao servidor. Verifique sua internet.");
     }
   };
 
   if (step === 1) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: cores.background }]}
       >
         <ScrollView contentContainerStyle={styles.container}>
           <Text style={styles.title}>Cadastrar Usuário</Text>
@@ -98,9 +116,9 @@ export default function Register({ navigation }: any) {
   }
   // Etapa 2: Cadastro do paciente
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: cores.background }]}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={[styles.title, { color: colors.primary }]}>Cadastrar Paciente Vinculado</Text>
+        <Text style={[styles.title, { color: cores.primary }]}>Cadastrar Paciente Vinculado</Text>
         <TextInput
           placeholder="Nome do paciente"
           value={nomePaciente}
@@ -123,12 +141,12 @@ export default function Register({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: cores.background },
+  safeArea: { flex: 1, backgroundColor: coresPadrao.background },
   container: { flexGrow: 1, padding: 16, justifyContent: "center" },
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: cores.primary,
+    color: coresPadrao.primary,
     marginBottom: 16,
     textAlign: "center",
   },
@@ -141,7 +159,7 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
   },
   btn: {
-    backgroundColor: cores.primary,
+    backgroundColor: coresPadrao.primary,
     padding: 14,
     borderRadius: 10,
     marginTop: 16,
@@ -149,5 +167,5 @@ const styles = StyleSheet.create({
   },
   btnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
   linkWrap: { alignItems: "center", marginTop: 12 },
-  link: { color: cores.primary, fontWeight: "600" },
+  link: { color: coresPadrao.primary, fontWeight: "600" },
 });

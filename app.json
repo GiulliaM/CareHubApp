@@ -10,11 +10,14 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.carehub.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -25,6 +28,23 @@
     },
     "experiments": {
       "typedRoutes": false
-    }
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "sounds": [
+            "./assets/sounds/notificacao.wav"
+          ],
+          "defaultChannel": "carehub-lembretes"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "94bcfb1d-9aac-4769-9357-e1be58e75d16"
+      }
+    },
+    "owner": "maria_rodrigues"
   }
 }

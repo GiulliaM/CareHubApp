@@ -1,105 +1,161 @@
 import db from "../config/db.js";
 import medicamentoModel from "../models/medicamentoModel.js";
+import { pacientePertenceAoUsuario } from "../models/pacienteModel.js";
 
-// Listar medicamentos de um paciente
-export const getMedicamentos = (req, res) => {
+export const buscarMedicamentos = (req, res) => {
   const { paciente_id } = req.params;
+  const usuarioId = req.user.usuario_id;
 
   if (!paciente_id) {
-    return res.status(400).json({ error: "ID do paciente não fornecido" });
+    return res.status(400).json({ error: "ID do paciente nao fornecido" });
   }
 
-  const query = "SELECT * FROM medicamentos WHERE paciente_id = ?";
+  pacientePertenceAoUsuario(paciente_id, usuarioId, (err, pertence) => {
+    if (err) return res.status(500).json({ error: "Erro ao verificar permissao" });
+    if (!pertence) return res.status(403).json({ message: "Acesso negado a este paciente" });
 
-  db.query(query, [paciente_id], (err, results) => {
-    if (err) {
-      console.error("Erro ao buscar medicamentos:", err);
-      return res.status(500).json({ error: "Erro ao buscar medicamentos" });
-    }
+    db.query("SELECT * FROM medicamentos WHERE paciente_id = ? ORDER BY horarios ASC", [paciente_id], (err2, results) => {
+      if (err2) return res.status(500).json({ error: "Erro ao buscar medicamentos" });
 
-    // Processar e formatar campos do banco SEM new Date()
-    const medicamentos = results.map((med) => {
-      // Tratar datas como strings puras
-      if (med.inicio) {
-        med.inicio = med.inicio instanceof Date
-          ? med.inicio.toISOString().substring(0, 10)
-          : String(med.inicio).substring(0, 10);
-      }
-
-      if (med.data_fim) {
-        med.data_fim = med.data_fim instanceof Date
-          ? med.data_fim.toISOString().substring(0, 10)
-          : String(med.data_fim).substring(0, 10);
-      }
-
-      // Converter horários (JSON → array)
-      if (med.horarios) {
-        try {
-          med.horarios = JSON.parse(med.horarios);
-        } catch {
-          if (typeof med.horarios === "string") {
-            med.horarios = med.horarios.split(",").map((h) => h.trim());
-          } else {
-            med.horarios = [];
-          }
+      const medicamentos = (results || []).map((med) => {
+        if (med.inicio) {
+          med.inicio = med.inicio instanceof Date
+            ? med.inicio.toISOString().substring(0, 10)
+            : String(med.inicio).substring(0, 10);
         }
+        if (med.data_fim) {
+          med.data_fim = med.data_fim instanceof Date
+            ? med.data_fim.toISOString().substring(0, 10)
+            : String(med.data_fim).substring(0, 10);
+        }
+        if (med.horarios) {
+          try { med.horarios = JSON.parse(med.horarios); }
+          catch { med.horarios = typeof med.horarios === "string" ? med.horarios.split(",").map(h => h.trim()) : []; }
+        }
+        return med;
+      });
+
+      res.status(200).json(medicamentos);
+    });
+  });
+};
+
+export const buscarMedicamentoPorId = (req, res) => {
+  const { id } = req.params;
+  const usuarioId = req.user.usuario_id;
+
+  db.query("SELECT * FROM medicamentos WHERE medicamento_id = ?", [id], (err, rows) => {
+    if (err) return res.status(500).json({ error: "Erro ao buscar medicamento" });
+    if (!rows || rows.length === 0) return res.status(404).json({ error: "Medicamento nao encontrado" });
+
+    const med = rows[0];
+    pacientePertenceAoUsuario(med.paciente_id, usuarioId, (err2, pertence) => {
+      if (err2) return res.status(500).json({ error: "Erro ao verificar permissao" });
+      if (!pertence) return res.status(403).json({ message: "Acesso negado" });
+
+      if (med.horarios) {
+        try { med.horarios = JSON.parse(med.horarios); }
+        catch { med.horarios = typeof med.horarios === "string" ? med.horarios.split(",").map(h => h.trim()) : []; }
       }
+      if (med.inicio) med.inicio = String(med.inicio).substring(0, 10);
+      if (med.data_fim) med.data_fim = String(med.data_fim).substring(0, 10);
 
-      return med;
-    });
-
-    res.status(200).json(medicamentos);
-  });
-};
-
-// 🔹 Criar medicamento
-export const createMedicamento = (req, res) => {
-  medicamentoModel.criarMedicamento(req.body, (err, result) => {
-    if (err) {
-      console.error("Erro ao criar medicamento:", err);
-      return res.status(500).json({ error: "Erro ao criar medicamento" });
-    }
-
-    res.status(201).json({
-      message: "Medicamento cadastrado com sucesso!",
-      medicamento_id: result.insertId ?? null,
+      res.json(med);
     });
   });
 };
 
-// Atualizar medicamento (PATCH)
-export const patchMedicamento = (req, res) => {
+export const criarMedicamentoRota = (req, res) => {
+  const pacienteId = req.body?.paciente_id;
+  const usuarioId = req.user.usuario_id;
+  if (!pacienteId) {
+    return res.status(400).json({ error: "paciente_id e obrigatorio" });
+  }
+  pacientePertenceAoUsuario(pacienteId, usuarioId, (err, pertence) => {
+    if (err) return res.status(500).json({ error: "Erro ao verificar permissao" });
+    if (!pertence) return res.status(403).json({ message: "Acesso negado a este paciente" });
+
+    medicamentoModel.criarMedicamento(req.body, (err2, result) => {
+      if (err2) {
+        console.error("Erro ao criar medicamento:", err2);
+        return res.status(500).json({ error: "Erro ao criar medicamento" });
+      }
+      res.status(201).json({
+        message: "Medicamento cadastrado com sucesso!",
+        medicamento_id: result.insertId ?? null,
+      });
+    });
+  });
+};
+
+export const atualizarMedicamentoRota = (req, res) => {
   const { id } = req.params;
   const dados = req.body;
+  const usuarioId = req.user.usuario_id;
+  const { atualizar_grupo } = req.query;
 
-  medicamentoModel.atualizarMedicamento(id, dados, (err, result) => {
-    if (err) {
-      console.error("Erro ao atualizar medicamento:", err);
-      return res.status(500).json({ error: "Erro ao atualizar medicamento" });
-    }
+  db.query("SELECT * FROM medicamentos WHERE medicamento_id = ?", [id], (err, rows) => {
+    if (err) return res.status(500).json({ error: "Erro ao buscar medicamento" });
+    if (!rows || rows.length === 0) return res.status(404).json({ error: "Medicamento nao encontrado" });
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Medicamento não encontrado" });
-    }
+    pacientePertenceAoUsuario(rows[0].paciente_id, usuarioId, (err2, pertence) => {
+      if (err2) return res.status(500).json({ error: "Erro ao verificar permissao" });
+      if (!pertence) return res.status(403).json({ message: "Acesso negado" });
 
-    res.status(200).json({ message: "Medicamento atualizado com sucesso!" });
+      if (atualizar_grupo === "true" && rows[0].grupo_repeticao) {
+        medicamentoModel.atualizarGrupo(rows[0].grupo_repeticao, parseInt(id), dados, (err3, result) => {
+          if (err3) return res.status(500).json({ error: "Erro ao atualizar grupo" });
+          res.json({ message: `${result.affectedRows} medicamentos atualizados.` });
+        });
+      } else {
+        medicamentoModel.atualizarMedicamento(id, dados, (err3, result) => {
+          if (err3) return res.status(500).json({ error: "Erro ao atualizar medicamento" });
+          if (result.affectedRows === 0) return res.status(404).json({ error: "Medicamento nao encontrado" });
+          res.json({ message: "Medicamento atualizado com sucesso!" });
+        });
+      }
+    });
   });
 };
 
-// Excluir medicamento
-export const deleteMedicamento = (req, res) => {
+export const alternarMedicamentoConcluido = (req, res) => {
   const { id } = req.params;
+  const { concluido } = req.body;
+  const usuarioId = req.user.usuario_id;
 
-  db.query("DELETE FROM medicamentos WHERE medicamento_id = ?", [id], (err, result) => {
-    if (err) {
-      console.error("Erro ao excluir medicamento:", err);
-      return res.status(500).json({ error: "Erro ao excluir medicamento" });
-    }
+  db.query("SELECT paciente_id FROM medicamentos WHERE medicamento_id = ?", [id], (err, rows) => {
+    if (err) return res.status(500).json({ error: "Erro ao buscar medicamento" });
+    if (!rows || rows.length === 0) return res.status(404).json({ error: "Medicamento nao encontrado" });
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Medicamento não encontrado" });
-    }
+    pacientePertenceAoUsuario(rows[0].paciente_id, usuarioId, (err2, pertence) => {
+      if (err2) return res.status(500).json({ error: "Erro ao verificar permissao" });
+      if (!pertence) return res.status(403).json({ message: "Acesso negado" });
 
-    res.status(200).json({ message: "Medicamento excluído com sucesso!" });
+      medicamentoModel.alternarMedicamento(id, concluido, (err3) => {
+        if (err3) return res.status(500).json({ error: "Erro ao atualizar medicamento" });
+        res.json({ message: concluido ? "Medicamento marcado como tomado" : "Medicamento desmarcado" });
+      });
+    });
+  });
+};
+
+export const excluirMedicamento = (req, res) => {
+  const { id } = req.params;
+  const usuarioId = req.user.usuario_id;
+
+  db.query("SELECT paciente_id FROM medicamentos WHERE medicamento_id = ?", [id], (err, rows) => {
+    if (err) return res.status(500).json({ error: "Erro ao excluir medicamento" });
+    if (!rows || rows.length === 0) return res.status(404).json({ error: "Medicamento nao encontrado" });
+
+    pacientePertenceAoUsuario(rows[0].paciente_id, usuarioId, (err2, pertence) => {
+      if (err2) return res.status(500).json({ error: "Erro ao verificar permissao" });
+      if (!pertence) return res.status(403).json({ message: "Acesso negado" });
+
+      db.query("DELETE FROM medicamentos WHERE medicamento_id = ?", [id], (err3, result) => {
+        if (err3) return res.status(500).json({ error: "Erro ao excluir medicamento" });
+        if (result.affectedRows === 0) return res.status(404).json({ error: "Medicamento nao encontrado" });
+        res.json({ message: "Medicamento excluido com sucesso!" });
+      });
+    });
   });
 };

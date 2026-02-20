@@ -7,7 +7,7 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import { INTERVALOS_DISPONIVEIS } from '../utils/medicamentoScheduler';
+import { INTERVALOS_DISPONIVEIS } from '../utils/agendadorMedicamento';
 import cores from '../config/cores';
 
 interface IntervaloModalProps {

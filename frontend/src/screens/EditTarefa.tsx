@@ -1,4 +1,3 @@
-// EditTarefa.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -13,33 +12,33 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import api from "../utils/apiClient";
-import { useTheme } from "../context/ThemeContext";
+import api from "../utils/clienteApi";
+import { useTema } from "../context/ThemeContext";
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
 
 dayjs.locale("pt-br");
 
 export default function EditTarefa({ route, navigation }: any) {
-  const { tarefa } = route.params;
-  const { colors } = useTheme();
+  const { tarefa, modoVisualizacao: initView } = route.params;
+  const { cores, tf } = useTema();
 
+  const [editando, setEditando] = useState(!initView);
   const [titulo, setTitulo] = useState(tarefa.titulo);
-  const [detalhes, setDetalhes] = useState(tarefa.detalhes);
-  const [data, setData] = useState<Date>(tarefa.data ? dayjs(tarefa.data).startOf("day").toDate() : dayjs().startOf("day").toDate());
-  const [hora, setHora] = useState<Date>(tarefa.hora ? dayjs(`1970-01-01 ${tarefa.hora}`).toDate() : dayjs().toDate());
-  const [diasRepeticao, setDiasRepeticao] = useState<string>(tarefa.dias_repeticao || "");
-  const [concluida, setConcluida] = useState<boolean>(tarefa.concluida === 1);
+  const [detalhes, setDetalhes] = useState(tarefa.detalhes || "");
+  const [data, setData] = useState<Date>(
+    tarefa.data
+      ? dayjs(tarefa.data).startOf("day").toDate()
+      : dayjs().startOf("day").toDate()
+  );
+  const [hora, setHora] = useState<Date>(
+    tarefa.hora
+      ? dayjs(`1970-01-01 ${tarefa.hora}`).toDate()
+      : dayjs().toDate()
+  );
   const [showDataPicker, setShowDataPicker] = useState(false);
   const [showHoraPicker, setShowHoraPicker] = useState(false);
   const [salvando, setSalvando] = useState(false);
-
-  const opcoesRepeticao = [
-    { label: "Nenhuma", value: "" },
-    { label: "Todos os dias", value: "todos" },
-    { label: "Seg / Qua / Sex", value: "seg,qua,sex" },
-    { label: "Ter / Qui", value: "ter,qui" },
-  ];
 
   const formatarHoraDB = (d: Date) => {
     const hh = String(d.getHours()).padStart(2, "0");
@@ -49,10 +48,9 @@ export default function EditTarefa({ route, navigation }: any) {
 
   const handleSalvar = async () => {
     if (!titulo.trim()) {
-      Alert.alert("Atenção", "O título não pode ficar vazio.");
+      Alert.alert("Atencao", "O titulo nao pode ficar vazio.");
       return;
     }
-
     setSalvando(true);
     try {
       await api.patch(`/tarefas/${tarefa.tarefa_id}`, {
@@ -60,73 +58,397 @@ export default function EditTarefa({ route, navigation }: any) {
         detalhes,
         data: dayjs(data).format("YYYY-MM-DD"),
         hora: formatarHoraDB(hora),
-        dias_repeticao: diasRepeticao,
-        concluida: concluida ? 1 : 0,
+        concluida: tarefa.concluida ? 1 : 0,
       });
       Alert.alert("Sucesso", "Tarefa atualizada com sucesso!");
       navigation.goBack();
-    } catch (err) {
-      console.error("Erro ao editar tarefa:", err);
-      Alert.alert("Erro", "Não foi possível atualizar a tarefa.");
+    } catch {
+      Alert.alert("Erro", "Nao foi possivel atualizar a tarefa.");
     } finally {
       setSalvando(false);
     }
   };
 
-  const toggleDiaCustom = (dia: string) => {
-    const lista = diasRepeticao ? diasRepeticao.split(",") : [];
-    const novaLista = lista.includes(dia) ? lista.filter((d: string) => d !== dia) : [...lista, dia];
-    setDiasRepeticao(novaLista.join(","));
+  const handleExcluir = () => {
+    Alert.alert("Excluir", "Deseja realmente excluir esta tarefa?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await api.delete(`/tarefas/${tarefa.tarefa_id}`);
+            navigation.goBack();
+          } catch {
+            Alert.alert("Erro", "Nao foi possivel excluir.");
+          }
+        },
+      },
+    ]);
   };
 
+  // MODO VISUALIZACAO
+  if (!editando) {
+    return (
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: cores.background }]}
+      >
+        <ScrollView contentContainerStyle={styles.container}>
+          <Text
+            style={[
+              styles.title,
+              { color: cores.primary, fontSize: tf(22) },
+            ]}
+          >
+            Detalhes da Tarefa
+          </Text>
+
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: cores.card, borderColor: cores.border },
+            ]}
+          >
+            <View style={styles.detailRow}>
+              <Ionicons
+                name="document-text-outline"
+                size={18}
+                color={cores.primary}
+              />
+              <Text
+                style={[
+                  styles.detailLabel,
+                  { color: cores.muted, fontSize: tf(13) },
+                ]}
+              >
+                Titulo
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.detailValue,
+                { color: cores.text, fontSize: tf(17) },
+              ]}
+            >
+              {tarefa.titulo}
+            </Text>
+
+            {tarefa.detalhes ? (
+              <>
+                <View style={[styles.detailRow, { marginTop: 14 }]}>
+                  <Ionicons
+                    name="chatbox-outline"
+                    size={18}
+                    color={cores.primary}
+                  />
+                  <Text
+                    style={[
+                      styles.detailLabel,
+                      { color: cores.muted, fontSize: tf(13) },
+                    ]}
+                  >
+                    Detalhes
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    styles.detailValue,
+                    { color: cores.text, fontSize: tf(15) },
+                  ]}
+                >
+                  {tarefa.detalhes}
+                </Text>
+              </>
+            ) : null}
+
+            <View style={[styles.detailRow, { marginTop: 14 }]}>
+              <Ionicons
+                name="calendar-outline"
+                size={18}
+                color={cores.primary}
+              />
+              <Text
+                style={[
+                  styles.detailLabel,
+                  { color: cores.muted, fontSize: tf(13) },
+                ]}
+              >
+                Data
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.detailValue,
+                { color: cores.text, fontSize: tf(15) },
+              ]}
+            >
+              {dayjs(tarefa.data).format("DD/MM/YYYY")}
+            </Text>
+
+            <View style={[styles.detailRow, { marginTop: 14 }]}>
+              <Ionicons
+                name="time-outline"
+                size={18}
+                color={cores.primary}
+              />
+              <Text
+                style={[
+                  styles.detailLabel,
+                  { color: cores.muted, fontSize: tf(13) },
+                ]}
+              >
+                Horario
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.detailValue,
+                { color: cores.text, fontSize: tf(15) },
+              ]}
+            >
+              {tarefa.hora ? tarefa.hora.slice(0, 5) : "Nao definido"}
+            </Text>
+
+            <View style={[styles.detailRow, { marginTop: 14 }]}>
+              <Ionicons
+                name={
+                  tarefa.concluida === 1
+                    ? "checkbox"
+                    : "square-outline"
+                }
+                size={18}
+                color={
+                  tarefa.concluida === 1
+                    ? cores.success
+                    : cores.warning
+                }
+              />
+              <Text
+                style={[
+                  styles.detailLabel,
+                  { color: cores.muted, fontSize: tf(13) },
+                ]}
+              >
+                Status
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.detailValue,
+                {
+                  color:
+                    tarefa.concluida === 1
+                      ? cores.success
+                      : cores.warning,
+                  fontSize: tf(15),
+                },
+              ]}
+            >
+              {tarefa.concluida === 1 ? "Concluida" : "Pendente"}
+            </Text>
+
+            {tarefa.hora_conclusao && (
+              <>
+                <View style={[styles.detailRow, { marginTop: 14 }]}>
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={18}
+                    color={cores.success}
+                  />
+                  <Text
+                    style={[
+                      styles.detailLabel,
+                      { color: cores.muted, fontSize: tf(13) },
+                    ]}
+                  >
+                    Concluida em
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    styles.detailValue,
+                    { color: cores.text, fontSize: tf(15) },
+                  ]}
+                >
+                  {dayjs(tarefa.hora_conclusao).format(
+                    "DD/MM/YYYY HH:mm"
+                  )}
+                </Text>
+              </>
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.btnPrimary,
+              { backgroundColor: cores.primary },
+            ]}
+            onPress={() => setEditando(true)}
+          >
+            <Ionicons name="create-outline" size={18} color="#fff" />
+            <Text style={styles.btnPrimaryText}>Editar tarefa</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.btnPrimary,
+              { backgroundColor: cores.danger },
+            ]}
+            onPress={handleExcluir}
+          >
+            <Ionicons name="trash-outline" size={18} color="#fff" />
+            <Text style={styles.btnPrimaryText}>Excluir tarefa</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.btnOutline,
+              { borderColor: cores.border },
+            ]}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={[{ color: cores.muted, fontWeight: "600" }]}>
+              Voltar
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // MODO EDICAO
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: cores.background }]}
+    >
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={[styles.title, { color: colors.primary }]}>Editar Tarefa</Text>
+        <Text
+          style={[
+            styles.title,
+            { color: cores.primary, fontSize: tf(22) },
+          ]}
+        >
+          Editar Tarefa
+        </Text>
 
-        <Text style={styles.label}>Título *</Text>
-        <TextInput style={styles.input} value={titulo} onChangeText={setTitulo} />
+        <Text
+          style={[styles.label, { color: cores.text, fontSize: tf(14) }]}
+        >
+          Titulo *
+        </Text>
+        <TextInput
+          style={[
+            styles.input,
+            {
+              backgroundColor: cores.inputBg,
+              color: cores.inputText,
+              borderColor: cores.border,
+            },
+          ]}
+          value={titulo}
+          onChangeText={setTitulo}
+        />
 
-        <Text style={styles.label}>Detalhes</Text>
-        <TextInput style={[styles.input, { height: 100 }]} value={detalhes} onChangeText={setDetalhes} multiline />
+        <Text
+          style={[styles.label, { color: cores.text, fontSize: tf(14) }]}
+        >
+          Detalhes
+        </Text>
+        <TextInput
+          style={[
+            styles.input,
+            {
+              height: 100,
+              backgroundColor: cores.inputBg,
+              color: cores.inputText,
+              borderColor: cores.border,
+            },
+          ]}
+          value={detalhes}
+          onChangeText={setDetalhes}
+          multiline
+        />
 
-        <Text style={styles.label}>Data</Text>
-        <TouchableOpacity style={styles.selectButton} onPress={() => setShowDataPicker(true)}>
-          <Text style={styles.selectButtonText}>{dayjs(data).format("DD/MM/YYYY")}</Text>
+        <TouchableOpacity
+          style={[
+            styles.selectButton,
+            { backgroundColor: cores.inputBg, borderColor: cores.border },
+          ]}
+          onPress={() => setShowDataPicker(true)}
+        >
+          <Ionicons
+            name="calendar-outline"
+            size={18}
+            color={cores.primary}
+          />
+          <Text style={[{ color: cores.text, fontWeight: "600" }]}>
+            Data: {dayjs(data).format("DD/MM/YYYY")}
+          </Text>
         </TouchableOpacity>
         {showDataPicker && (
-          <DateTimePicker value={data} mode="date" onChange={(e, dateSel) => { setShowDataPicker(false); if (dateSel) setData(dateSel); }} />
+          <DateTimePicker
+            value={data}
+            mode="date"
+            onChange={(e, dateSel) => {
+              setShowDataPicker(false);
+              if (dateSel) setData(dateSel);
+            }}
+          />
         )}
 
-        <Text style={styles.label}>Hora</Text>
-        <TouchableOpacity style={styles.selectButton} onPress={() => setShowHoraPicker(true)}>
-          <Text style={styles.selectButtonText}>{dayjs(hora).format("HH:mm")}</Text>
+        <TouchableOpacity
+          style={[
+            styles.selectButton,
+            { backgroundColor: cores.inputBg, borderColor: cores.border },
+          ]}
+          onPress={() => setShowHoraPicker(true)}
+        >
+          <Ionicons
+            name="time-outline"
+            size={18}
+            color={cores.primary}
+          />
+          <Text style={[{ color: cores.text, fontWeight: "600" }]}>
+            Hora: {dayjs(hora).format("HH:mm")}
+          </Text>
         </TouchableOpacity>
         {showHoraPicker && (
-          <DateTimePicker value={hora} mode="time" is24Hour onChange={(e, dateSel) => { setShowHoraPicker(false); if (dateSel) setHora(dateSel); }} />
+          <DateTimePicker
+            value={hora}
+            mode="time"
+            is24Hour
+            display="spinner"
+            onChange={(e, dateSel) => {
+              setShowHoraPicker(false);
+              if (dateSel) setHora(dateSel);
+            }}
+          />
         )}
 
-        <Text style={styles.label}>Repetição</Text>
-        <View style={styles.repeticaoContainer}>
-          {opcoesRepeticao.map((item) => (
-            <TouchableOpacity key={item.value} style={[styles.repeticaoBtn, diasRepeticao === item.value && { backgroundColor: colors.primary }]} onPress={() => setDiasRepeticao(item.value)}>
-              <Text style={[styles.repeticaoBtnText, diasRepeticao === item.value && { color: "#fff" }]}>{item.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={styles.label}>Concluída</Text>
-        <TouchableOpacity style={[styles.statusBtn, { borderColor: colors.primary }, concluida && { backgroundColor: colors.primary }]} onPress={() => setConcluida(!concluida)}>
-          <Ionicons name={concluida ? "checkbox" : "square-outline"} size={22} color={concluida ? "#fff" : colors.primary} />
-          <Text style={[styles.statusBtnText, { color: concluida ? "#fff" : colors.primary }]}>{concluida ? "Marcada como concluída" : "Marcar como concluída"}</Text>
+        <TouchableOpacity
+          style={[
+            styles.btnPrimary,
+            { backgroundColor: cores.primary },
+          ]}
+          onPress={handleSalvar}
+          disabled={salvando}
+        >
+          {salvando ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.btnPrimaryText}>Salvar Alteracoes</Text>
+          )}
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.btnSalvar, { backgroundColor: colors.primary }]} onPress={handleSalvar} disabled={salvando}>
-          {salvando ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Salvar Alterações</Text>}
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.btnCancelar, { borderColor: colors.primary }]} onPress={() => navigation.goBack()}>
-          <Text style={[styles.btnCancelarText, { color: colors.primary }]}>Cancelar</Text>
+        <TouchableOpacity
+          style={[styles.btnOutline, { borderColor: cores.border }]}
+          onPress={() =>
+            initView ? setEditando(false) : navigation.goBack()
+          }
+        >
+          <Text style={[{ color: cores.muted, fontWeight: "600" }]}>
+            Cancelar
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -136,18 +458,53 @@ export default function EditTarefa({ route, navigation }: any) {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { padding: 16 },
-  title: { fontSize: 24, fontWeight: "700", marginBottom: 16, textAlign: "center" },
-  label: { fontWeight: "700", marginBottom: 6, marginTop: 10 },
-  input: { backgroundColor: "#fff", padding: 12, borderRadius: 10, borderWidth: 1, borderColor: "#ccc" },
-  selectButton: { padding: 12, borderRadius: 10, backgroundColor: "#eee", marginBottom: 12 },
-  selectButtonText: { fontWeight: "600" },
-  repeticaoContainer: { flexDirection: "column", gap: 8 },
-  repeticaoBtn: { padding: 12, borderWidth: 1, borderRadius: 10, borderColor: "#ccc" },
-  repeticaoBtnText: { textAlign: "center", fontWeight: "700" },
-  statusBtn: { flexDirection: "row", alignItems: "center", padding: 12, borderWidth: 2, borderRadius: 10, marginBottom: 12, gap: 10 },
-  statusBtnText: { fontWeight: "700", fontSize: 16 },
-  btnSalvar: { padding: 16, borderRadius: 12, alignItems: "center", marginTop: 12 },
-  btnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
-  btnCancelar: { padding: 14, borderRadius: 12, alignItems: "center", marginTop: 12, borderWidth: 2 },
-  btnCancelarText: { fontWeight: "700", fontSize: 16 },
+  title: { fontWeight: "700", marginBottom: 16, textAlign: "center" },
+  card: {
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    elevation: 2,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 2,
+  },
+  detailLabel: { fontWeight: "600" },
+  detailValue: { fontWeight: "500", marginLeft: 26 },
+  label: { fontWeight: "600", marginBottom: 6, marginTop: 10 },
+  input: {
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  selectButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 12,
+    gap: 8,
+  },
+  btnPrimary: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 10,
+    gap: 6,
+  },
+  btnPrimaryText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  btnOutline: {
+    padding: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    marginBottom: 10,
+    borderWidth: 1,
+  },
 });

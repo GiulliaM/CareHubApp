@@ -12,17 +12,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "../config/api";
-import cores from "../config/cores";
-import { saveToken } from '../utils/auth';
-import { useTheme } from '../context/ThemeContext';
+import coresPadrao from "../config/cores";
+import { salvarToken } from '../utils/autenticacao';
+import { useTema } from '../context/ThemeContext';
 
 export default function Cadastro({ navigation }: any) {
-  const { colors } = useTheme();
+  const { cores } = useTema();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [tipo, setTipo] = useState<"familiar" | "cuidador" | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [carregando, setCarregando] = useState(false);
 
   async function handleCadastro() {
     if (!nome || !email || !senha || !tipo) {
@@ -31,7 +31,7 @@ export default function Cadastro({ navigation }: any) {
     }
 
     try {
-      setLoading(true);
+      setCarregando(true);
       const res = await axios.post(`${API_URL}/usuarios/cadastro`, {
         nome,
         email,
@@ -40,35 +40,45 @@ export default function Cadastro({ navigation }: any) {
       });
 
       if (res.status === 201) {
-        // backend returns token and usuario_id
+        // backend retorna: { usuario: { usuario_id, nome, email, tipo }, token }
         const token = res.data?.token;
-        const usuario_id = res.data?.usuario_id;
-        if (token && usuario_id) {
-          await saveToken(token);
-          // Salva TODOS os dados do usuário, incluindo email
-          const userData = { usuario_id, nome, email, tipo };
-          await AsyncStorage.setItem("usuario", JSON.stringify(userData));
-          console.log("Registration completed:", userData);
-          // go to patient registration so patient is linked to this user
-          navigation.reset({ index: 0, routes: [{ name: 'RegisterPatient' }] });
+        const usuario_id = res.data?.usuario?.usuario_id;
+
+        if (!token || !usuario_id) {
+          // Resposta inesperada — mas cadastro pode ter funcionado, vai para login
+          Alert.alert("Sucesso", "Cadastro realizado! Faça login para continuar.");
+          navigation.navigate("Login");
           return;
         }
-        // fallback: go to login
-        Alert.alert("Sucesso", "Cadastro realizado com sucesso!");
-        navigation.navigate("Login");
+
+        await salvarToken(token);
+        const userData = {
+          usuario_id,
+          nome: res.data?.usuario?.nome || nome,
+          email: res.data?.usuario?.email || email,
+          tipo: res.data?.usuario?.tipo || tipo,
+        };
+        await AsyncStorage.setItem("usuario", JSON.stringify(userData));
+        console.log("Cadastro concluido:", userData);
+        navigation.reset({ index: 0, routes: [{ name: "Abas" }] });
       }
     } catch (err: any) {
-      console.error(err);
-      Alert.alert("Erro", "Não foi possível realizar o cadastro.");
+      console.error("[Cadastro] Erro:", err);
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.detail ||
+        (err?.response?.status === 409 ? "Este e-mail já está cadastrado." : null) ||
+        "Não foi possível realizar o cadastro. Verifique sua conexão.";
+      Alert.alert("Erro no cadastro", msg);
     } finally {
-      setLoading(false);
+      setCarregando(false);
     }
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: cores.background }}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={[styles.title, { color: colors.primary }]}>Crie sua conta</Text>
+        <Text style={[styles.title, { color: cores.primary }]}>Crie sua conta</Text>
 
         <TextInput
           style={styles.input}
@@ -129,12 +139,12 @@ export default function Cadastro({ navigation }: any) {
         </View>
 
         <TouchableOpacity
-          style={[styles.btnCadastrar, { backgroundColor: colors.primary }]}
+          style={[styles.btnCadastrar, { backgroundColor: cores.primary }]}
           onPress={handleCadastro}
-          disabled={loading}
+          disabled={carregando}
         >
           <Text style={styles.btnText}>
-            {loading ? "Cadastrando..." : "Cadastrar"}
+            {carregando ? "Cadastrando..." : "Cadastrar"}
           </Text>
         </TouchableOpacity>
 
@@ -154,11 +164,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
-    backgroundColor: cores.background,
+    backgroundColor: coresPadrao.background,
   },
   title: {
     fontSize: 26,
-    color: cores.primary,
+    color: coresPadrao.primary,
     fontWeight: "700",
     marginBottom: 20,
   },
@@ -189,24 +199,24 @@ const styles = StyleSheet.create({
   tipoBtn: {
     flex: 1,
     borderWidth: 1,
-    borderColor: cores.primary,
+    borderColor: coresPadrao.primary,
     padding: 12,
     marginHorizontal: 5,
     borderRadius: 10,
     alignItems: "center",
   },
   tipoSelecionado: {
-    backgroundColor: cores.primary,
+    backgroundColor: coresPadrao.primary,
   },
   tipoText: {
-    color: cores.primary,
+    color: coresPadrao.primary,
     fontWeight: "600",
   },
   tipoTextSelecionado: {
     color: "#fff",
   },
   btnCadastrar: {
-    backgroundColor: cores.primary,
+    backgroundColor: coresPadrao.primary,
     padding: 14,
     borderRadius: 10,
     width: "100%",
@@ -223,7 +233,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   link: {
-    color: cores.primary,
+    color: coresPadrao.primary,
     fontWeight: "600",
   },
 });

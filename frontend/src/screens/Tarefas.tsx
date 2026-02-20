@@ -1,5 +1,4 @@
-// Tarefas.tsx
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -11,10 +10,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Calendar } from "react-native-calendars";
-import { useTheme } from "../context/ThemeContext";
+import { useTema } from "../context/ThemeContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
-import api from "../utils/apiClient";
+import api from "../utils/clienteApi";
+import { cancelarLembreteTarefa } from "../utils/notificacoes";
 import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
@@ -22,57 +22,44 @@ import "dayjs/locale/pt-br";
 dayjs.locale("pt-br");
 
 export default function Tarefas({ navigation }: any) {
-  const { colors } = useTheme();
+  const { cores, tf } = useTema();
   const [tarefas, setTarefas] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [carregando, setCarregando] = useState(true);
 
   const hoje = dayjs().format("YYYY-MM-DD");
   const [dataSelecionada, setDataSelecionada] = useState(hoje);
 
-  const normalizar = (data: string) => {
-    return dayjs(data).startOf("day").format("YYYY-MM-DD");
-  };
+  const normalizar = (data: string) =>
+    dayjs(data).startOf("day").format("YYYY-MM-DD");
 
   const fetchTarefas = useCallback(async () => {
-    setLoading(true);
+    setCarregando(true);
     try {
       let raw = await AsyncStorage.getItem("paciente");
       let paciente = raw ? JSON.parse(raw) : null;
 
-      // Se não tem paciente no AsyncStorage, tenta buscar da API
       if (!paciente?.paciente_id) {
-        console.log("Patient not found, fetching from API");
         try {
           const pacienteRes = await api.get("/pacientes");
           if (Array.isArray(pacienteRes) && pacienteRes.length > 0) {
             paciente = pacienteRes[0];
             await AsyncStorage.setItem("paciente", JSON.stringify(paciente));
-            console.log("✅ Paciente carregado da API:", paciente.nome);
           }
-        } catch (errApi) {
-          console.log("⚠️ Erro ao buscar paciente da API");
-        }
+        } catch {}
       }
 
-      console.log("Patient loaded:", paciente);
-
       if (!paciente?.paciente_id) {
-        console.log("⚠️ Nenhum paciente encontrado");
         setTarefas([]);
-        setLoading(false);
+        setCarregando(false);
         return;
       }
 
-      console.log("📋 Buscando tarefas para paciente_id:", paciente.paciente_id);
-
-      // apiClient retorna res.data diretamente, por isso aqui pegamos "data"
-      const data = await api.get(`/tarefas?paciente_id=${paciente.paciente_id}`);
-      console.log("✅ Tarefas da API:", data);
-
+      const data = await api.get(
+        `/tarefas?paciente_id=${paciente.paciente_id}`
+      );
       if (!Array.isArray(data)) {
-        console.log("⚠️ Resposta da API não é um array:", data);
         setTarefas([]);
-        setLoading(false);
+        setCarregando(false);
         return;
       }
 
@@ -82,13 +69,11 @@ export default function Tarefas({ navigation }: any) {
         concluida: t.concluida === 1 ? 1 : 0,
       }));
 
-      console.log("✅ Tarefas carregadas:", tarefasCorrigidas.length);
       setTarefas(tarefasCorrigidas);
-    } catch (e) {
-      console.log("❌ Erro ao carregar tarefas:", e);
+    } catch {
       setTarefas([]);
     } finally {
-      setLoading(false);
+      setCarregando(false);
     }
   }, []);
 
@@ -98,42 +83,44 @@ export default function Tarefas({ navigation }: any) {
     }, [fetchTarefas])
   );
 
-  const tarefasDoDia = tarefas.filter((t) => t.data === dataSelecionada);
+  const tarefasDoDia = useMemo(
+    () =>
+      tarefas
+        .filter((t) => t.data === dataSelecionada)
+        .sort((a, b) => {
+          if (!a.hora && !b.hora) return 0;
+          if (!a.hora) return 1;
+          if (!b.hora) return -1;
+          return a.hora.localeCompare(b.hora);
+        }),
+    [tarefas, dataSelecionada]
+  );
 
-  const marcarDias = () => {
-    const marked: any = {};
+  const marcarDias = useMemo(() => {
+    const marked: Record<string, any> = {};
     tarefas.forEach((t) => {
       const d = normalizar(t.data);
-      marked[d] = {
-        marked: true,
-        dotColor: colors.primary,
-      };
+      marked[d] = { marked: true, dotColor: cores.primary };
     });
-
     marked[dataSelecionada] = {
       ...(marked[dataSelecionada] || {}),
       selected: true,
-      selectedColor: colors.primary,
+      selectedColor: cores.primary,
     };
-
     return marked;
-  };
+  }, [tarefas, dataSelecionada, cores.primary]);
 
-  const concluirTarefa = async (tarefa: any) => {
-    Alert.alert("Confirmar", "Marcar esta tarefa como concluída?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Concluir",
-        onPress: async () => {
-          try {
-            await api.patch(`/tarefas/${tarefa.tarefa_id}`, { ...tarefa, concluida: 1 });
-            fetchTarefas();
-          } catch {
-            Alert.alert("Erro", "Não foi possível concluir a tarefa.");
-          }
-        },
-      },
-    ]);
+  const toggleConcluida = async (tarefa: any) => {
+    const novoConcluida = tarefa.concluida === 1 ? 0 : 1;
+    try {
+      await api.patch(`/tarefas/${tarefa.tarefa_id}/toggle`, {
+        concluida: novoConcluida,
+      });
+      if (novoConcluida) await cancelarLembreteTarefa(tarefa.tarefa_id);
+      fetchTarefas();
+    } catch {
+      Alert.alert("Erro", "Nao foi possivel atualizar a tarefa.");
+    }
   };
 
   const excluirTarefa = (id: number) => {
@@ -145,9 +132,10 @@ export default function Tarefas({ navigation }: any) {
         onPress: async () => {
           try {
             await api.delete(`/tarefas/${id}`);
+            await cancelarLembreteTarefa(id);
             fetchTarefas();
           } catch {
-            Alert.alert("Erro", "Não foi possível excluir.");
+            Alert.alert("Erro", "Nao foi possivel excluir.");
           }
         },
       },
@@ -155,59 +143,148 @@ export default function Tarefas({ navigation }: any) {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: cores.background }]}
+    >
       <View style={styles.container}>
-        <Text style={[styles.title, { color: colors.primary }]}>Tarefas</Text>
+        <Text
+          style={[
+            styles.title,
+            { color: cores.primary, fontSize: tf(24) },
+          ]}
+        >
+          Tarefas
+        </Text>
 
         <Calendar
-          markedDates={marcarDias()}
+          markedDates={marcarDias}
           onDayPress={(d) => setDataSelecionada(d.dateString)}
           theme={{
-            todayTextColor: colors.primary,
-            selectedDayBackgroundColor: colors.primary,
+            backgroundColor: cores.card,
+            calendarBackground: cores.card,
+            textSectionTitleColor: cores.muted,
+            selectedDayBackgroundColor: cores.primary,
+            selectedDayTextColor: "#fff",
+            todayTextColor: cores.primary,
+            dayTextColor: cores.text,
+            textDisabledColor: cores.border,
+            monthTextColor: cores.text,
+            arrowColor: cores.primary,
+          }}
+          style={{
+            borderRadius: 12,
+            marginBottom: 12,
+            borderWidth: 1,
+            borderColor: cores.border,
           }}
         />
 
-        {loading ? (
-          <ActivityIndicator size="large" color={colors.primary} />
+        {carregando ? (
+          <ActivityIndicator size="large" color={cores.primary} />
         ) : tarefasDoDia.length === 0 ? (
-          <Text style={[styles.emptyText, { color: colors.muted }]}>Nenhuma tarefa neste dia.</Text>
+          <Text
+            style={[
+              styles.emptyText,
+              { color: cores.muted, fontSize: tf(15) },
+            ]}
+          >
+            Nenhuma tarefa neste dia.
+          </Text>
         ) : (
           <FlatList
             data={tarefasDoDia}
             keyExtractor={(i) => i.tarefa_id.toString()}
             renderItem={({ item }) => (
-              <View style={[styles.card, { backgroundColor: colors.card }]}>
-                <View style={styles.cardHeader}>
-                  <Text style={[styles.cardTitle, { color: colors.primary }]}>{item.titulo}</Text>
-                  <Text style={[styles.status, { color: item.concluida === 1 ? "#2ecc71" : "#e74c3c" }]}>{item.concluida === 1 ? "Concluída" : "Pendente"}</Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() =>
+                  navigation.navigate("EditTarefa", {
+                    tarefa: item,
+                    modoVisualizacao: true,
+                  })
+                }
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: cores.card,
+                    borderColor: cores.border,
+                    opacity: item.concluida === 1 ? 0.7 : 1,
+                  },
+                ]}
+              >
+                <TouchableOpacity
+                  onPress={() => toggleConcluida(item)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons
+                    name={
+                      item.concluida === 1
+                        ? "checkbox"
+                        : "square-outline"
+                    }
+                    size={24}
+                    color={
+                      item.concluida === 1 ? cores.success : cores.muted
+                    }
+                  />
+                </TouchableOpacity>
+
+                <View style={styles.cardContent}>
+                  <Text
+                    style={[
+                      styles.cardTitle,
+                      {
+                        color: cores.text,
+                        fontSize: tf(16),
+                        textDecorationLine:
+                          item.concluida === 1 ? "line-through" : "none",
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {item.titulo}
+                  </Text>
+                  {item.detalhes ? (
+                    <Text
+                      style={[
+                        styles.cardSubtitle,
+                        { color: cores.muted, fontSize: tf(13) },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {item.detalhes}
+                    </Text>
+                  ) : null}
                 </View>
 
-                <Text style={[styles.cardText, { color: colors.text }]}>🕒 {item.hora || "—"}</Text>
-
-                {item.detalhes ? <Text style={[styles.cardText, { color: colors.text }]}>📝 {item.detalhes}</Text> : null}
-
-                <View style={styles.actions}>
-                  {item.concluida !== 1 && (
-                    <TouchableOpacity style={[styles.actionBtn, { backgroundColor: "#2ecc71" }]} onPress={() => concluirTarefa(item)}>
-                      <Ionicons name="checkmark" size={20} color="#fff" />
-                    </TouchableOpacity>
+                <View style={styles.cardRight}>
+                  {item.hora && (
+                    <View style={styles.timeChip}>
+                      <Ionicons
+                        name="time-outline"
+                        size={14}
+                        color={cores.primary}
+                      />
+                      <Text
+                        style={[
+                          styles.timeText,
+                          { color: cores.primary, fontSize: tf(13) },
+                        ]}
+                      >
+                        {item.hora?.slice(0, 5)}
+                      </Text>
+                    </View>
                   )}
-
-                  <TouchableOpacity style={[styles.actionBtn, { backgroundColor: "#3498db" }]} onPress={() => navigation.navigate("EditTarefa", { tarefa: item })}>
-                    <Ionicons name="create-outline" size={20} color="#fff" />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity style={[styles.actionBtn, { backgroundColor: "#e74c3c" }]} onPress={() => excluirTarefa(item.tarefa_id)}>
-                    <Ionicons name="trash-outline" size={20} color="#fff" />
-                  </TouchableOpacity>
                 </View>
-              </View>
+              </TouchableOpacity>
             )}
           />
         )}
 
-        <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={() => navigation.navigate("NovaTarefa")}>
+        <TouchableOpacity
+          style={[styles.addBtn, { backgroundColor: cores.primary }]}
+          onPress={() => navigation.navigate("NovaTarefa")}
+        >
           <Ionicons name="add" size={28} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -218,31 +295,36 @@ export default function Tarefas({ navigation }: any) {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1, padding: 16 },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  emptyText: { textAlign: "center", marginTop: 20, fontSize: 16 },
+  title: { fontWeight: "700", textAlign: "center", marginBottom: 12 },
+  emptyText: { textAlign: "center", marginTop: 20 },
   card: {
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 12,
     padding: 14,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     marginBottom: 8,
+    borderWidth: 1,
+    elevation: 1,
   },
-  cardTitle: { fontSize: 18, fontWeight: "700" },
-  cardText: { marginTop: 4, fontSize: 15 },
-  status: { fontSize: 15, fontWeight: "700" },
-  actions: { flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 10 },
-  actionBtn: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  addBtn: { position: "absolute", bottom: 24, right: 24, width: 58, height: 58, borderRadius: 50, alignItems: "center", justifyContent: "center", elevation: 5 },
+  cardContent: { flex: 1, marginLeft: 12 },
+  cardTitle: { fontWeight: "600" },
+  cardSubtitle: { marginTop: 2 },
+  cardRight: { alignItems: "flex-end", marginLeft: 8 },
+  timeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  timeText: { fontWeight: "600" },
+  addBtn: {
+    position: "absolute",
+    bottom: 24,
+    right: 24,
+    width: 58,
+    height: 58,
+    borderRadius: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 5,
+  },
 });

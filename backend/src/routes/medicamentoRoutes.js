@@ -1,19 +1,21 @@
 import express from "express";
 import {
-  getMedicamentos,
-  createMedicamento,
-  patchMedicamento,
-  deleteMedicamento,
+  buscarMedicamentos,
+  buscarMedicamentoPorId,
+  criarMedicamentoRota,
+  atualizarMedicamentoRota,
+  alternarMedicamentoConcluido,
+  excluirMedicamento,
 } from "../controllers/medicamentoController.js";
+import middlewareAutenticacao from "../middleware/middlewareAutenticacao.js";
 
 const router = express.Router();
 
-router.get("/:paciente_id", getMedicamentos);
-
-router.post("/", createMedicamento);
-
-router.patch("/:id", patchMedicamento);
-
-router.delete("/:id", deleteMedicamento);
+router.get("/:paciente_id", middlewareAutenticacao, buscarMedicamentos);
+router.get("/detalhe/:id", middlewareAutenticacao, buscarMedicamentoPorId);
+router.post("/", middlewareAutenticacao, criarMedicamentoRota);
+router.patch("/:id", middlewareAutenticacao, atualizarMedicamentoRota);
+router.patch("/:id/toggle", middlewareAutenticacao, alternarMedicamentoConcluido);
+router.delete("/:id", middlewareAutenticacao, excluirMedicamento);
 
 export default router;

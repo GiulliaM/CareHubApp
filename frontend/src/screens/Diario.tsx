@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,30 +9,48 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../context/ThemeContext";
-import { API_URL } from "../config/api";
-import { getToken } from "../utils/auth";
+import { useTema } from "../context/ThemeContext";
 import { useFocusEffect } from "@react-navigation/native";
+import api from "../utils/clienteApi";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CATALOGO_DIARIO } from "../utils/diarioCatalogo";
+import dayjs from "dayjs";
+
+const labelFromCodigo = (codigo: string): string => {
+  for (const cat of CATALOGO_DIARIO) {
+    const item = cat.itens.find((i) => i.codigo === codigo);
+    if (item) return item.label;
+  }
+  return codigo;
+};
+
+const iconFromCodigo = (codigo: string): string => {
+  for (const cat of CATALOGO_DIARIO) {
+    const item = cat.itens.find((i) => i.codigo === codigo);
+    if (item) return item.icon;
+  }
+  return "ellipsis-horizontal-outline";
+};
 
 export default function Diario({ navigation }: any) {
-  const { colors } = useTheme();
+  const { cores, tf } = useTema();
   const [registros, setRegistros] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [carregando, setCarregando] = useState(true);
 
   const fetchRegistros = useCallback(async () => {
-    setLoading(true);
+    setCarregando(true);
     try {
-      const token = await getToken();
-      const response = await fetch(`${API_URL}/diario`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const data = await response.json();
-      setRegistros(data);
-    } catch (error) {
-      console.error("Erro ao carregar registros:", error);
+      const rawPac = await AsyncStorage.getItem("paciente");
+      const paciente = rawPac ? JSON.parse(rawPac) : null;
+      const url = paciente?.paciente_id
+        ? `/diario?paciente_id=${paciente.paciente_id}`
+        : "/diario";
+      const data = await api.get(url);
+      setRegistros(Array.isArray(data) ? data : []);
+    } catch {
+      setRegistros([]);
     } finally {
-      setLoading(false);
+      setCarregando(false);
     }
   }, []);
 
@@ -44,22 +62,40 @@ export default function Diario({ navigation }: any) {
 
   return (
     <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: colors.background }]}
+      style={[styles.safeArea, { backgroundColor: cores.background }]}
     >
       <View style={styles.container}>
-        <Text style={[styles.title, { color: colors.primary }]}>Diário</Text>
+        <Text
+          style={[
+            styles.title,
+            { color: cores.primary, fontSize: tf(24) },
+          ]}
+        >
+          Diario
+        </Text>
 
-        {/* Lista */}
-        {loading ? (
+        {carregando ? (
           <ActivityIndicator
             size="large"
-            color={colors.primary}
+            color={cores.primary}
             style={{ marginTop: 30 }}
           />
         ) : registros.length === 0 ? (
-          <Text style={[styles.emptyText, { color: colors.text }]}>
-            Nenhum registro encontrado.
-          </Text>
+          <View style={styles.emptyContainer}>
+            <Ionicons
+              name="book-outline"
+              size={48}
+              color={cores.muted}
+            />
+            <Text
+              style={[
+                styles.emptyText,
+                { color: cores.muted, fontSize: tf(15) },
+              ]}
+            >
+              Nenhum registro encontrado.
+            </Text>
+          </View>
         ) : (
           <FlatList
             data={registros}
@@ -71,75 +107,81 @@ export default function Diario({ navigation }: any) {
                 style={[
                   styles.card,
                   {
-                    backgroundColor: colors.card || "#fff",
-                    borderColor: colors.muted,
+                    backgroundColor: cores.card,
+                    borderColor: cores.border,
                   },
                 ]}
               >
-                {/* Cabeçalho */}
                 <View style={styles.cardHeader}>
                   <View>
                     <Text
                       style={[
                         styles.cardDate,
-                        { color: colors.primary, fontWeight: "700" },
+                        { color: cores.primary, fontSize: tf(15) },
                       ]}
                     >
-                      {new Date(item.data).toLocaleDateString("pt-BR")}
+                      {dayjs(item.data).format("DD/MM/YYYY")}
                     </Text>
-                    <Text style={[styles.cardTime, { color: colors.text }]}>
+                    <Text
+                      style={[
+                        styles.cardTime,
+                        { color: cores.muted, fontSize: tf(13) },
+                      ]}
+                    >
                       {item.hora ? item.hora.slice(0, 5) : ""}
+                      {item.autor_nome
+                        ? ` - ${item.autor_nome}`
+                        : ""}
                     </Text>
                   </View>
-
                   <Ionicons
                     name="journal-outline"
-                    size={26}
-                    color={colors.primary}
+                    size={22}
+                    color={cores.primary}
                   />
                 </View>
 
-                {/* Atividades */}
-                {item.atividades && (
-                  <View style={styles.cardSection}>
-                    <Text
-                      style={[
-                        styles.cardLabel,
-                        { color: colors.muted, marginBottom: 4 },
-                      ]}
-                    >
-                      Atividades:
-                    </Text>
-                    <Text style={[styles.cardText, { color: colors.text }]}>
-                      {item.atividades}
-                    </Text>
+                {/* Itens categorizados */}
+                {item.itens && item.itens.length > 0 && (
+                  <View style={styles.itensContainer}>
+                    {item.itens.map((it: any, idx: number) => (
+                      <View key={idx} style={styles.itemChip}>
+                        <Ionicons
+                          name={iconFromCodigo(it.codigo) as any}
+                          size={16}
+                          color={cores.primary}
+                        />
+                        <Text
+                          style={[
+                            styles.itemText,
+                            { color: cores.text, fontSize: tf(12) },
+                          ]}
+                        >
+                          {labelFromCodigo(it.codigo)}
+                          {it.valor ? `: ${it.valor}` : ""}
+                        </Text>
+                      </View>
+                    ))}
                   </View>
                 )}
 
-                {/* Comentário */}
                 {item.comentario && (
-                  <View style={styles.cardSection}>
-                    <Text
-                      style={[
-                        styles.cardLabel,
-                        { color: colors.muted, marginBottom: 4 },
-                      ]}
-                    >
-                      Comentário:
-                    </Text>
-                    <Text style={[styles.cardText, { color: colors.text }]}>
-                      {item.comentario}
-                    </Text>
-                  </View>
+                  <Text
+                    style={[
+                      styles.comentario,
+                      { color: cores.text, fontSize: tf(14) },
+                    ]}
+                  >
+                    {item.comentario}
+                  </Text>
                 )}
               </View>
             )}
           />
         )}
 
-        {/* Botão flutuante */}
         <TouchableOpacity
-          style={[styles.floatingBtn, { backgroundColor: colors.primary }]}
+          style={[styles.floatingBtn, { backgroundColor: cores.primary }]}
           onPress={() => navigation.navigate("NovoRegistro")}
         >
           <Ionicons name="add" size={28} color="#fff" />
@@ -152,62 +194,41 @@ export default function Diario({ navigation }: any) {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1, padding: 16 },
-
-  title: {
-    fontSize: 26,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 18,
-  },
-
-  emptyText: {
-    fontSize: 16,
-    textAlign: "center",
-    marginTop: 40,
-  },
-
+  title: { fontWeight: "700", textAlign: "center", marginBottom: 14 },
+  emptyContainer: { alignItems: "center", marginTop: 60 },
+  emptyText: { marginTop: 12, textAlign: "center" },
   card: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 14,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
     borderWidth: 1,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
+    elevation: 1,
   },
-
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 8,
   },
-
-  cardDate: {
-    fontSize: 17,
-    fontWeight: "700",
+  cardDate: { fontWeight: "700" },
+  cardTime: { marginTop: 2 },
+  itensContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 8,
   },
-
-  cardTime: {
-    fontSize: 14,
-    marginTop: 3,
+  itemChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: "rgba(96,165,250,0.1)",
+    gap: 4,
   },
-
-  cardSection: {
-    marginBottom: 10,
-  },
-
-  cardLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-
-  cardText: {
-    fontSize: 15,
-    lineHeight: 20,
-  },
-
+  itemText: { fontWeight: "500" },
+  comentario: { marginTop: 4, lineHeight: 20 },
   floatingBtn: {
     position: "absolute",
     bottom: 26,
@@ -218,8 +239,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     elevation: 6,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
   },
 });
