@@ -1,81 +1,137 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-type ThemeName = 'light' | 'dark';
+type NomeTema = "light" | "dark";
+type TamanhoFonte = "small" | "medium" | "large";
 
-const LIGHT = {
-  primary: '#0B3B5A',
-  accent: '#D4AF37',
-  background: '#FFFFFF',
-  text: '#111827',
-  muted: '#6B7280',
-  card: '#F3F4F6', 
-
+const ESCALAS_FONTE: Record<TamanhoFonte, number> = {
+  small: 0.85,
+  medium: 1,
+  large: 1.2,
 };
 
-const DARK = {
-  primary: '#9DD3FF',
-  accent: '#FFD36E',
-  background: '#0B1220',
-  text: '#E6EEF6',
-  card: '#1E2633', 
-  muted: '#9AA6B2',
+const CLARO = {
+  primary: "#0B3B5A",
+  accent: "#D4AF37",
+  background: "#F7F8FA",
+  text: "#111827",
+  muted: "#6B7280",
+  card: "#FFFFFF",
+  border: "#E2E5EA",
+  success: "#22C55E",
+  danger: "#EF4444",
+  warning: "#F59E0B",
+  inputBg: "#FFFFFF",
+  inputText: "#111827",
+  inputPlaceholder: "#9CA3AF",
+  tabBar: "#FFFFFF",
+  tabBarBorder: "#E5E7EB",
+  statusBar: "dark-content" as const,
 };
 
-type Theme = typeof LIGHT;
-
-type ThemeContextValue = {
-  themeName: ThemeName;
-  colors: Theme;
-  toggleTheme: () => Promise<void>;
-  setThemeName: (t: ThemeName) => Promise<void>;
+const ESCURO = {
+  primary: "#60A5FA",
+  accent: "#FFD36E",
+  background: "#0F172A",
+  text: "#E2E8F0",
+  muted: "#94A3B8",
+  card: "#1E293B",
+  border: "#334155",
+  success: "#4ADE80",
+  danger: "#F87171",
+  warning: "#FBBF24",
+  inputBg: "#1E293B",
+  inputText: "#E2E8F0",
+  inputPlaceholder: "#64748B",
+  tabBar: "#1E293B",
+  tabBarBorder: "#334155",
+  statusBar: "light-content" as const,
 };
 
-const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+export type Tema = typeof CLARO;
 
-const STORAGE_KEY = 'app_theme';
+type ValorContextoTema = {
+  nomeTema: NomeTema;
+  cores: Tema;
+  tamanhoFonte: TamanhoFonte;
+  escalaFonte: number;
+  alternarTema: () => Promise<void>;
+  definirNomeTema: (t: NomeTema) => Promise<void>;
+  definirTamanhoFonte: (s: TamanhoFonte) => Promise<void>;
+  tf: (base: number) => number;
+};
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [themeName, setThemeNameState] = useState<ThemeName>('light');
+const ContextoTema = createContext<ValorContextoTema | undefined>(undefined);
+
+const CHAVE_TEMA = "app_theme";
+const CHAVE_FONTE = "app_font_size";
+
+export const ProvedorTema: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [nomeTema, definirNomeTemaEstado] = useState<NomeTema>("light");
+  const [tamanhoFonte, definirTamanhoFonteEstado] = useState<TamanhoFonte>("medium");
 
   useEffect(() => {
     (async () => {
       try {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw === 'dark' || raw === 'light') setThemeNameState(raw);
-      } catch (e) {
-        // ignore
-      }
+        const [temaRaw, fonteRaw] = await Promise.all([
+          AsyncStorage.getItem(CHAVE_TEMA),
+          AsyncStorage.getItem(CHAVE_FONTE),
+        ]);
+        if (temaRaw === "dark" || temaRaw === "light")
+          definirNomeTemaEstado(temaRaw);
+        if (fonteRaw === "small" || fonteRaw === "medium" || fonteRaw === "large")
+          definirTamanhoFonteEstado(fonteRaw);
+      } catch {}
     })();
   }, []);
 
-  const setThemeName = async (t: ThemeName) => {
+  const definirNomeTema = async (t: NomeTema) => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, t);
-    } catch (e) {
-      // ignore
-    }
-    setThemeNameState(t);
+      await AsyncStorage.setItem(CHAVE_TEMA, t);
+    } catch {}
+    definirNomeTemaEstado(t);
   };
 
-  const toggleTheme = async () => {
-    const next = themeName === 'light' ? 'dark' : 'light';
-    await setThemeName(next);
+  const definirTamanhoFonte = async (s: TamanhoFonte) => {
+    try {
+      await AsyncStorage.setItem(CHAVE_FONTE, s);
+    } catch {}
+    definirTamanhoFonteEstado(s);
   };
 
-  const colors = themeName === 'light' ? LIGHT : DARK;
+  const alternarTema = async () => {
+    await definirNomeTema(nomeTema === "light" ? "dark" : "light");
+  };
+
+  const cores = nomeTema === "light" ? CLARO : ESCURO;
+  const escalaFonte = ESCALAS_FONTE[tamanhoFonte];
+
+  const tf = (base: number) => Math.round(base * escalaFonte);
 
   return (
-    <ThemeContext.Provider value={{ themeName, colors, toggleTheme, setThemeName }}>
+    <ContextoTema.Provider
+      value={{
+        nomeTema,
+        cores,
+        tamanhoFonte,
+        escalaFonte,
+        alternarTema,
+        definirNomeTema,
+        definirTamanhoFonte,
+        tf,
+      }}
+    >
       {children}
-    </ThemeContext.Provider>
+    </ContextoTema.Provider>
   );
 };
 
-export function useTheme() {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
+export function useTema() {
+  const ctx = useContext(ContextoTema);
+  if (!ctx) throw new Error("useTema deve ser usado dentro de ProvedorTema");
   return ctx;
 }
 
-export default ThemeContext;
+export default ContextoTema;

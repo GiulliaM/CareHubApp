@@ -66,11 +66,18 @@ export default StyleSheet.create({
     marginBottom: 6,
   },
 
+  patientActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: 12,
+  },
+
   editBtn: {
     flexDirection: "row",
-    marginTop: 12,
     borderRadius: 10,
     paddingVertical: 10,
+    paddingHorizontal: 14,
     justifyContent: "center",
     alignItems: "center",
     gap: 6,

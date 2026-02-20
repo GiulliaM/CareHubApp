@@ -13,8 +13,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import api from "../utils/apiClient";
-import { useTheme } from "../context/ThemeContext";
+import api from "../utils/clienteApi";
+import { useTema } from "../context/ThemeContext";
+import { agendarLembreteTarefa, cancelarLembreteTarefa } from "../utils/notificacoes";
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
 
@@ -31,7 +32,7 @@ const WEEKDAYS = [
 ];
 
 export default function NovaTarefa({ navigation, route }: any) {
-  const { colors } = useTheme();
+  const { cores } = useTema();
   const editingTarefa = route?.params?.tarefa ?? null;
 
   // Use dayjs to avoid timezone shifts
@@ -41,8 +42,11 @@ export default function NovaTarefa({ navigation, route }: any) {
     editingTarefa?.data ? dayjs(editingTarefa.data).startOf("day").toDate() : dayjs().startOf("day").toDate()
   );
   const [hora, setHora] = useState<Date>(
-    editingTarefa?.hora ? dayjs(`1970-01-01 ${editingTarefa.hora}`).toDate() : dayjs().toDate()
+    editingTarefa?.hora
+      ? dayjs(`1970-01-01 ${editingTarefa.hora}`).toDate()
+      : new Date(2000, 0, 1, 8, 0)
   );
+  const [horaDefinida, setHoraDefinida] = useState(!!editingTarefa?.hora);
   const [showDataPicker, setShowDataPicker] = useState(false);
   const [showHoraPicker, setShowHoraPicker] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -124,6 +128,15 @@ export default function NovaTarefa({ navigation, route }: any) {
           paciente_id: paciente.paciente_id,
         };
         await api.patch(`/tarefas/${editingTarefa.tarefa_id}`, payload);
+        await cancelarLembreteTarefa(editingTarefa.tarefa_id);
+        if (!payload.concluida) {
+          await agendarLembreteTarefa(
+            editingTarefa.tarefa_id,
+            payload.titulo,
+            payload.data,
+            payload.hora
+          );
+        }
         Alert.alert("Sucesso", "Tarefa atualizada com sucesso!");
         navigation.goBack();
         return;
@@ -140,7 +153,16 @@ export default function NovaTarefa({ navigation, route }: any) {
           dias_repeticao: "",
           paciente_id: paciente.paciente_id,
         };
-        await api.post("/tarefas", payload);
+        const res = await api.post("/tarefas", payload);
+        const tarefaId = res?.tarefa_id;
+        if (tarefaId) {
+          await agendarLembreteTarefa(
+            tarefaId,
+            payload.titulo,
+            payload.data,
+            payload.hora
+          );
+        }
         Alert.alert("Sucesso", "Tarefa cadastrada com sucesso!");
         navigation.goBack();
         return;
@@ -178,9 +200,9 @@ export default function NovaTarefa({ navigation, route }: any) {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: cores.background }]}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={[styles.title, { color: colors.primary }]}>
+        <Text style={[styles.title, { color: cores.primary }]}>
           {editingTarefa ? "Editar Tarefa" : "Nova Tarefa"}
         </Text>
 
@@ -217,17 +239,22 @@ export default function NovaTarefa({ navigation, route }: any) {
         )}
 
         <TouchableOpacity style={styles.selectButton} onPress={() => setShowHoraPicker(true)}>
-          <Text style={styles.selectButtonText}>Hora: {dayjs(hora).format("HH:mm")}</Text>
+          <Text style={styles.selectButtonText}>
+            {horaDefinida ? `Hora: ${dayjs(hora).format("HH:mm")}` : "Definir horário"}
+          </Text>
         </TouchableOpacity>
         {showHoraPicker && (
           <DateTimePicker
             value={hora}
             mode="time"
             is24Hour
-            display="default"
+            display="spinner"
             onChange={(e, dateSel) => {
               setShowHoraPicker(false);
-              if (dateSel) setHora(dateSel);
+              if (dateSel) {
+                setHora(dateSel);
+                setHoraDefinida(true);
+              }
             }}
           />
         )}
@@ -245,7 +272,7 @@ export default function NovaTarefa({ navigation, route }: any) {
               key={item.value}
               style={[
                 styles.repeticaoBtn,
-                preset === item.value && { backgroundColor: colors.primary },
+                preset === item.value && { backgroundColor: cores.primary },
               ]}
               onPress={() => applyPreset(item.value)}
             >
@@ -262,7 +289,7 @@ export default function NovaTarefa({ navigation, route }: any) {
             return (
               <TouchableOpacity
                 key={d.idx}
-                style={[styles.weekdayBtn, { borderColor: colors.primary }, active && { backgroundColor: colors.primary }]}
+                style={[styles.weekdayBtn, { borderColor: cores.primary }, active && { backgroundColor: cores.primary }]}
                 onPress={() => toggleWeekday(d.idx)}
               >
                 <Text style={[styles.weekdayText, active && { color: "#fff" }]}>{d.label}</Text>
@@ -271,12 +298,12 @@ export default function NovaTarefa({ navigation, route }: any) {
           })}
         </View>
 
-        <TouchableOpacity style={[styles.btnSalvar, { backgroundColor: colors.primary }]} disabled={salvando} onPress={handleSalvar}>
+        <TouchableOpacity style={[styles.btnSalvar, { backgroundColor: cores.primary }]} disabled={salvando} onPress={handleSalvar}>
           {salvando ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>{editingTarefa ? "Salvar alterações" : "Salvar Tarefa"}</Text>}
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.btnCancelar, { borderColor: colors.primary }]} onPress={() => navigation.goBack()}>
-          <Text style={[styles.btnCancelarText, { color: colors.primary }]}>Cancelar</Text>
+        <TouchableOpacity style={[styles.btnCancelar, { borderColor: cores.primary }]} onPress={() => navigation.goBack()}>
+          <Text style={[styles.btnCancelarText, { color: cores.primary }]}>Cancelar</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

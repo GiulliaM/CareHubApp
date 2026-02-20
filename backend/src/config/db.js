@@ -1,18 +1,24 @@
-
-import dotenv from "dotenv";
 import mysql from "mysql2";
-dotenv.config();
-const connection = mysql.createConnection({
+
+// Nota: as variáveis de ambiente (DB_HOST, etc.) são carregadas pelo server.js
+// através do dotenv ANTES de importar este módulo (import dinâmico).
+const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
-  database: process.env.DB_NAME
+  database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
-connection.connect(err => {
+
+pool.getConnection((err, conn) => {
   if (err) {
-    console.error("Erro ao conectar ao MySQL:", err);
+    console.error("Erro ao conectar ao MySQL:", err.message);
   } else {
-    console.log("Conectado ao MySQL:", process.env.DB_NAME);
+    console.log("Pool MySQL conectado:", process.env.DB_NAME);
+    conn.release();
   }
 });
-export default connection;
+
+export default pool;

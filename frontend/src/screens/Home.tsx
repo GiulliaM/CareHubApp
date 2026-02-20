@@ -5,143 +5,138 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Image,
+  StyleSheet,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, Feather } from "@expo/vector-icons";
-import { useTheme } from "../context/ThemeContext";
+import { useTema } from "../context/ThemeContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import dayjs from "dayjs";
-import api from "../utils/apiClient";
-import styles from "../style/homeStyle";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import "dayjs/locale/pt-br";
+import api from "../utils/clienteApi";
+import { termoPaciente } from "../utils/terminologia";
 
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 dayjs.locale("pt-br");
 
 export default function Home({ navigation }: any) {
-  const { colors } = useTheme();
+  const { cores, tf } = useTema();
   const [user, setUser] = useState<any>(null);
-  const [paciente, setPaciente] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [pacientes, setPacientes] = useState<any[]>([]);
+  const [pacienteAtivo, setPacienteAtivo] = useState<any>(null);
+  const [carregando, setCarregando] = useState(true);
+  const [membrosGrupo, setMembrosGrupo] = useState<any[]>([]);
 
-  // Dashboard states
-  const [qtdTarefasHoje, setQtdTarefasHoje] = useState(0);
-  const [qtdMedHoje, setQtdMedHoje] = useState(0);
-  const [qtdDiarioHoje, setQtdDiarioHoje] = useState(0);
+  const [resumo, setResumo] = useState({
+    tarefasTotal: 0,
+    tarefasConcluidas: 0,
+    tarefasPendentes: 0,
+    medTotal: 0,
+    medConcluidos: 0,
+    medPendentes: 0,
+  });
 
   const hoje = dayjs().format("YYYY-MM-DD");
+  const termo = termoPaciente(user?.tipo);
 
   async function load() {
-    setLoading(true);
-
+    setCarregando(true);
     try {
-      const allKeys = await AsyncStorage.getAllKeys();
-      console.log("AsyncStorage keys:", allKeys);
-      
-      // Sempre busca do AsyncStorage as chaves padronizadas
       const rawUser = await AsyncStorage.getItem("usuario");
-      const rawPac = await AsyncStorage.getItem("paciente");
-
-      console.log("Loading user data");
-      console.log("Loading patient data");
-
       if (rawUser) {
         const userData = JSON.parse(rawUser);
-        console.log("👤 Usuário carregado:", userData.nome);
-        console.log("🆔 usuario_id:", userData.usuario_id);
         setUser(userData);
-      } else {
-        console.log("⚠️ Nenhum usuário no AsyncStorage");
-        setUser(null);
       }
-      
-      if (rawPac) {
-        const pacData = JSON.parse(rawPac);
-        console.log("🏥 Paciente carregado do AsyncStorage:", pacData.nome);
-        setPaciente(pacData);
-      } else {
-        console.log("⚠️ Nenhum paciente no AsyncStorage, buscando da API...");
-        // Se não tem paciente no AsyncStorage, busca da API
-        if (rawUser) {
-          try {
-            const userData = JSON.parse(rawUser);
-            if (userData.usuario_id) {
-              const pacienteRes = await api.get("/pacientes");
-              if (Array.isArray(pacienteRes) && pacienteRes.length > 0) {
-                const pacienteData = pacienteRes[0];
-                await AsyncStorage.setItem("paciente", JSON.stringify(pacienteData));
-                setPaciente(pacienteData);
-                console.log("Patient loaded from API:", pacienteData.nome);
-              } else {
-                console.log("ℹ️ Nenhum paciente cadastrado para este usuário");
-                setPaciente(null);
-              }
-            }
-          } catch (errApi) {
-            console.log("⚠️ Erro ao buscar paciente da API:", errApi);
-            setPaciente(null);
-          }
-        } else {
-          setPaciente(null);
-        }
-      }
-    } catch (error) {
-      console.error("❌ Erro ao carregar dados:", error);
-      setUser(null);
-      setPaciente(null);
-    }
 
-    setLoading(false);
+      const listaPacientes = await api.get("/pacientes");
+      const lista = Array.isArray(listaPacientes) ? listaPacientes : [];
+      setPacientes(lista);
+
+      if (lista.length > 0) {
+        const rawPac = await AsyncStorage.getItem("paciente_ativo_id");
+        const savedId = rawPac ? parseInt(rawPac) : null;
+        const found = lista.find((p: any) => p.paciente_id === savedId);
+        const ativo = found || lista[0];
+        setPacienteAtivo(ativo);
+        await AsyncStorage.setItem(
+          "paciente_ativo_id",
+          String(ativo.paciente_id)
+        );
+        await AsyncStorage.setItem("paciente", JSON.stringify(ativo));
+      } else {
+        setPacienteAtivo(null);
+      }
+    } catch {
+      setPacientes([]);
+      setPacienteAtivo(null);
+    }
+    setCarregando(false);
   }
 
-  async function carregarDashboard() {
-    if (!paciente?.paciente_id) return;
-
+  const carregarDashboard = useCallback(async () => {
+    if (!pacienteAtivo?.paciente_id) return;
     try {
-      // -------------------- TAREFAS --------------------
-      const tarefas = await api.get(`/tarefas?paciente_id=${paciente.paciente_id}`);
-      const tarefasHoje = (tarefas || []).filter((t: any) => t.data === hoje);
-      setQtdTarefasHoje(tarefasHoje.length);
+      const [tarefas, med] = await Promise.all([
+        api.get(`/tarefas?paciente_id=${pacienteAtivo.paciente_id}`),
+        api.get(`/medicamentos/${pacienteAtivo.paciente_id}`),
+      ]);
 
-      // -------------------- MEDICAMENTOS --------------------
-      const med = await api.get(`/medicamentos/${paciente.paciente_id}`);
+      const tarefasHoje = (tarefas || []).filter(
+        (t: any) => t.data === hoje
+      );
+      const tarefasConcluidas = tarefasHoje.filter(
+        (t: any) => t.concluida === 1
+      ).length;
 
       const medHoje = (med || []).filter((m: any) => {
         if (!m.inicio) return false;
-
-        const dataInicio = dayjs(m.inicio);
-
-        // Uso contínuo
-        if (m.uso_continuo == 1) {
-          return dayjs(hoje).isSame(dataInicio, "day") || dayjs(hoje).isAfter(dataInicio, "day");
-        }
-
-        // Com duração definida
-        if (m.duracao_days && m.duracao_days > 0) {
-          const dataFim = dataInicio.add(m.duracao_days - 1, "day");
-
+        const di = dayjs(m.inicio);
+        if (m.uso_continuo == 1) return dayjs(hoje).isSameOrAfter(di, "day");
+        if (m.duracao_days > 0) {
+          const df = di.add(m.duracao_days - 1, "day");
           return (
-            (dayjs(hoje).isSame(dataInicio, "day") || dayjs(hoje).isAfter(dataInicio, "day")) &&
-            (dayjs(hoje).isSame(dataFim, "day") || dayjs(hoje).isBefore(dataFim, "day"))
+            dayjs(hoje).isSameOrAfter(di, "day") &&
+            dayjs(hoje).isSameOrBefore(df, "day")
           );
         }
+        return dayjs(hoje).isSame(di, "day");
+      });
+      const medConcluidos = medHoje.filter(
+        (m: any) => m.concluido === 1
+      ).length;
 
-        // Sem duração → apenas no início
-        return dayjs(hoje).isSame(dataInicio, "day");
+      setResumo({
+        tarefasTotal: tarefasHoje.length,
+        tarefasConcluidas,
+        tarefasPendentes: tarefasHoje.length - tarefasConcluidas,
+        medTotal: medHoje.length,
+        medConcluidos,
+        medPendentes: medHoje.length - medConcluidos,
       });
 
-      setQtdMedHoje(medHoje.length);
-
-      // -------------------- DIÁRIO --------------------
-      const diario = await api.get(`/diario?paciente_id=${paciente.paciente_id}`);
-      const diarioHoje = (diario || []).filter(
-        (d: any) => dayjs(d.data).format("YYYY-MM-DD") === hoje
-      );
-      setQtdDiarioHoje(diarioHoje.length);
-    } catch (err) {
-      console.log("Erro ao carregar dashboard:", err);
+      try {
+        const membros = await api.get(
+          `/grupo/membros/${pacienteAtivo.paciente_id}`
+        );
+        setMembrosGrupo(Array.isArray(membros) ? membros : []);
+      } catch {
+        setMembrosGrupo([]);
+      }
+    } catch {
+      setResumo({
+        tarefasTotal: 0,
+        tarefasConcluidas: 0,
+        tarefasPendentes: 0,
+        medTotal: 0,
+        medConcluidos: 0,
+        medPendentes: 0,
+      });
     }
-  }
+  }, [pacienteAtivo?.paciente_id, hoje]);
 
   useEffect(() => {
     load();
@@ -149,183 +144,420 @@ export default function Home({ navigation }: any) {
 
   useFocusEffect(
     useCallback(() => {
-      // Força reload sempre que a tela recebe foco
-      console.log("Home screen focused, reloading data");
-      load();
-    }, [])
+      if (pacienteAtivo?.paciente_id) carregarDashboard();
+    }, [pacienteAtivo?.paciente_id, carregarDashboard])
   );
 
-  // Assim que paciente carregar, carrega a dashboard
   useEffect(() => {
-    if (paciente) carregarDashboard();
-  }, [paciente]);
+    if (pacienteAtivo?.paciente_id) carregarDashboard();
+  }, [pacienteAtivo?.paciente_id]);
+
+  const selecionarPaciente = async (p: any) => {
+    setPacienteAtivo(p);
+    await AsyncStorage.setItem("paciente_ativo_id", String(p.paciente_id));
+    await AsyncStorage.setItem("paciente", JSON.stringify(p));
+  };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: cores.background }]}
+    >
       <ScrollView contentContainerStyle={styles.container}>
-        {loading && (
+        {carregando && (
           <ActivityIndicator
             size="large"
-            color={colors.primary}
+            color={cores.primary}
             style={{ marginTop: 40 }}
           />
         )}
 
-        {!loading && (
+        {!carregando && (
           <>
             {/* Header */}
             <View style={styles.header}>
-              <View>
-                <Text style={[styles.welcome, { color: colors.primary }]}>
-                  Olá, {user?.nome?.split(" ")[0] || "usuário"}
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={[
+                    styles.welcome,
+                    { color: cores.primary, fontSize: tf(22) },
+                  ]}
+                >
+                  Ola, {user?.nome?.split(" ")[0] || "usuario"}
                 </Text>
-                <Text style={[styles.welcomeSubtitle, { color: colors.text }]}>
-                  Aqui está o resumo do seu cuidado de hoje
+                <Text
+                  style={[
+                    styles.welcomeSubtitle,
+                    { color: cores.muted, fontSize: tf(14) },
+                  ]}
+                >
+                  Resumo do cuidado de hoje
                 </Text>
               </View>
-
-              <TouchableOpacity onPress={() => navigation.navigate("Perfil")}>
-                <Image
-                  source={require("../../../assets/bandaid-heart.webp")}
-                  style={styles.avatar}
+              <TouchableOpacity
+                style={[styles.settingsBtn, { backgroundColor: cores.card }]}
+                onPress={() => navigation.navigate("Configuracoes")}
+              >
+                <Ionicons
+                  name="settings-outline"
+                  size={22}
+                  color={cores.primary}
                 />
               </TouchableOpacity>
             </View>
 
-            {/* Card do Paciente */}
-            <View style={[styles.card, { backgroundColor: colors.card }]}>
+            {/* Seletor de paciente */}
+            {pacientes.length > 1 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.pacienteSelectorRow}
+              >
+                {pacientes.map((p: any) => {
+                  const isActive =
+                    p.paciente_id === pacienteAtivo?.paciente_id;
+                  return (
+                    <TouchableOpacity
+                      key={p.paciente_id}
+                      style={[
+                        styles.pacienteChip,
+                        {
+                          backgroundColor: isActive
+                            ? cores.primary
+                            : cores.card,
+                          borderColor: isActive
+                            ? cores.primary
+                            : cores.border,
+                        },
+                      ]}
+                      onPress={() => selecionarPaciente(p)}
+                    >
+                      <Ionicons
+                        name="heart-outline"
+                        size={16}
+                        color={isActive ? "#fff" : cores.primary}
+                      />
+                      <Text
+                        style={{
+                          color: isActive ? "#fff" : cores.text,
+                          fontWeight: "600",
+                          fontSize: tf(13),
+                          marginLeft: 4,
+                        }}
+                      >
+                        {p.nome}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
+
+            {/* Info do paciente */}
+            <View style={[styles.card, { backgroundColor: cores.card, borderColor: cores.border }]}>
               <View style={styles.cardHeaderRow}>
-                <Feather name="user" size={20} color={colors.primary} />
-                <Text style={[styles.cardTitle, { color: colors.text }]}>
-                  Informações do Paciente
+                <Ionicons name="heart-outline" size={20} color={cores.primary} />
+                <Text style={[styles.cardTitle, { color: cores.text, fontSize: tf(17) }]}>
+                  {termo}
                 </Text>
               </View>
 
-              {paciente ? (
+              {pacienteAtivo ? (
                 <>
-                  <Text style={[styles.cardInfo, { color: colors.text }]}>
-                    <Text style={styles.cardLabel}>Nome:</Text> {paciente.nome}
+                  <Text style={[styles.cardInfo, { color: cores.text, fontSize: tf(15) }]}>
+                    <Text style={[styles.cardLabel, { color: cores.primary }]}>Nome: </Text>
+                    {pacienteAtivo.nome}
                   </Text>
-                  <Text style={[styles.cardInfo, { color: colors.text }]}>
-                    <Text style={styles.cardLabel}>Idade:</Text>{" "}
-                    {paciente.idade || "—"}
-                  </Text>
-                  <Text style={[styles.cardInfo, { color: colors.text }]}>
-                    <Text style={styles.cardLabel}>Gênero:</Text>{" "}
-                    {paciente.genero || "—"}
-                  </Text>
-                  <Text style={[styles.cardInfo, { color: colors.text }]}>
-                    <Text style={styles.cardLabel}>Observações:</Text>{" "}
-                    {paciente.observacoes || "—"}
+                  <Text style={[styles.cardInfo, { color: cores.text, fontSize: tf(15) }]}>
+                    <Text style={[styles.cardLabel, { color: cores.primary }]}>Idade: </Text>
+                    {pacienteAtivo.idade || "Nao informada"}
                   </Text>
 
-                  <TouchableOpacity
-                    style={[styles.editBtn, { backgroundColor: colors.primary }]}
-                    onPress={() => navigation.navigate("EditPatient", { paciente })}
-                  >
-                    <Feather name="edit" size={16} color="#fff" />
-                    <Text style={styles.editText}>Editar</Text>
-                  </TouchableOpacity>
+                  <View style={styles.patientActions}>
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: cores.primary }]}
+                      onPress={() =>
+                        navigation.navigate("HistoricoMedico", {
+                          paciente: pacienteAtivo,
+                        })
+                      }
+                    >
+                      <Feather name="file-text" size={14} color="#fff" />
+                      <Text style={styles.actionBtnText}>Historico</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: cores.primary }]}
+                      onPress={() =>
+                        navigation.navigate("EditarPaciente", {
+                          paciente: pacienteAtivo,
+                        })
+                      }
+                    >
+                      <Feather name="edit-2" size={14} color="#fff" />
+                      <Text style={styles.actionBtnText}>Editar</Text>
+                    </TouchableOpacity>
+                  </View>
                 </>
               ) : (
-                <Text style={[styles.emptyText, { color: colors.muted }]}>
-                  Nenhum paciente vinculado.
-                </Text>
+                <View style={{ alignItems: "center", paddingVertical: 12 }}>
+                  <Text style={[styles.emptyText, { color: cores.muted, fontSize: tf(14) }]}>
+                    Nenhum {termo.toLowerCase()} vinculado.
+                  </Text>
+                  <View style={styles.emptyActions}>
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: cores.primary }]}
+                      onPress={() => navigation.navigate("CadastrarPaciente")}
+                    >
+                      <Ionicons name="add-outline" size={16} color="#fff" />
+                      <Text style={styles.actionBtnText}>Cadastrar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: cores.accent }]}
+                      onPress={() => navigation.navigate("VincularCuidador")}
+                    >
+                      <Ionicons name="link-outline" size={16} color="#fff" />
+                      <Text style={styles.actionBtnText}>Vincular</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               )}
             </View>
 
-            {/* DASHBOARD DO DIA */}
-            <View style={[styles.card, { backgroundColor: colors.card }]}>
-              <View style={styles.cardHeaderRow}>
-                <Ionicons
-                  name="bar-chart-outline"
-                  size={22}
-                  color={colors.primary}
-                />
-                <Text style={[styles.cardTitle, { color: colors.text }]}>
-                  Resumo de Hoje
-                </Text>
+            {/* Resumo do dia */}
+            {pacienteAtivo && (
+              <View style={[styles.card, { backgroundColor: cores.card, borderColor: cores.border }]}>
+                <View style={styles.cardHeaderRow}>
+                  <Ionicons name="bar-chart-outline" size={20} color={cores.primary} />
+                  <Text style={[styles.cardTitle, { color: cores.text, fontSize: tf(17) }]}>
+                    Resumo de Hoje
+                  </Text>
+                </View>
+
+                <View style={styles.summaryTable}>
+                  <View style={styles.summaryRow}>
+                    <Text style={[styles.summaryHeader, { color: cores.muted, fontSize: tf(12) }]}> </Text>
+                    <Text style={[styles.summaryHeader, { color: cores.muted, fontSize: tf(12) }]}>Total</Text>
+                    <Text style={[styles.summaryHeader, { color: cores.success, fontSize: tf(12) }]}>Feito</Text>
+                    <Text style={[styles.summaryHeader, { color: cores.warning, fontSize: tf(12) }]}>Pendente</Text>
+                  </View>
+
+                  <View style={[styles.summaryRow, { backgroundColor: cores.background }]}>
+                    <View style={styles.summaryLabelRow}>
+                      <Ionicons name="checkbox-outline" size={16} color={cores.primary} />
+                      <Text style={[styles.summaryLabel, { color: cores.text, fontSize: tf(14) }]}>Tarefas</Text>
+                    </View>
+                    <Text style={[styles.summaryVal, { color: cores.text, fontSize: tf(14) }]}>{resumo.tarefasTotal}</Text>
+                    <Text style={[styles.summaryVal, { color: cores.success, fontSize: tf(14) }]}>{resumo.tarefasConcluidas}</Text>
+                    <Text style={[styles.summaryVal, { color: cores.warning, fontSize: tf(14) }]}>{resumo.tarefasPendentes}</Text>
+                  </View>
+
+                  <View style={styles.summaryRow}>
+                    <View style={styles.summaryLabelRow}>
+                      <Ionicons name="medical-outline" size={16} color={cores.primary} />
+                      <Text style={[styles.summaryLabel, { color: cores.text, fontSize: tf(14) }]}>Medicamentos</Text>
+                    </View>
+                    <Text style={[styles.summaryVal, { color: cores.text, fontSize: tf(14) }]}>{resumo.medTotal}</Text>
+                    <Text style={[styles.summaryVal, { color: cores.success, fontSize: tf(14) }]}>{resumo.medConcluidos}</Text>
+                    <Text style={[styles.summaryVal, { color: cores.warning, fontSize: tf(14) }]}>{resumo.medPendentes}</Text>
+                  </View>
+                </View>
               </View>
+            )}
 
-              <Text style={[styles.cardInfo, { color: colors.text }]}>
-                📌 Tarefas de hoje:{" "}
-                <Text style={styles.cardLabel}>{qtdTarefasHoje}</Text>
-              </Text>
+            {/* Grupo de cuidado */}
+            {pacienteAtivo && membrosGrupo.length > 0 && (
+              <View style={[styles.card, { backgroundColor: cores.card, borderColor: cores.border }]}>
+                <View style={styles.cardHeaderRow}>
+                  <Ionicons name="people-outline" size={20} color={cores.primary} />
+                  <Text style={[styles.cardTitle, { color: cores.text, fontSize: tf(17) }]}>
+                    Grupo de Cuidado: {pacienteAtivo.nome}
+                  </Text>
+                </View>
+                {membrosGrupo.map((m: any) => (
+                  <View key={m.usuario_id} style={styles.membroRow}>
+                    <Ionicons
+                      name={
+                        m.tipo === "cuidador"
+                          ? "medkit-outline"
+                          : "person-outline"
+                      }
+                      size={18}
+                      color={cores.primary}
+                    />
+                    <Text style={[{ color: cores.text, fontSize: tf(14), marginLeft: 8 }]}>
+                      {m.nome}
+                    </Text>
+                    <Text style={[{ color: cores.muted, fontSize: tf(12), marginLeft: 6 }]}>
+                      ({m.papel})
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
 
-              <Text style={[styles.cardInfo, { color: colors.text }]}>
-                💊 Medicamentos hoje:{" "}
-                <Text style={styles.cardLabel}>{qtdMedHoje}</Text>
-              </Text>
-
-              <Text style={[styles.cardInfo, { color: colors.text }]}>
-                📖 Diário hoje:{" "}
-                <Text style={styles.cardLabel}>{qtdDiarioHoje}</Text>
-              </Text>
-            </View>
-
-            {/* Acesso rápido */}
-            <Text style={[styles.sectionTitle, { color: colors.primary }]}>
-              Acesso rápido
+            {/* Acesso rapido */}
+            <Text style={[styles.sectionTitle, { color: cores.primary, fontSize: tf(18) }]}>
+              Acesso rapido
             </Text>
 
             <View style={styles.quickGrid}>
-              <TouchableOpacity
-                style={[styles.quickCard, { backgroundColor: colors.card }]}
-                onPress={() => navigation.navigate("Tarefas")}
-              >
-                <Ionicons
-                  name="calendar-outline"
-                  size={28}
-                  color={colors.primary}
-                />
-                <Text style={[styles.quickText, { color: colors.text }]}>
-                  Tarefas
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.quickCard, { backgroundColor: colors.card }]}
-                onPress={() => navigation.navigate("Medicamentos")}
-              >
-                <Ionicons
-                  name="medical-outline"
-                  size={28}
-                  color={colors.primary}
-                />
-                <Text style={[styles.quickText, { color: colors.text }]}>
-                  Medicamentos
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.quickCard, { backgroundColor: colors.card }]}
-                onPress={() => navigation.navigate("Diario")}
-              >
-                <Ionicons
-                  name="book-outline"
-                  size={28}
-                  color={colors.primary}
-                />
-                <Text style={[styles.quickText, { color: colors.text }]}>
-                  Diário
-                </Text>
-              </TouchableOpacity>
+              {[
+                { name: "Tarefas", icon: "checkbox-outline" as const, screen: "Tarefas" },
+                { name: "Medicamentos", icon: "medical-outline" as const, screen: "Medicamentos" },
+                { name: "Diario", icon: "book-outline" as const, screen: "Diario" },
+              ].map((item) => (
+                <TouchableOpacity
+                  key={item.screen}
+                  style={[styles.quickCard, { backgroundColor: cores.card, borderColor: cores.border }]}
+                  onPress={() => navigation.navigate(item.screen)}
+                >
+                  <Ionicons name={item.icon} size={28} color={cores.primary} />
+                  <Text style={[styles.quickText, { color: cores.text, fontSize: tf(13) }]}>
+                    {item.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
 
-            {/* Aviso */}
-            <View style={[styles.notice, { backgroundColor: colors.card }]}>
-              <Ionicons
-                name="information-circle-outline"
-                size={22}
-                color={colors.accent}
-              />
-              <Text style={[styles.noticeText, { color: colors.text }]}>
-                Mantenha os registros do paciente atualizados 💙
-              </Text>
-            </View>
+            {/* Botoes vincular/cadastrar */}
+            {pacienteAtivo && (
+              <View style={styles.linkRow}>
+                <TouchableOpacity
+                  style={[styles.linkBtn, { backgroundColor: cores.card, borderColor: cores.border }]}
+                  onPress={() => navigation.navigate("CadastrarPaciente")}
+                >
+                  <Ionicons name="add-circle-outline" size={20} color={cores.primary} />
+                  <Text style={[styles.linkBtnText, { color: cores.text, fontSize: tf(13) }]}>
+                    Cadastrar {termo.toLowerCase()}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.linkBtn, { backgroundColor: cores.card, borderColor: cores.border }]}
+                  onPress={() => navigation.navigate("VincularCuidador")}
+                >
+                  <Ionicons name="link-outline" size={20} color={cores.primary} />
+                  <Text style={[styles.linkBtnText, { color: cores.text, fontSize: tf(13) }]}>
+                    Vincular pessoa
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </>
         )}
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: { flex: 1 },
+  container: { padding: 16, paddingBottom: 32 },
+  header: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
+  welcome: { fontWeight: "700" },
+  welcomeSubtitle: { marginTop: 2 },
+  settingsBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 2,
+  },
+  pacienteSelectorRow: { marginBottom: 12 },
+  pacienteChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1,
+  },
+  card: {
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    elevation: 2,
+  },
+  cardHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 10,
+  },
+  cardTitle: { fontWeight: "700" },
+  cardInfo: { marginBottom: 4 },
+  cardLabel: { fontWeight: "700" },
+  emptyText: { textAlign: "center", marginBottom: 12 },
+  emptyActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  patientActions: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 12,
+  },
+  actionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 4,
+  },
+  actionBtnText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  summaryTable: { marginTop: 4 },
+  summaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+  },
+  summaryHeader: {
+    flex: 1,
+    textAlign: "center",
+    fontWeight: "600",
+  },
+  summaryLabelRow: {
+    flex: 1.5,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  summaryLabel: { fontWeight: "600" },
+  summaryVal: { flex: 1, textAlign: "center", fontWeight: "700" },
+  membroRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+  },
+  sectionTitle: { fontWeight: "700", marginBottom: 10, marginTop: 4 },
+  quickGrid: { flexDirection: "row", gap: 10, marginBottom: 14 },
+  quickCard: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    elevation: 1,
+  },
+  quickText: { marginTop: 6, fontWeight: "600" },
+  linkRow: { flexDirection: "row", gap: 10, marginTop: 4 },
+  linkBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 6,
+  },
+  linkBtnText: { fontWeight: "600" },
+});

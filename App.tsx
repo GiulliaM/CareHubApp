@@ -2,13 +2,23 @@ import { LogBox } from "react-native";
 LogBox.ignoreLogs(["Require cycle:"]);
 
 import React from "react";
-import RootNavigator from "./frontend/src/navigation/RootNavigator";
-import { ThemeProvider } from "./frontend/src/context/ThemeContext";
+import * as Notifications from "expo-notifications";
+import NavegadorRaiz from "./frontend/src/navigation/NavegadorRaiz";
+import { ProvedorTema } from "./frontend/src/context/ThemeContext";
+
+// Configura como as notificações são exibidas quando o app está em primeiro plano
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <RootNavigator />
-    </ThemeProvider>
+    <ProvedorTema>
+      <NavegadorRaiz />
+    </ProvedorTema>
   );
 }

@@ -13,16 +13,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../context/ThemeContext";
+import { useTema } from "../context/ThemeContext";
 import styles from "../style/loginStyle";
-import { saveToken } from "../utils/auth";
+import { salvarToken } from "../utils/autenticacao";
 import { API_URL } from "../config/api";
 
 export default function Login({ navigation }: any) {
-  const { colors } = useTheme();
+  const { cores } = useTema();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [carregando, setCarregando] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   async function handleLogin() {
@@ -32,7 +32,7 @@ export default function Login({ navigation }: any) {
     }
 
     try {
-      setLoading(true);
+      setCarregando(true);
 
       const res = await axios.post(`${API_URL}/usuarios/login`, {
         email,
@@ -60,13 +60,13 @@ export default function Login({ navigation }: any) {
         }
 
         // Salva novos dados do usuário
-        await saveToken(token);
+        await salvarToken(token);
         await AsyncStorage.setItem("usuario", JSON.stringify(userData));
 
         console.log("Login successful:", userData.nome);
 
-        // Redirecionar para tela de loading que carregará todos os dados
-        navigation.reset({ index: 0, routes: [{ name: "LoadingData" }] });
+        // Redirecionar para tela de carregando que carregará todos os dados
+        navigation.reset({ index: 0, routes: [{ name: "CarregandoDados" }] });
       } else {
         Alert.alert("Erro", "Credenciais inválidas.");
       }
@@ -83,17 +83,17 @@ export default function Login({ navigation }: any) {
         Alert.alert("Erro", "Ocorreu um erro inesperado.");
       }
     } finally {
-      setLoading(false);
+      setCarregando(false);
     }
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: cores.background }]}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <Text style={[styles.title, { color: colors.primary }]}>Entrar</Text>
+        <Text style={[styles.title, { color: cores.primary }]}>Entrar</Text>
 
         <TextInput
           style={styles.input}
@@ -130,11 +130,11 @@ export default function Login({ navigation }: any) {
 
         {/* Botão */}
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: colors.primary }]}
+          style={[styles.button, { backgroundColor: cores.primary }]}
           onPress={handleLogin}
-          disabled={loading}
+          disabled={carregando}
         >
-          {loading ? (
+          {carregando ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.buttonText}>Entrar</Text>
@@ -142,7 +142,7 @@ export default function Login({ navigation }: any) {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.navigate("Cadastro")}>
-          <Text style={[styles.link, { color: colors.primary }]}>
+          <Text style={[styles.link, { color: cores.primary }]}>
             Não tem uma conta? Cadastre-se
           </Text>
         </TouchableOpacity>
